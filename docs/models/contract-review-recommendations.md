@@ -1,16 +1,16 @@
-# Contract Review — Recommended Dispositions (Not Yet Approved)
+# Contract Review — Recommended Dispositions (Approved as D-004)
 
-**Artifact status:** PROPOSED / decision support only
+**Artifact status:** HISTORICAL recommendations — all twelve accepted in [ADR-0004](../decisions/ADR-0004-contract-review-dispositions.md) on 2026-10-19
 **Review owner:** Project owner
 **Decision context:** D-001 through D-003 and the confirmed candidate lifecycle
 **Source:** Prior twelve-decision contract review recommendations, consolidated here for GitHub review
-**Important:** A PR merge **does not** itself imply approval of this decision list. Explicit sign-off is required before contract freeze.
+**Approval:** The project owner expressly delegated acceptance of the recommended answer for every outstanding decision in the 2026-10-19 conversation. This acceptance is documented by D-004. **Contract v0.2 implementation and freeze remain pending.**
 
 ## Confirmed independently
 
 **Candidate lifecycle:** A person registers in Drupal, develops a reusable profile, and submits one or more distinct applications against programs or opportunities. The account, candidate identity, profile, and application are separate concepts.
 
-## Twelve open contract decisions
+## Twelve accepted design decisions
 
 | # | Area | Recommended disposition | Acceptance concern |
 |---|---|---|---|
@@ -27,14 +27,14 @@
 | 11 | RAG | Retrieval requires organization scope, Drupal access checks, source revisions, withdrawal handling, and immediate fail-closed behavior on access/freshness failures. | Revalidate before model context and before reviewer action; a vector index is never authoritative. |
 | 12 | Evaluation | Convert initial 12 labels into reproducible case fixtures and reviewer-adjudicated rubrics; maintain a genuinely separate held-out set. | No claimed benchmark results without an actual run and measured observations. |
 
-## Recommended additional baseline rule (proposal)
+## Approved additional baseline rule
 
 Before calling any LLM, execute a deterministic eligibility and explanation baseline. Measure whether an AI model adds recommendation utility against this baseline while keeping hard-policy violations, unauthorized retrieval, and stale evidence as blocking regressions.
 
-## Proposed review gate
+## Contract v0.2 implementation and freeze gate (not yet complete)
 
-- [ ] Project owner approves or revises #1–#12 explicitly.
-- [ ] Open disagreements are recorded with their impact on contracts.
+- [x] Project owner approved recommended answers #1–#12 explicitly by delegation; ADR-0004 records those decisions.
+- [x] No requested exceptions to the twelve proposed answers; implementation-level open choices and tradeoffs are recorded in D-004.
 - [ ] Cross-record organization scoping, freshness, and human authorization have negative tests.
 - [ ] Source versions, review transitions, idempotency semantics, and structured reasons are reflected in Contract v0.2.
 - [ ] Synthetic cases and evaluation rubric are versioned, with no invented metrics.
@@ -46,4 +46,4 @@ Before calling any LLM, execute a deterministic eligibility and explanation base
 | Date | Event | Status |
 |---|---|---|
 | 2026-10-15 | Owner confirmed the account → profile → multiple applications lifecycle. | **Accepted lifecycle only** |
-| 2026-10-19 | These twelve recommended dispositions were transferred into GitHub for review. | **Pending owner approval** |
+| 2026-10-19 | Recommended dispositions were transferred into GitHub for review. | Historical proposal |\n| 2026-10-19 | Owner delegated approval of all twelve recommended answers; ADR-0004 accepted as the decision record. | **Approved decisions; contract revision pending** |

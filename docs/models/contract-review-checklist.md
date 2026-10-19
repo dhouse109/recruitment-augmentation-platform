@@ -1,30 +1,46 @@
-# Contract Review Gate — Proposed Checklist
+# Contract Review Gate — Accepted Decisions and Remaining Implementation Checks
 
-**Review status:** NOT YET APPROVED  
-**Accepted decisions in force:** D-001, D-002, D-003  
-**Artifact version:** 0.1.0
+**Decision status:** APPROVED by project-owner delegation (D-004, 2026-10-19)  
+**Contract status:** **v0.1 remains proposed; v0.2 NOT YET BUILT or frozen**  
+**Accepted decision basis:** D-001, D-002, D-003, [D-004](../decisions/ADR-0004-contract-review-dispositions.md)  
+**Confirmed lifecycle:** Drupal account → reusable candidate profile → distinct program/opportunity applications
 
-## Decisions to confirm before treating contracts as stable
+## Decisions accepted
 
-- [ ] Does one Drupal account map to one Candidate per organization, or can a candidate maintain multiple separate identities? Pilot defaults to one synthetic account per candidate.
-- [ ] Are profile claims, application records, and recruitment opportunities represented by distinct, versionable Drupal entities? Exact implementation remains open.
-- [ ] Is coordinator the correct first pilot reviewer role? Does `approve_for_follow_up` fully express first-slice authority?
-- [ ] Should review a failed verification allow `request_information` rather than normal `approve_for_follow_up`? Current model treats escalations as a separate human-handling path.
-- [ ] Does an `ineligible` program-specific *opportunity* appropriately mean not eligible to consider this opportunity, not rejection of the applicant?
-- [ ] Confirm the four fictional pilot policies; real-world application of any skills/availability rules needs fairness/accommodation and legal review.
-- [ ] Is the `SourceReference` logical-version exception for Drupal `User` acceptable, pending exact entity choice?
-- [ ] Choose where human-review idempotency and append-only audit are actually enforced; Pydantic cannot enforce storage guarantees.
-- [ ] Confirm whether `ReviewDecision.reason` must always be nonempty or should support standard reason codes plus optional comment.
-- [ ] Approve the minimum candidate-profile claim vocabulary and prohibit unreviewed attributes/irrelevant demographic signals.
-- [ ] Confirm RAG context authorization, source freshness and withdrawal contract before starting index implementation.
-- [ ] Convert proposed synthetic evaluation labels into actual scenario fixtures and have reviewers adjudicate them.
+Each selected answer and its rationale, exceptions, and test obligations are recorded in ADR-0004. A checked item means the **decision** is approved, not that its software has been implemented.
 
-## Gate exit conditions
+- [x] **D-004.01 — Identity:** Drupal account versus organization-scoped Candidate; one per organization, with opaque portable IDs.
+- [x] **D-004.02 — Entity separation:** Distinct revisionable logical CandidateProfile, Application, and Opportunity; physical Drupal type remains open.
+- [x] **D-004.03 — Human reviewer:** Nonprofit coordinator; approve for **follow-up only**.
+- [x] **D-004.04 — Escalation:** Failed/stale verification cannot enter normal approval; request information or dismiss suggestion.
+- [x] **D-004.05 — Eligibility:** Opportunity- and policy-specific, not candidate rejection.
+- [x] **D-004.06 — Pilot policies:** Four configurable fictional categories; missing/conflicting data becomes needs_information rather than an inferred rejection.
+- [x] **D-004.07 — Source version:** Native Drupal revisions or validated logical snapshots; permission and freshness rechecked separately.
+- [x] **D-004.08 — Writes:** Authenticated Drupal service enforces transactionality, idempotency, and append-only audit events.
+- [x] **D-004.09 — Review reasons:** Structured reason_code; optional comment with conditional explanation.
+- [x] **D-004.10 — Claims:** Allowlisted, source-backed fields and explicit epistemic states; inferred claims are not authoritative.
+- [x] **D-004.11 — RAG:** Scoped and live-authorized retrieval with revision/currentness and withdrawal handling.
+- [x] **D-004.12 — Evaluation:** Complete synthetic fixtures, adjudicated labels, held-out cases, reproducible measurements.
 
-1. Domain owner explicitly accepts or revises the portable types and enums.
-2. Each mandatory relationship has a planned integration/negative test.
-3. Source-of-truth/derived-RAG boundaries are documented and authorized-person model chosen.
-4. No invented performance or quality claims; baseline is explicitly unmeasured.
-5. Implementation technology choices remain in an OPEN register until selected by separate ADRs.
+**Additional accepted rule:** Deterministic eligibility and explanation baseline before model-dependent matching or multi-agent claims.
 
-**Next deliverables after approval:** contract v0.2 with revised schemas, deterministic policy evaluation spec, complete synthetic fixture set and a Slice 0 executable baseline plan. The current pack is **a modeling artifact and a local validation spike**, not Slice 0 completion.
+## Unfinished implementation gates for Contract v0.2
+
+- [ ] Update typed Pydantic reference contracts, enums, and cross-object validators to match all twelve decisions.
+- [ ] Generate JSON Schema outputs and ensure their semantics align with the Python validation boundaries.
+- [ ] Implement synthetic fixture cases for all positive, negative, unknown, stale, cross-organization, escalation and idempotency scenarios.
+- [ ] Run automated tests and retain actual commands and observed results in GitHub/CI evidence.
+- [ ] Distinguish mock-backed contract tests from future Drupal live authorization, source-freshness and transactional review tests.
+- [ ] Reconcile candidate lifecycle and review escalation against explicit state-transition tables.
+- [ ] Complete a reproducible deterministic eligibility-policy baseline design and execution plan.
+- [ ] Produce an evaluation fixture rubric without inventing quality, safety, cost or latency results.
+- [ ] Keep unselected implementation technologies in an OPEN register and obtain separate decisions where necessary.
+- [ ] Present a Contract v0.2 freeze proposal only after contracts, fixtures, and required tests are reviewed.
+
+## Exit criteria
+
+**Decision gate:** Complete with D-004 adoption.  
+**Contract implementation / freeze gate:** Not yet complete.  
+**Claude implementation authorization:** Not granted by this ADR or checklist alone.
+
+**Next deliverables:** Contract v0.2 revision, deterministic policy evaluation specification, reproducible synthetic case set, and the first executable Slice 0 plan.

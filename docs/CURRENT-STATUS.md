@@ -1,37 +1,53 @@
 # Current Status — Recruitment Augmentation Platform
 
-**Phase:** Planning / proposed contract review
-**Implementation authorization:** **NONE**
-**Repository branch target:** `main` (via reviewed PRs only)
-**Pilot:** Fictional nonprofit internship placement using entirely synthetic records
+**Phase:** Approved domain-policy decisions → Contract v0.2 revision planning  
+**Implementation authorization:** **NONE** (contracts and execution plan are not frozen)  
+**Repository branch target:** `main` through reviewed PRs  
+**Pilot:** Fictional nonprofit internship placement; synthetic data only
 
-## Accepted design commitments
+## Accepted decisions
 
-- **D-001:** General-purpose recruitment architecture, nonprofit internship pilot.
-- **D-002:** Drupal as the pilot's authoritative business record system; revision- and permission-aware RAG supports AI inside and outside Drupal.
-- **D-003:** Versioned synthetic evaluation and gated prompt/model/retrieval changes.
-- **Candidate lifecycle (confirmed):** Drupal user registration → reusable candidate profile → distinct applications against programs or opportunities → eligibility and matching → verified suggestions → human review for follow-up.
+- **D-001:** General-purpose recruitment architecture with a nonprofit internship pilot.
+- **D-002:** Drupal authoritative business records and controlled AI inside/outside Drupal via permission-aware RAG.
+- **D-003:** Versioned synthetic evaluation, regression assessment, and gated changes.
+- **D-004:** Twelve accepted contract-review decisions plus deterministic-baseline-first sequencing.
+- **Confirmed lifecycle:** Drupal account → reusable candidate profile → one or more distinct program/opportunity applications → eligibility/matching → verification → authenticated human follow-up review.
 
-See `docs/decisions/README.md` for actual ADRs.
+See `docs/decisions/README.md` and the individual ADRs for authoritative detail.
 
-## In review, NOT accepted
+## Contract status
 
-- Domain and contract descriptions under `docs/models/` are **v0.1 proposals**.
-- Twelve contract-review recommendations await explicit approval.
-- The physical Drupal entity/module choices, authorization transport, retrieval index/database, stack details, orchestration topology, evaluation runner, and thresholds are open.
-- The model examples described in the companion draft contract package are **not imported as executable code in this documentation PR**. Schemas, fixtures, and test sources will require a separate follow-on integration/freeze PR after contract review.
+**Design decisions: approved.**  
+**Pydantic models / JSON Schemas: v0.1 draft reference only; must be reconciled with D-004.**  
+**Contract v0.2: not implemented, evaluated, accepted, or frozen.**
 
-## Next steps
+The v0.1 contracts, domain mapping, and synthetic evaluation labels currently in documentation are proposals and design references. New source, fixtures, and runnable test code require a separate PR and verification. Earlier local modeling checks do not prove integrated source authorization, review transactionality, or model quality.
 
-1. Review and approve/revise the twelve decisions in `docs/models/contract-review-recommendations.md`.
-2. Build Contract v0.2 (typed contracts, schema generation, synthetic fixtures, negative tests) and plan deterministic Slice 0.
-3. Decide the implementation method, Claude execution environment, and stage gates; prepare agent instructions.
-4. Authorize one bounded implementation slice only after contract and execution-gate approval.
+## Approved implementation constraints to enforce in v0.2
 
-## Evidence policy
+- Account / Candidate / Profile / Application separation; one stable Candidate per organization per account.
+- Opportunity-specific eligibility with explicit unknowns.
+- Escalation for failed verification; no follow-up approval for unverified recommendations.
+- Native revision or validated logical source snapshot; live permission/currentness checks.
+- Human-authorized Drupal review writes with structured reason codes, idempotency and append-only events.
+- Source-backed allowlisted claims; no AI-inferred factual promotions or sensitive proxy matching.
+- Versioned synthetic evaluation and a deterministic eligibility/explanation baseline ahead of paid model inference.
 
-No production software or model evaluations have been completed in this repository. Draft schema tests cited in prior planning materials are **local design spike results**, not CI or integrated acceptance tests. No real recruitment outcomes, external client records, or proprietary configuration should be committed.
+## Work now authorized as planning/contract revision
 
-## Change control
+1. Produce a **Contract v0.2** proposal implementing D-004, including generated schemas, synthetic cases, negative tests, and observed test output.
+2. Propose the deterministic eligibility engine and Slice 0 execution plan; choose and document any supporting technology decisions separately.
+3. Define implementation stage gates and Claude instructions (`AGENTS.md`, `CLAUDE.md`) for later review.
+4. Request explicit authorization before full application implementation or claiming a contract freeze.
 
-Every PR states: accepted decisions relied upon, changes proposed, verification performed, deferred items, and whether implementation is authorized. Merging a PR that imports a **proposed** model does not constitute a separate decision to approve that model.
+## Remaining OPEN implementation selections
+
+- Drupal core version, physical entity types, module strategy, secure service delegation.
+- Database/index backend, model providers, LangGraph/LangChain/Temporal/LangFuse topology, deployment.
+- Quantitative non-safety evaluation thresholds and how human subjective cases are adjudicated.
+- Framework choice for spec-driven versus custom R&D execution.
+- Retention/compliance measures needed before real-applicant deployment.
+
+## Evidence and change control
+
+No production pilot, Drupal integration, agent pipeline, or measured model benchmark exists in this repository yet. All data must be synthetic or expressly licensed. PRs must identify decisions, test evidence, risks, and withheld claims. **Merging a planning PR does not by itself authorize executable implementation or real-applicant processing.**
