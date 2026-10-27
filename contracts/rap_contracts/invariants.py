@@ -195,12 +195,30 @@ def all_source_refs(records: ContractRecordSet) -> list[SourceReference]:
     return refs
 
 
-def check_record_set(records: ContractRecordSet) -> None:
+PINNED_VERSIONS_MUST_BE_PRESENT = "must_be_present"
+PINNED_VERSIONS_MAY_BE_ABSENT = "may_be_absent"
+
+
+def check_record_set(records: ContractRecordSet, pinned_versions: str = PINNED_VERSIONS_MUST_BE_PRESENT) -> None:
     """Organization scope, referential integrity and profile-version coherence.
+
+    ``pinned_versions`` states what the caller asserts about the record set:
+
+    * ``"must_be_present"`` (default, fail closed): the set is complete, so the
+      exact profile version pinned by every submission must be one of the
+      supplied ``CandidateProfile`` versions (``unpinned_profile_version``).
+      Fixture sets are checked this way.
+    * ``"may_be_absent"``: the set is a partial projection (e.g. an adapter
+      loaded only current profile versions). The pinned version is then NOT
+      checked here; its existence, retention and readability must be
+      established by the authoritative resolver
+      (``source_checks.resolve_submission_evidence``), which fails closed.
 
     Version-kind checks against adapter capabilities are in
     ``source_checks.check_version_kind`` / ``check_record_set_versions``.
     """
+    if pinned_versions not in (PINNED_VERSIONS_MUST_BE_PRESENT, PINNED_VERSIONS_MAY_BE_ABSENT):
+        raise ValueError(f"unknown pinned_versions mode: {pinned_versions!r}")
     check_identity_mappings(records.candidates)
     candidates = {c.id: c for c in records.candidates}
     programs = _unique(records.programs, "program")
@@ -259,4 +277,11 @@ def check_record_set(records: ContractRecordSet) -> None:
                 raise ContractViolation(
                     "submission_profile_mismatch",
                     f"application {app.id} profile_ref does not locate profile {sub.profile_id}",
+                )
+            if pinned_versions == PINNED_VERSIONS_MUST_BE_PRESENT and not any(
+                v.source_ref == sub.profile_ref for v in versions
+            ):
+                raise ContractViolation(
+                    "unpinned_profile_version",
+                    f"application {app.id} pins a profile version absent from a record set declared complete",
                 )

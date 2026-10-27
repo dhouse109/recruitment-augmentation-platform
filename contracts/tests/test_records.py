@@ -8,6 +8,7 @@ from pydantic import ValidationError
 import support
 from rap_contracts.invariants import (
     ALLOWED_APPLICATION_TRANSITIONS,
+    PINNED_VERSIONS_MAY_BE_ABSENT,
     ContractRecordSet,
     ContractViolation,
     check_application_transition,
@@ -119,6 +120,60 @@ class SubmissionPreservationTests(unittest.TestCase):
         with self.assertRaises(ContractViolation) as ctx:
             check_profile_revision(r101, CandidateProfile.model_validate(moved))
         self.assertEqual(ctx.exception.code, "profile_source_entity_changed")
+
+
+class PinnedVersionMembershipTests(unittest.TestCase):
+    """check_record_set treatment of the exact pinned profile version (complete vs partial record sets)."""
+
+    def _without_r101(self):
+        recs = support.records()
+        profiles = tuple(p for p in recs.profiles
+                         if not (p.id == "profile_demo_a" and p.source_ref.version.revision_id == "101"))
+        return ContractRecordSet(**{**recs.__dict__, "profiles": profiles})
+
+    def test_complete_fixture_set_contains_every_pinned_version(self):
+        check_record_set(support.records())  # default: must_be_present
+
+    def test_complete_set_missing_pinned_version_rejected(self):
+        with self.assertRaises(ContractViolation) as ctx:
+            check_record_set(self._without_r101())
+        self.assertEqual(ctx.exception.code, "unpinned_profile_version")
+
+    def test_complete_set_pinning_nonexistent_version_rejected(self):
+        bad = support.raw_record("applications", "application_demo_a_data")
+        bad["submission"]["profile_ref"]["version"]["revision_id"] = "199"  # right profile entity, unknown version
+        recs = support.records()
+        apps = tuple(a for a in recs.applications if a.id != bad["id"]) + (Application.model_validate(bad),)
+        with self.assertRaises(ContractViolation) as ctx:
+            check_record_set(ContractRecordSet(**{**recs.__dict__, "applications": apps}))
+        self.assertEqual(ctx.exception.code, "unpinned_profile_version")
+
+    def test_partial_set_defers_to_resolver_which_fails_closed(self):
+        partial = self._without_r101()
+        check_record_set(partial, pinned_versions=PINNED_VERSIONS_MAY_BE_ABSENT)  # documented assumption
+        app = support.by_id(partial.applications, "application_demo_a_data")
+        authority = support.FixtureSourceAuthority()  # MOCK: pinned 101 not retained; 102 is current
+        authority.set(support.COORDINATOR, app.submission.profile_ref, VersionStatus.UNAVAILABLE, AccessStatus.ALLOWED)
+        authority.set(support.COORDINATOR, application_submission_ref(app), VersionStatus.CURRENT, AccessStatus.ALLOWED)
+        authority.set(support.COORDINATOR, _profile_version("102").source_ref, VersionStatus.CURRENT, AccessStatus.ALLOWED)
+        with self.assertRaises(ContractViolation) as ctx:
+            resolve_submission_evidence(app, authority, support.COORDINATOR)
+        self.assertEqual(ctx.exception.code, "source_unavailable")
+        self.assertEqual(authority.calls, [app.submission.profile_ref])  # stopped; never fell back to 102
+
+    def test_partial_set_resolves_when_authority_still_retains_pinned_version(self):
+        partial = self._without_r101()
+        check_record_set(partial, pinned_versions=PINNED_VERSIONS_MAY_BE_ABSENT)
+        app = support.by_id(partial.applications, "application_demo_a_data")
+        authority = support.FixtureSourceAuthority()
+        authority.set(support.COORDINATOR, app.submission.profile_ref, VersionStatus.SUPERSEDED, AccessStatus.ALLOWED)
+        authority.set(support.COORDINATOR, application_submission_ref(app), VersionStatus.CURRENT, AccessStatus.ALLOWED)
+        profile_result, _ = resolve_submission_evidence(app, authority, support.COORDINATOR)
+        self.assertEqual(profile_result.source, app.submission.profile_ref)
+
+    def test_unknown_mode_rejected(self):
+        with self.assertRaises(ValueError):
+            check_record_set(support.records(), pinned_versions="trust_me")
 
 
 class PinnedEvidenceResolutionTests(unittest.TestCase):

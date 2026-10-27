@@ -1,0 +1,4 @@
+# Development/test only. Adds an independent JSON Schema validator for
+# conformance tests; not used by the contracts package itself.
+-r requirements.txt
+jsonschema==4.26.0
