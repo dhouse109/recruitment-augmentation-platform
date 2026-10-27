@@ -6,6 +6,8 @@
 **Contract examples:** `contracts/rap_contracts/models.py`; `contracts/examples/`  
 **Schema output:** `contracts/schemas/*.schema.json`
 
+> **Note (PR #4):** The v0.1 example code and schemas referenced on this page were never committed to `main`. The `contracts/` directory now holds the partial **v0.2 foundations** contracts (`0.2.0-dev.foundations`); see [`contract-v0.2-foundations.md`](contract-v0.2-foundations.md). The demo commands below describe the v0.1 draft and do not apply to the current `contracts/` package. This page remains the v0.1 design reference.
+
 ## Purpose
 
 These are **framework-independent domain agreements**, represented here by runnable **Pydantic v2 examples** and generated JSON Schemas. Pydantic is useful because the original intended stack includes it; this **does not choose** the runtime, Drupal modules, orchestration design, database, or spec framework. A future toolchain may consume the JSON Schemas instead.
