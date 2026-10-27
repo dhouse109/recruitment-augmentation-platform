@@ -1,0 +1,3 @@
+# Reference-contract tooling only; not an application runtime selection.
+# Exact pin: generated JSON Schemas are reproducible only for this version.
+pydantic==2.13.5

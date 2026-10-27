@@ -1,0 +1,258 @@
+{
+  "fixture_set": "contract-v0.2-foundations",
+  "contract_version": "0.2.0-dev.foundations",
+  "data_policy": "Wholly synthetic. All organizations, programs, opportunities, accounts and candidates are invented. Source entity IDs are fictional fixture IDs, not Drupal records.",
+  "organizations": {
+    "org_demo_001": "Harbor Futures (fictional nonprofit)",
+    "org_demo_002": "Lantern Ridge Works (fictional employer, portability check)"
+  },
+  "notes": [
+    "Synthetic account 9001 has distinct organization-scoped identities: candidate_demo_a in org_demo_001 and candidate_demo_c in org_demo_002. Their portable IDs deliberately do not encode that link.",
+    "profile_demo_a has two versions: 101 (before both submissions) and 102 (created between them). application_demo_a_data pins 101; application_demo_a_web pins 102.",
+    "Version kinds below follow the fixture adapter's declared capabilities; they are not claims about which Drupal entity types are revisionable."
+  ],
+  "capabilities": [
+    {
+      "source_system": "fixture",
+      "declared_by": "fixture-adapter/0.2.0-dev.foundations",
+      "identity_entity_types": ["user"],
+      "native_revision_entity_types": ["application", "candidate_profile", "opportunity"],
+      "logical_snapshot_entity_types": ["program", "user"],
+      "snapshot_methods": ["sha256-canonical-json/v1"]
+    }
+  ],
+  "snapshot_payloads": {
+    "user-9001": {"fixture": "user-9001", "note": "synthetic account A"},
+    "program-3001": {"fixture": "program-3001", "note": "synthetic program record"}
+  },
+  "example_source_references": [
+    {
+      "organization_id": "org_demo_001",
+      "entity": {"source_system": "fixture", "entity_type": "user", "entity_id": "9001"},
+      "version": {
+        "kind": "logical_snapshot",
+        "method": "sha256-canonical-json/v1",
+        "token": "sha256:ae661dc3eb53f15803db418d743812f87583185ec6cde0ff38a678a2df2460bc",
+        "captured_at": "2026-10-20T13:00:00Z",
+        "captured_by": "fixture-adapter/0.2.0-dev.foundations"
+      }
+    }
+  ],
+  "candidates": [
+    {
+      "id": "candidate_demo_a",
+      "organization_id": "org_demo_001",
+      "identity_source": {"source_system": "fixture", "entity_type": "user", "entity_id": "9001"}
+    },
+    {
+      "id": "candidate_demo_b",
+      "organization_id": "org_demo_001",
+      "identity_source": {"source_system": "fixture", "entity_type": "user", "entity_id": "9002"}
+    },
+    {
+      "id": "candidate_demo_c",
+      "organization_id": "org_demo_002",
+      "identity_source": {"source_system": "fixture", "entity_type": "user", "entity_id": "9001"}
+    }
+  ],
+  "programs": [
+    {
+      "id": "program_demo_001",
+      "organization_id": "org_demo_001",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "program", "entity_id": "3001"},
+        "version": {
+          "kind": "logical_snapshot",
+          "method": "sha256-canonical-json/v1",
+          "token": "sha256:2f1debd02abbd7ae735fb8f03c4723df9660e4aa8254aa6c0fa1c68ccfcbf216",
+          "captured_at": "2026-10-20T12:00:00Z",
+          "captured_by": "fixture-adapter/0.2.0-dev.foundations"
+        }
+      }
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "opportunity_demo_data",
+      "organization_id": "org_demo_001",
+      "opportunity_type": "internship",
+      "status": "active",
+      "program_id": "program_demo_001",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "opportunity", "entity_id": "4001"},
+        "version": {"kind": "native_revision", "revision_id": "41"}
+      }
+    },
+    {
+      "id": "opportunity_demo_web",
+      "organization_id": "org_demo_001",
+      "opportunity_type": "internship",
+      "status": "active",
+      "program_id": "program_demo_001",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "opportunity", "entity_id": "4002"},
+        "version": {"kind": "native_revision", "revision_id": "42"}
+      }
+    },
+    {
+      "id": "opportunity_demo_ops",
+      "organization_id": "org_demo_001",
+      "opportunity_type": "internship",
+      "status": "paused",
+      "program_id": "program_demo_001",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "opportunity", "entity_id": "4003"},
+        "version": {"kind": "native_revision", "revision_id": "43"}
+      }
+    },
+    {
+      "id": "opportunity_demo_job",
+      "organization_id": "org_demo_002",
+      "opportunity_type": "job",
+      "status": "active",
+      "source_ref": {
+        "organization_id": "org_demo_002",
+        "entity": {"source_system": "fixture", "entity_type": "opportunity", "entity_id": "4101"},
+        "version": {"kind": "native_revision", "revision_id": "51"}
+      }
+    }
+  ],
+  "profiles": [
+    {
+      "id": "profile_demo_a",
+      "organization_id": "org_demo_001",
+      "candidate_id": "candidate_demo_a",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "candidate_profile", "entity_id": "5001"},
+        "version": {"kind": "native_revision", "revision_id": "101"}
+      }
+    },
+    {
+      "id": "profile_demo_a",
+      "organization_id": "org_demo_001",
+      "candidate_id": "candidate_demo_a",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "candidate_profile", "entity_id": "5001"},
+        "version": {"kind": "native_revision", "revision_id": "102"}
+      }
+    },
+    {
+      "id": "profile_demo_b",
+      "organization_id": "org_demo_001",
+      "candidate_id": "candidate_demo_b",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "candidate_profile", "entity_id": "5002"},
+        "version": {"kind": "native_revision", "revision_id": "201"}
+      }
+    },
+    {
+      "id": "profile_demo_c",
+      "organization_id": "org_demo_002",
+      "candidate_id": "candidate_demo_c",
+      "source_ref": {
+        "organization_id": "org_demo_002",
+        "entity": {"source_system": "fixture", "entity_type": "candidate_profile", "entity_id": "5003"},
+        "version": {"kind": "native_revision", "revision_id": "301"}
+      }
+    }
+  ],
+  "applications": [
+    {
+      "id": "application_demo_a_data",
+      "organization_id": "org_demo_001",
+      "candidate_id": "candidate_demo_a",
+      "target": {"program_id": "program_demo_001", "opportunity_id": "opportunity_demo_data"},
+      "status": "submitted",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "application", "entity_id": "7001"},
+        "version": {"kind": "native_revision", "revision_id": "711"}
+      },
+      "submission": {
+        "submitted_at": "2026-10-20T14:00:00Z",
+        "profile_id": "profile_demo_a",
+        "profile_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {"source_system": "fixture", "entity_type": "candidate_profile", "entity_id": "5001"},
+          "version": {"kind": "native_revision", "revision_id": "101"}
+        },
+        "application_version": {"kind": "native_revision", "revision_id": "711"}
+      }
+    },
+    {
+      "id": "application_demo_a_web",
+      "organization_id": "org_demo_001",
+      "candidate_id": "candidate_demo_a",
+      "target": {"opportunity_id": "opportunity_demo_web"},
+      "status": "submitted",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "application", "entity_id": "7002"},
+        "version": {"kind": "native_revision", "revision_id": "721"}
+      },
+      "submission": {
+        "submitted_at": "2026-10-22T09:30:00Z",
+        "profile_id": "profile_demo_a",
+        "profile_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {"source_system": "fixture", "entity_type": "candidate_profile", "entity_id": "5001"},
+          "version": {"kind": "native_revision", "revision_id": "102"}
+        },
+        "application_version": {"kind": "native_revision", "revision_id": "721"}
+      }
+    },
+    {
+      "id": "application_demo_b_program",
+      "organization_id": "org_demo_001",
+      "candidate_id": "candidate_demo_b",
+      "target": {"program_id": "program_demo_001"},
+      "status": "draft",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "application", "entity_id": "7003"},
+        "version": {"kind": "native_revision", "revision_id": "731"}
+      }
+    },
+    {
+      "id": "application_demo_b_data",
+      "organization_id": "org_demo_001",
+      "candidate_id": "candidate_demo_b",
+      "target": {"opportunity_id": "opportunity_demo_data"},
+      "status": "withdrawn",
+      "source_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {"source_system": "fixture", "entity_type": "application", "entity_id": "7004"},
+        "version": {"kind": "native_revision", "revision_id": "742"}
+      }
+    },
+    {
+      "id": "application_demo_c_job",
+      "organization_id": "org_demo_002",
+      "candidate_id": "candidate_demo_c",
+      "target": {"opportunity_id": "opportunity_demo_job"},
+      "status": "submitted",
+      "source_ref": {
+        "organization_id": "org_demo_002",
+        "entity": {"source_system": "fixture", "entity_type": "application", "entity_id": "7101"},
+        "version": {"kind": "native_revision", "revision_id": "811"}
+      },
+      "submission": {
+        "submitted_at": "2026-10-23T16:15:00Z",
+        "profile_id": "profile_demo_c",
+        "profile_ref": {
+          "organization_id": "org_demo_002",
+          "entity": {"source_system": "fixture", "entity_type": "candidate_profile", "entity_id": "5003"},
+          "version": {"kind": "native_revision", "revision_id": "301"}
+        },
+        "application_version": {"kind": "native_revision", "revision_id": "811"}
+      }
+    }
+  ]
+}
