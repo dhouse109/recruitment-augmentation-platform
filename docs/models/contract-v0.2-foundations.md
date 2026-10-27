@@ -21,6 +21,8 @@ This PR implements **portable reference contracts** with Pydantic v2. Pydantic i
 | 6 | Explicit version kind + adapter capabilities; SHA-256 initial but not the only method; provenance and responsibilities stated | `NativeRevision` / `LogicalSnapshot` discriminated union; `SourceSystemCapabilities`; open `SnapshotMethodRegistry` |
 | 7 | Identity reference not changeable via ordinary updates; opaque portable IDs | `check_candidate_update`; frozen models; typed-prefix ID pattern |
 | 8 | Partial dev version, pinned Pydantic, stable schema IDs, not frozen | `CONTRACT_VERSION`, `pydantic==2.13.5`, versioned `$id`, `x-contract-status` |
+| R1 | Review: treatment of the exact pinned profile version in `check_record_set` | Explicit `pinned_versions` mode: `must_be_present` (default, fail closed) requires the exact pinned version in the set; `may_be_absent` documents partial projections and defers to the fail-closed resolver |
+| R2 | Review: independent JSON Schema conformance, dev-scoped dependency | `requirements-dev.txt` (`jsonschema==4.26.0`); `tests/test_json_schema_conformance.py` validates against committed schema files |
 
 ## Evidence levels used below
 
@@ -49,9 +51,10 @@ This PR implements **portable reference contracts** with Pydantic v2. Pydantic i
 | Distinct logical records | `CandidateProfile`, `Application`, `Opportunity` (+ minimal `Program`) | all fixtures validate; `test_fixture_record_set_is_consistent` | Schema + Invariant |
 | One candidate, two independent applications | fixture `application_demo_a_data` / `application_demo_a_web` | `test_one_candidate_two_independent_applications`, `test_withdrawing_one_application_leaves_the_other_untouched` | Invariant |
 | Profile revision does not mutate submitted snapshot | `SubmissionSnapshot` pins `profile_ref`; `check_application_update` (`submission_rewrite`) | `test_profile_revision_does_not_mutate_submitted_snapshot`, `test_rewriting_pinned_profile_to_newer_revision_rejected`, `test_removing_submission_rejected` | Invariant — **Drupal revision retention not established** |
+| Exact pinned version membership in a record set | `check_record_set(pinned_versions=...)` (`unpinned_profile_version`) | `PinnedVersionMembershipTests` (6 tests: complete set passes; missing or nonexistent pinned version rejected; partial set defers to resolver, which fails closed when unavailable and resolves when retained; unknown mode rejected) | Invariant (complete mode) / Mock (partial mode resolution) |
 | Pinned evidence resolves without substituting newer versions | `resolve_submission_evidence`, `checked` (`source_substitution`) | `PinnedEvidenceResolutionTests` (10 tests) | Mock |
-| Independent status and submission history | `ApplicationStatus`; transition table; status↔submission coupling (model + JSON Schema `allOf`) | `test_full_transition_matrix` (16 pairs), `test_status_submission_coupling`, `test_reopen_via_update_rejected`, `test_submission_added_only_by_draft_to_submitted` | Schema + Invariant |
-| Program/opportunity target, consistent org | `ApplicationTarget` (`anyOf` in schema); `check_record_set` | `TargetTests` (4 tests) | Schema + Invariant |
+| Independent status and submission history | `ApplicationStatus`; transition table; status↔submission coupling (model + JSON Schema `allOf`) | `test_full_transition_matrix` (16 pairs), `test_status_submission_coupling`, `test_reopen_via_update_rejected`, `test_submission_added_only_by_draft_to_submitted`; independently `test_malformed_submission_and_target_cases_rejected` | Schema (Pydantic **and** independent JSON Schema validator) + Invariant |
+| Program/opportunity target, consistent org | `ApplicationTarget` (`anyOf` in schema); `check_record_set` | `TargetTests` (4 tests); independently `test_malformed_submission_and_target_cases_rejected` | Schema (Pydantic **and** independent JSON Schema validator) + Invariant |
 | Portability (non-internship) | `Opportunity.opportunity_type` open label | `test_job_opportunity_uses_same_contracts` (`org_demo_002`, `job`) | Schema |
 
 ### D-004.07 — Source version semantics (representation)
@@ -87,7 +90,8 @@ Local schema, invariant and mock tests **cannot** establish:
 6. **Immutability in storage** — frozen Pydantic objects and update checks do not stop a database row from being rewritten.
 7. **Transactionality, idempotency, append-only audit** — D-004.08, out of scope.
 8. **Derived-index invalidation** — D-004.11, out of scope.
-9. **Non-Python consumers** — JSON Schemas carry structure (including status↔submission and target `anyOf` rules) but not cross-record invariants, version-kind capability checks or source-check policy. JSON Schema validation of fixtures was not run (no additional dependency added).
+9. **Non-Python consumers** — JSON Schemas carry structure (including status↔submission and target `anyOf` rules) but not cross-field or cross-record invariants, version-kind capability checks or source-check policy. An independent validator (`jsonschema`, dev-only) confirms the committed schemas accept all synthetic fixtures and reject 14 malformed submission/target cases; `test_documented_gap_cross_field_org_equality_not_in_json_schema` demonstrates one rule only the Python contract enforces. Semantic `format` keywords (e.g. `date-time`) were not asserted by the JSON Schema validator.
+10. **Completeness of a record set** — `check_record_set` cannot know whether a record set is complete. The caller declares it via `pinned_versions`; the default assumes completeness and fails closed. For partial projections, only the authoritative resolver can establish that a pinned version still exists and is readable.
 
 ## Unresolved semantics (documented, not encoded)
 
@@ -107,7 +111,9 @@ Local schema, invariant and mock tests **cannot** establish:
 
 ## Test evidence
 
-**Run environment:** fresh `git clone` of branch `contracts/v0.2-foundations` at commit `0512de3955c0f790dc1171cc51337278cf253cd7`; new virtualenv; Python 3.13.17 (Linux); dependencies installed only from `contracts/requirements.txt`.
+**Current run (after review fixes):** fresh `git clone` of branch `contracts/v0.2-foundations` at commit `333541594c933e228505e9fa489f26a202b0480e`; new virtualenvs; Python 3.13.17 (Linux).
+
+*Runtime requirements only* (`contracts/requirements.txt`):
 
 ```text
 $ python -m pip freeze
@@ -120,19 +126,53 @@ typing_extensions==4.16.0
 $ python -m rap_contracts.schema_export --check
 schema drift: NONE
 
+$ python -m unittest discover -s tests
+Ran 81 tests in 0.123s
+
+OK (skipped=4)
+```
+
+The 4 skips are the JSON Schema conformance tests, skipped with a visible reason when the dev dependency is absent.
+
+*Development requirements* (`contracts/requirements-dev.txt`):
+
+```text
+$ python -m pip freeze
+annotated-types==0.8.0
+attrs==26.1.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+pydantic==2.13.5
+pydantic_core==2.46.5
+referencing==0.37.0
+rpds-py==2026.9.1
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+
+$ python -m rap_contracts.schema_export --check
+schema drift: NONE
+
 $ python -m unittest discover -s tests -v
 ...
-Ran 71 tests in 0.152s
+Ran 81 tests in 0.228s
 
 OK
 ```
 
-Per module: `test_identity` 16, `test_records` 31, `test_source_versions` 18, `test_schemas` 6. Several tests iterate subTests (e.g. 16 transition pairs, 14 malformed-version cases, 7 invalid IDs). Python versions other than 3.13.17 were not tested.
+Per module: `test_identity` 16, `test_records` 37, `test_source_versions` 18, `test_schemas` 6, `test_json_schema_conformance` 4. All 81 reported `ok`; none failed, errored or skipped. Several tests iterate subTests (e.g. 16 transition pairs, 14 malformed-version cases, 14 malformed submission/target cases, 7 invalid IDs). Python versions other than 3.13.17 were not tested. Only `jsonschema` is pinned in the dev file; its transitive versions above are as resolved on this run.
 
-**Supplementary local mutation check (not committed tooling):** seven invariants were individually disabled on a scratch copy — identity conflict, submission rewrite, `:` exclusion in native revisions, substitution detection, superseded-as-current, reopen-from-closed, snapshot-for-revisionable-type. Each mutation caused at least one test failure.
+**Previous run (superseded):** commit `0512de3` — 71 tests OK, drift NONE, runtime requirements only.
+
+**Supplementary local mutation checks (not committed tooling):**
+
+- Initial PR: seven invariants disabled one at a time on a scratch copy — identity conflict, submission rewrite, `:` exclusion in native revisions, substitution detection, superseded-as-current, reopen-from-closed, snapshot-for-revisionable-type. Each caused at least one test failure.
+- Review fixes:
+  - Disabling the pinned-version membership check failed 2 tests.
+  - Removing the draft/submission `allOf` rule from the *committed* schema file only failed the conformance test as well as the drift tests.
+  - Removing the target `anyOf` from the committed schema file only did the same.
 
 <details>
-<summary>Full verbose test output</summary>
+<summary>Full verbose test output (dev requirements, commit 3335415)</summary>
 
 ```text
 test_application_for_candidate_in_other_org_rejected (test_identity.CrossOrganizationReferenceTests) ... ok
@@ -151,6 +191,10 @@ test_same_account_gets_distinct_candidates_in_two_orgs (test_identity.IdentityMa
 test_second_candidate_for_same_account_in_same_org_rejected (test_identity.IdentityMappingTests) ... ok
 test_personal_data_shaped_and_mistyped_ids_rejected (test_identity.PortableIdTests) ... ok
 test_unknown_fields_rejected (test_identity.PortableIdTests) ... ok
+test_all_synthetic_fixture_records_accepted (test_json_schema_conformance.JsonSchemaConformanceTests) ... ok
+test_committed_schemas_are_valid_draft_2020_12 (test_json_schema_conformance.JsonSchemaConformanceTests) ... ok
+test_documented_gap_cross_field_org_equality_not_in_json_schema (test_json_schema_conformance.JsonSchemaConformanceTests) ... ok
+test_malformed_submission_and_target_cases_rejected (test_json_schema_conformance.JsonSchemaConformanceTests) ... ok
 test_one_candidate_two_independent_applications (test_records.IndependentApplicationTests) ... ok
 test_withdrawing_one_application_leaves_the_other_untouched (test_records.IndependentApplicationTests) ... ok
 test_full_transition_matrix (test_records.LifecycleTests) ... ok
@@ -170,6 +214,12 @@ test_unavailable_pinned_version_fails_closed_without_fallback (test_records.Pinn
 test_unknown_principal_fails_closed (test_records.PinnedEvidenceResolutionTests) ... ok
 test_withdrawn_application_is_not_active_evidence (test_records.PinnedEvidenceResolutionTests) ... ok
 test_withdrawn_pinned_version_fails_closed (test_records.PinnedEvidenceResolutionTests) ... ok
+test_complete_fixture_set_contains_every_pinned_version (test_records.PinnedVersionMembershipTests) ... ok
+test_complete_set_missing_pinned_version_rejected (test_records.PinnedVersionMembershipTests) ... ok
+test_complete_set_pinning_nonexistent_version_rejected (test_records.PinnedVersionMembershipTests) ... ok
+test_partial_set_defers_to_resolver_which_fails_closed (test_records.PinnedVersionMembershipTests) ... ok
+test_partial_set_resolves_when_authority_still_retains_pinned_version (test_records.PinnedVersionMembershipTests) ... ok
+test_unknown_mode_rejected (test_records.PinnedVersionMembershipTests) ... ok
 test_job_opportunity_uses_same_contracts (test_records.PortabilityTests) ... ok
 test_pinning_another_candidates_profile_rejected (test_records.SubmissionPreservationTests) ... ok
 test_profile_ref_that_does_not_locate_the_named_profile_rejected (test_records.SubmissionPreservationTests) ... ok
@@ -208,7 +258,7 @@ test_both_version_kinds_validate (test_source_versions.VersionKindRepresentation
 test_malformed_versions_rejected (test_source_versions.VersionKindRepresentationTests) ... ok
 
 ----------------------------------------------------------------------
-Ran 71 tests in 0.152s
+Ran 81 tests in 0.228s
 
 OK
 ```

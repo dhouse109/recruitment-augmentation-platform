@@ -17,6 +17,7 @@ Pydantic v2 is used for these reference contracts only. It is not a selection of
 | `schemas/` | Generated JSON Schemas (do not edit by hand) |
 | `fixtures/` | Synthetic fixture set |
 | `tests/` | `unittest` suites; `tests/support.py` holds the **mock** source authority |
+| `requirements.txt` / `requirements-dev.txt` | Runtime pin / dev-only additions for tests |
 
 ## Reproduce
 
@@ -24,10 +25,14 @@ From a clean checkout, in the `contracts/` directory:
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt   # runtime pin + dev-only jsonschema
 python -m rap_contracts.schema_export --check   # expect: schema drift: NONE
 python -m unittest discover -s tests -v
 ```
+
+`requirements.txt` holds the runtime pin only (`pydantic`). `requirements-dev.txt` adds `jsonschema` for the independent conformance tests in `tests/test_json_schema_conformance.py`; with runtime requirements alone those tests are reported as skipped.
+
+`invariants.check_record_set` validates a record set as **complete** by default: every submission's exact pinned profile version must be present. Pass `pinned_versions="may_be_absent"` for a partial projection; the pinned version must then be established by `source_checks.resolve_submission_evidence`, which fails closed.
 
 Regenerate schemas after an intentional model change with `python -m rap_contracts.schema_export`, and commit the result with the change. Output is reproducible only with the pinned Pydantic version.
 
