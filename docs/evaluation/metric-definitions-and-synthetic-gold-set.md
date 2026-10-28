@@ -5,6 +5,8 @@
 **Decision basis:** ADR-0003 / D-003; FR-012, FR-028–031  
 **Status:** Proposed metric formulas and synthetic expected labels; **NO AI outcome measurements yet**
 
+> **Correction (2026-10-28, PR #7).** Earlier text in this proposal described artifacts that were never committed: `contracts/examples/synthetic-evaluation-cases.json`, a `metrics.py` returning `NOT_DETERMINED_CONTRACT_ONLY`, seed schemas and "arithmetic tests". **None of these existed on `main`.** The seed labels below are now implemented as versioned synthetic case fixtures in `contracts/fixtures/evaluation-golden-v0.2.0-dev.json` and `contracts/fixtures/evaluation-nominal-held-out-v0.2.0-dev.json`, with contracts in `contracts/rap_contracts/evaluation.py`, `adjudication.py` and `promotion.py`, executed only by a test-only conformance harness (evidence tier T2). See `docs/models/contract-v0.2-evaluation.md` for the mapping (EVAL-G005 was split into two cases; EVAL-H004 was revised so the fault reaches substantive verification). The rest of this document is unchanged and remains a **proposal**.
+
 ## Why evaluate
 
 We need to know whether a change in prompt, provider, retrieval strategy or agent topology actually improves safe reviewer assistance. Trace collection without labeled cases is observability, not evaluation. A change must be compared on a frozen dataset with enough metadata to reproduce the experiment and inspect regressions.
@@ -16,7 +18,7 @@ The historical interview described ad-hoc spreadsheet comparison, not a mature e
 - **Golden regression**: visible, human-reviewed fixed cases for debugging, integration tests and controlled prompt refinement.
 - **Held-out**: reserved cases for unbiased later evaluation. Its details/labels are committed here as a demonstration of structure; a future serious experiment should keep held-out labels restricted from prompt-optimizing developers and coding agents. **A public GitHub held-out set is not truly hidden.** For this first design package, it is a structural example, not an unbiased generalization benchmark.
 
-Dataset manifest is `contracts/examples/synthetic-evaluation-cases.json` — **8 golden + 4 nominal held-out** synthetic labels. Some cases have only safety assertions, not eligibility expectations. Each case needs a complete scenario fixture and human-adjudicated label before an actual candidate-vs-baseline model comparison is credible; the current manifest is a **design seed**, not fully executable end-to-end benchmark data.
+The proposed dataset manifest was described as `contracts/examples/synthetic-evaluation-cases.json` — **8 golden + 4 nominal held-out** synthetic labels. *[Corrected 2026-10-28: that file was never committed; see the correction note above.]* Some cases have only safety assertions, not eligibility expectations. Each case needs a complete scenario fixture and human-adjudicated label before an actual candidate-vs-baseline model comparison is credible; the current manifest is a **design seed**, not fully executable end-to-end benchmark data.
 
 ## Dataset coverage
 
@@ -68,7 +70,7 @@ The machine-readable `expected_safety_failures` on a negative fixture denotes th
 - Unauthorized retrieval succeeded and exposed text → **blocking failure**.
 - A citation checker reports unsupported evidence and quarantines a suggestion → positive detection; unchecked use in coordinator-facing output → **blocking failure**.
 
-The included `metrics.py` demonstrates **label-matching and detection-arithmetic only**; it intentionally returns `promotion_decision = NOT_DETERMINED_CONTRACT_ONLY`, because it cannot prove exposure/blocking without integrated observations. Do not mistake that arithmetic for measured quality or a working safety gate.
+*[Corrected 2026-10-28: no `metrics.py` was ever committed.]* The proposal intended a label-matching helper that could not determine promotion without integrated observations; PR #7 instead defines `promotion.evaluate_safety_gate`, which returns `insufficient_evidence` for any mock-level (T2) observation. Do not mistake that arithmetic for measured quality or a working safety gate.
 
 ## Experiment manifest and promotion workflow
 
@@ -92,7 +94,7 @@ evals/comparisons/<baseline>-vs-<candidate>.md
 evals/decisions/<candidate>-promotion-decision.md
 ```
 
-Only the **seed manifest, schemas, and arithmetic tests** exist in this bundle. These suggested paths are future repository outputs, not present results.
+*[Corrected 2026-10-28: no seed manifest, schemas or arithmetic tests were committed with this proposal.]* These suggested paths are future repository outputs, not present results; no `evals/` directory exists.
 
 ## External observation / LangFuse / Temporal boundary
 
