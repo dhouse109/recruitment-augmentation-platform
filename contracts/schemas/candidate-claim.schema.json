@@ -1,0 +1,511 @@
+{
+  "$defs": {
+    "AvailabilityValue": {
+      "additionalProperties": false,
+      "description": "Declared whole hours per week.\n\nBounded only by the hours in a week. This does NOT represent schedules,\ntime windows, schedule compatibility, or accommodation needs.",
+      "properties": {
+        "hours_per_week": {
+          "maximum": 168,
+          "minimum": 0,
+          "title": "Hours Per Week",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "availability",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "hours_per_week"
+      ],
+      "title": "AvailabilityValue",
+      "type": "object"
+    },
+    "ClaimAlternative": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_ids": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^evidence_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "value": {
+          "discriminator": {
+            "mapping": {
+              "availability": "#/$defs/AvailabilityValue",
+              "experience": "#/$defs/ExperienceValue",
+              "interest": "#/$defs/InterestValue",
+              "skill": "#/$defs/SkillValue",
+              "work_preference": "#/$defs/WorkPreferenceValue"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SkillValue"
+            },
+            {
+              "$ref": "#/$defs/ExperienceValue"
+            },
+            {
+              "$ref": "#/$defs/InterestValue"
+            },
+            {
+              "$ref": "#/$defs/AvailabilityValue"
+            },
+            {
+              "$ref": "#/$defs/WorkPreferenceValue"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value",
+        "evidence_ids"
+      ],
+      "title": "ClaimAlternative",
+      "type": "object"
+    },
+    "ClaimState": {
+      "enum": [
+        "declared",
+        "inferred",
+        "unknown",
+        "contested"
+      ],
+      "title": "ClaimState",
+      "type": "string"
+    },
+    "ClaimType": {
+      "enum": [
+        "skill",
+        "experience",
+        "interest",
+        "availability",
+        "work_preference"
+      ],
+      "title": "ClaimType",
+      "type": "string"
+    },
+    "ExperienceValue": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_months": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration Months"
+        },
+        "kind": {
+          "const": "experience",
+          "title": "Kind",
+          "type": "string"
+        },
+        "presence": {
+          "enum": [
+            "has",
+            "lacks"
+          ],
+          "title": "Presence",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "presence"
+      ],
+      "title": "ExperienceValue",
+      "type": "object"
+    },
+    "InterestValue": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "interest",
+          "title": "Kind",
+          "type": "string"
+        },
+        "stance": {
+          "enum": [
+            "interested",
+            "not_interested"
+          ],
+          "title": "Stance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "stance"
+      ],
+      "title": "InterestValue",
+      "type": "object"
+    },
+    "SkillValue": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "skill",
+          "title": "Kind",
+          "type": "string"
+        },
+        "presence": {
+          "enum": [
+            "has",
+            "lacks"
+          ],
+          "title": "Presence",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "presence"
+      ],
+      "title": "SkillValue",
+      "type": "object"
+    },
+    "VocabularyPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^vocabulary_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "VocabularyPin",
+      "type": "object"
+    },
+    "WorkPreferenceValue": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "work_preference",
+          "title": "Kind",
+          "type": "string"
+        },
+        "stance": {
+          "enum": [
+            "prefers",
+            "does_not_prefer"
+          ],
+          "title": "Stance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "stance"
+      ],
+      "title": "WorkPreferenceValue",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/candidate-claim.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "declared",
+              "inferred"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "alternatives": {
+            "type": "null"
+          },
+          "evidence_ids": {
+            "minItems": 1
+          },
+          "value": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "value",
+          "evidence_ids"
+        ]
+      }
+    },
+    {
+      "else": {
+        "properties": {
+          "inferred_by": {
+            "type": "null"
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "state": {
+            "const": "inferred"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "inferred_by": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "inferred_by"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "alternatives": {
+            "type": "null"
+          },
+          "value": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "contested"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "alternatives": {
+            "minItems": 2,
+            "type": "array"
+          },
+          "evidence_ids": {
+            "maxItems": 0
+          },
+          "value": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "alternatives"
+        ]
+      }
+    },
+    {
+      "else": {
+        "properties": {
+          "subject_code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_code"
+        ]
+      },
+      "if": {
+        "properties": {
+          "claim_type": {
+            "const": "availability"
+          }
+        },
+        "required": [
+          "claim_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "subject_code": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "description": "One candidate fact in an explicit epistemic state.\n\n* declared  -- a value supported by >=1 source-backed evidence record.\n* inferred  -- a NON-AUTHORITATIVE proposal: value + producing component + input evidence.\n* unknown   -- no supported value. A value here is a fabrication and is rejected.\n* contested -- >=2 genuinely conflicting source-backed alternatives; no single value.",
+  "properties": {
+    "alternatives": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/ClaimAlternative"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Alternatives"
+    },
+    "candidate_id": {
+      "description": "Opaque portable organization-scoped candidate identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^candidate_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "claim_type": {
+      "$ref": "#/$defs/ClaimType"
+    },
+    "evidence_ids": {
+      "default": [],
+      "items": {
+        "maxLength": 64,
+        "pattern": "^evidence_[a-z0-9]+(?:_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "title": "Evidence Ids",
+      "type": "array"
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^claim_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "inferred_by": {
+      "anyOf": [
+        {
+          "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Inferred By"
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "state": {
+      "$ref": "#/$defs/ClaimState"
+    },
+    "subject_code": {
+      "anyOf": [
+        {
+          "maxLength": 48,
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Subject Code"
+    },
+    "value": {
+      "anyOf": [
+        {
+          "discriminator": {
+            "mapping": {
+              "availability": "#/$defs/AvailabilityValue",
+              "experience": "#/$defs/ExperienceValue",
+              "interest": "#/$defs/InterestValue",
+              "skill": "#/$defs/SkillValue",
+              "work_preference": "#/$defs/WorkPreferenceValue"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SkillValue"
+            },
+            {
+              "$ref": "#/$defs/ExperienceValue"
+            },
+            {
+              "$ref": "#/$defs/InterestValue"
+            },
+            {
+              "$ref": "#/$defs/AvailabilityValue"
+            },
+            {
+              "$ref": "#/$defs/WorkPreferenceValue"
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Value"
+    },
+    "vocabulary": {
+      "$ref": "#/$defs/VocabularyPin"
+    }
+  },
+  "required": [
+    "id",
+    "organization_id",
+    "candidate_id",
+    "vocabulary",
+    "claim_type",
+    "state"
+  ],
+  "title": "CandidateClaim",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.2"
+}

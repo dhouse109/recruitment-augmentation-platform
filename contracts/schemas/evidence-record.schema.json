@@ -1,0 +1,232 @@
+{
+  "$defs": {
+    "EvidenceBasis": {
+      "description": "Why this source supports a fact. Preserves declared vs verified (D-004.10, owner refinement A/2).",
+      "enum": [
+        "candidate_statement",
+        "authority_record",
+        "independent_verification"
+      ],
+      "title": "EvidenceBasis",
+      "type": "string"
+    },
+    "EvidenceSubject": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^(candidate|opportunity)_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EvidenceSubjectKind"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "title": "EvidenceSubject",
+      "type": "object"
+    },
+    "EvidenceSubjectKind": {
+      "enum": [
+        "candidate",
+        "opportunity"
+      ],
+      "title": "EvidenceSubjectKind",
+      "type": "string"
+    },
+    "LogicalSnapshot": {
+      "additionalProperties": false,
+      "description": "A version token computed by an adapter when no native revision exists.\n\nProvenance: ``captured_by`` computed ``token`` with ``method`` over the\nauthoritative record as read at ``captured_at``. A well-formed token proves\nneither currentness nor authorization; only the authority can confirm that\na token still corresponds to the record and that the caller may read it.",
+      "properties": {
+        "captured_at": {
+          "format": "date-time",
+          "title": "Captured At",
+          "type": "string"
+        },
+        "captured_by": {
+          "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+          "title": "Captured By",
+          "type": "string"
+        },
+        "kind": {
+          "const": "logical_snapshot",
+          "title": "Kind",
+          "type": "string"
+        },
+        "method": {
+          "description": "Snapshot method identifier, e.g. 'sha256-canonical-json/v1'. Open set; consumers accept only registered methods.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*/v[1-9][0-9]*$",
+          "title": "Method",
+          "type": "string"
+        },
+        "token": {
+          "description": "'<scheme>:<value>' token. Method-specific format is checked against a snapshot-method registry.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*:[A-Za-z0-9._~-]{8,256}$",
+          "title": "Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "method",
+        "token",
+        "captured_at",
+        "captured_by"
+      ],
+      "title": "LogicalSnapshot",
+      "type": "object"
+    },
+    "NativeRevision": {
+      "additionalProperties": false,
+      "description": "A revision identifier issued natively by the source system.\n\n``:`` is excluded from the pattern so a prefixed logical snapshot token\n(``sha256:...``) cannot be relabeled as a native revision.",
+      "properties": {
+        "kind": {
+          "const": "native_revision",
+          "title": "Kind",
+          "type": "string"
+        },
+        "revision_id": {
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Revision Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "revision_id"
+      ],
+      "title": "NativeRevision",
+      "type": "object"
+    },
+    "SourceEntityKey": {
+      "additionalProperties": false,
+      "description": "Unversioned locator of one authoritative source record.",
+      "properties": {
+        "entity_id": {
+          "description": "Identifier of the record in the source system. Source metadata only; never a portable ID.",
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "entity_type": {
+          "description": "Source-side logical entity type label declared by the adapter. Not a Drupal schema commitment.",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Entity Type",
+          "type": "string"
+        },
+        "source_system": {
+          "$ref": "#/$defs/SourceSystem"
+        }
+      },
+      "required": [
+        "source_system",
+        "entity_type",
+        "entity_id"
+      ],
+      "title": "SourceEntityKey",
+      "type": "object"
+    },
+    "SourceReference": {
+      "additionalProperties": false,
+      "description": "An authoritative record at one honestly labeled version.\n\nVersion currentness and access are deliberately NOT fields here: they are\nseparate, live checks reported by ``SourceCheckResult``.",
+      "properties": {
+        "entity": {
+          "$ref": "#/$defs/SourceEntityKey"
+        },
+        "organization_id": {
+          "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+          "maxLength": 64,
+          "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "version": {
+          "discriminator": {
+            "mapping": {
+              "logical_snapshot": "#/$defs/LogicalSnapshot",
+              "native_revision": "#/$defs/NativeRevision"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NativeRevision"
+            },
+            {
+              "$ref": "#/$defs/LogicalSnapshot"
+            }
+          ],
+          "title": "Version"
+        }
+      },
+      "required": [
+        "organization_id",
+        "entity",
+        "version"
+      ],
+      "title": "SourceReference",
+      "type": "object"
+    },
+    "SourceSystem": {
+      "description": "Authoritative source. ``fixture`` is the offline test substitute only.",
+      "enum": [
+        "drupal",
+        "fixture"
+      ],
+      "title": "SourceSystem",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/evidence-record.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Attributable pointer to one field of one exact authoritative source version.\n\nCarries no copied text. Content is resolved, when permitted, from the\nauthority; a valid EvidenceRecord is not proof that it may be read.",
+  "properties": {
+    "basis": {
+      "$ref": "#/$defs/EvidenceBasis"
+    },
+    "field_path": {
+      "description": "Location of the supporting field inside the source record, e.g. 'answers.screening_python'.",
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*$",
+      "title": "Field Path",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^evidence_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "source_ref": {
+      "$ref": "#/$defs/SourceReference"
+    },
+    "subject": {
+      "$ref": "#/$defs/EvidenceSubject"
+    }
+  },
+  "required": [
+    "id",
+    "organization_id",
+    "subject",
+    "basis",
+    "source_ref",
+    "field_path"
+  ],
+  "title": "EvidenceRecord",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.2"
+}

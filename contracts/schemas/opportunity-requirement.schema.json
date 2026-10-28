@@ -1,0 +1,283 @@
+{
+  "$defs": {
+    "LogicalSnapshot": {
+      "additionalProperties": false,
+      "description": "A version token computed by an adapter when no native revision exists.\n\nProvenance: ``captured_by`` computed ``token`` with ``method`` over the\nauthoritative record as read at ``captured_at``. A well-formed token proves\nneither currentness nor authorization; only the authority can confirm that\na token still corresponds to the record and that the caller may read it.",
+      "properties": {
+        "captured_at": {
+          "format": "date-time",
+          "title": "Captured At",
+          "type": "string"
+        },
+        "captured_by": {
+          "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+          "title": "Captured By",
+          "type": "string"
+        },
+        "kind": {
+          "const": "logical_snapshot",
+          "title": "Kind",
+          "type": "string"
+        },
+        "method": {
+          "description": "Snapshot method identifier, e.g. 'sha256-canonical-json/v1'. Open set; consumers accept only registered methods.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*/v[1-9][0-9]*$",
+          "title": "Method",
+          "type": "string"
+        },
+        "token": {
+          "description": "'<scheme>:<value>' token. Method-specific format is checked against a snapshot-method registry.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*:[A-Za-z0-9._~-]{8,256}$",
+          "title": "Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "method",
+        "token",
+        "captured_at",
+        "captured_by"
+      ],
+      "title": "LogicalSnapshot",
+      "type": "object"
+    },
+    "MandatoryQualificationRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "mandatory_qualification",
+          "title": "Kind",
+          "type": "string"
+        },
+        "skill_code": {
+          "maxLength": 48,
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+          "title": "Skill Code",
+          "type": "string"
+        },
+        "vocabulary": {
+          "$ref": "#/$defs/VocabularyPin"
+        }
+      },
+      "required": [
+        "kind",
+        "vocabulary",
+        "skill_code"
+      ],
+      "title": "MandatoryQualificationRequirement",
+      "type": "object"
+    },
+    "NativeRevision": {
+      "additionalProperties": false,
+      "description": "A revision identifier issued natively by the source system.\n\n``:`` is excluded from the pattern so a prefixed logical snapshot token\n(``sha256:...``) cannot be relabeled as a native revision.",
+      "properties": {
+        "kind": {
+          "const": "native_revision",
+          "title": "Kind",
+          "type": "string"
+        },
+        "revision_id": {
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Revision Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "revision_id"
+      ],
+      "title": "NativeRevision",
+      "type": "object"
+    },
+    "SourceEntityKey": {
+      "additionalProperties": false,
+      "description": "Unversioned locator of one authoritative source record.",
+      "properties": {
+        "entity_id": {
+          "description": "Identifier of the record in the source system. Source metadata only; never a portable ID.",
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "entity_type": {
+          "description": "Source-side logical entity type label declared by the adapter. Not a Drupal schema commitment.",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Entity Type",
+          "type": "string"
+        },
+        "source_system": {
+          "$ref": "#/$defs/SourceSystem"
+        }
+      },
+      "required": [
+        "source_system",
+        "entity_type",
+        "entity_id"
+      ],
+      "title": "SourceEntityKey",
+      "type": "object"
+    },
+    "SourceReference": {
+      "additionalProperties": false,
+      "description": "An authoritative record at one honestly labeled version.\n\nVersion currentness and access are deliberately NOT fields here: they are\nseparate, live checks reported by ``SourceCheckResult``.",
+      "properties": {
+        "entity": {
+          "$ref": "#/$defs/SourceEntityKey"
+        },
+        "organization_id": {
+          "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+          "maxLength": 64,
+          "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "version": {
+          "discriminator": {
+            "mapping": {
+              "logical_snapshot": "#/$defs/LogicalSnapshot",
+              "native_revision": "#/$defs/NativeRevision"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NativeRevision"
+            },
+            {
+              "$ref": "#/$defs/LogicalSnapshot"
+            }
+          ],
+          "title": "Version"
+        }
+      },
+      "required": [
+        "organization_id",
+        "entity",
+        "version"
+      ],
+      "title": "SourceReference",
+      "type": "object"
+    },
+    "SourceSystem": {
+      "description": "Authoritative source. ``fixture`` is the offline test substitute only.",
+      "enum": [
+        "drupal",
+        "fixture"
+      ],
+      "title": "SourceSystem",
+      "type": "string"
+    },
+    "VocabularyPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^vocabulary_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "VocabularyPin",
+      "type": "object"
+    },
+    "WeeklyHoursRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "hours_per_week": {
+          "maximum": 168,
+          "minimum": 0,
+          "title": "Hours Per Week",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "weekly_hours",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "hours_per_week"
+      ],
+      "title": "WeeklyHoursRequirement",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/opportunity-requirement.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A published requirement, versioned by the exact authoritative source it came from.\n\n``source_ref`` must be the opportunity's own source at the same version as\nthe Opportunity record, or the exact source of a policy set that covers the\nopportunity. The Opportunity contract itself is unchanged.",
+  "properties": {
+    "field_path": {
+      "description": "Location of the supporting field inside the source record, e.g. 'answers.screening_python'.",
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*$",
+      "title": "Field Path",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^requirement_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "opportunity_id": {
+      "description": "Opaque portable opportunity identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^opportunity_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Opportunity Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "requirement": {
+      "discriminator": {
+        "mapping": {
+          "mandatory_qualification": "#/$defs/MandatoryQualificationRequirement",
+          "weekly_hours": "#/$defs/WeeklyHoursRequirement"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/WeeklyHoursRequirement"
+        },
+        {
+          "$ref": "#/$defs/MandatoryQualificationRequirement"
+        }
+      ],
+      "title": "Requirement"
+    },
+    "source_ref": {
+      "$ref": "#/$defs/SourceReference"
+    }
+  },
+  "required": [
+    "id",
+    "organization_id",
+    "opportunity_id",
+    "requirement",
+    "source_ref",
+    "field_path"
+  ],
+  "title": "OpportunityRequirement",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.2"
+}

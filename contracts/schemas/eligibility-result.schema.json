@@ -1,0 +1,706 @@
+{
+  "$defs": {
+    "EligibilityDecision": {
+      "description": "Opportunity- and policy-version-scoped assessment. Never a candidate-level outcome.",
+      "enum": [
+        "eligible",
+        "ineligible",
+        "needs_information"
+      ],
+      "title": "EligibilityDecision",
+      "type": "string"
+    },
+    "LogicalSnapshot": {
+      "additionalProperties": false,
+      "description": "A version token computed by an adapter when no native revision exists.\n\nProvenance: ``captured_by`` computed ``token`` with ``method`` over the\nauthoritative record as read at ``captured_at``. A well-formed token proves\nneither currentness nor authorization; only the authority can confirm that\na token still corresponds to the record and that the caller may read it.",
+      "properties": {
+        "captured_at": {
+          "format": "date-time",
+          "title": "Captured At",
+          "type": "string"
+        },
+        "captured_by": {
+          "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+          "title": "Captured By",
+          "type": "string"
+        },
+        "kind": {
+          "const": "logical_snapshot",
+          "title": "Kind",
+          "type": "string"
+        },
+        "method": {
+          "description": "Snapshot method identifier, e.g. 'sha256-canonical-json/v1'. Open set; consumers accept only registered methods.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*/v[1-9][0-9]*$",
+          "title": "Method",
+          "type": "string"
+        },
+        "token": {
+          "description": "'<scheme>:<value>' token. Method-specific format is checked against a snapshot-method registry.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*:[A-Za-z0-9._~-]{8,256}$",
+          "title": "Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "method",
+        "token",
+        "captured_at",
+        "captured_by"
+      ],
+      "title": "LogicalSnapshot",
+      "type": "object"
+    },
+    "NativeRevision": {
+      "additionalProperties": false,
+      "description": "A revision identifier issued natively by the source system.\n\n``:`` is excluded from the pattern so a prefixed logical snapshot token\n(``sha256:...``) cannot be relabeled as a native revision.",
+      "properties": {
+        "kind": {
+          "const": "native_revision",
+          "title": "Kind",
+          "type": "string"
+        },
+        "revision_id": {
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Revision Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "revision_id"
+      ],
+      "title": "NativeRevision",
+      "type": "object"
+    },
+    "PolicyPin": {
+      "additionalProperties": false,
+      "properties": {
+        "policy_set_id": {
+          "maxLength": 64,
+          "pattern": "^policy_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Policy Set Id",
+          "type": "string"
+        },
+        "source_ref": {
+          "$ref": "#/$defs/SourceReference"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "policy_set_id",
+        "version",
+        "source_ref"
+      ],
+      "title": "PolicyPin",
+      "type": "object"
+    },
+    "PolicyRuleKind": {
+      "enum": [
+        "opportunity_status_active",
+        "program_participation_confirmed",
+        "availability_meets_required_hours",
+        "mandatory_qualification_evidenced"
+      ],
+      "title": "PolicyRuleKind",
+      "type": "string"
+    },
+    "RuleOutcome": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "pass"
+              },
+              "rule_kind": {
+                "const": "opportunity_status_active"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "opportunity_active"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "fail"
+              },
+              "rule_kind": {
+                "const": "opportunity_status_active"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "opportunity_closed",
+                  "opportunity_paused"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "unknown"
+              },
+              "rule_kind": {
+                "const": "opportunity_status_active"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "not": {}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "pass"
+              },
+              "rule_kind": {
+                "const": "program_participation_confirmed"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "participation_confirmed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "fail"
+              },
+              "rule_kind": {
+                "const": "program_participation_confirmed"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "participation_not_participating"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "unknown"
+              },
+              "rule_kind": {
+                "const": "program_participation_confirmed"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "participation_not_recorded"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "pass"
+              },
+              "rule_kind": {
+                "const": "availability_meets_required_hours"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "availability_meets_required_hours"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "fail"
+              },
+              "rule_kind": {
+                "const": "availability_meets_required_hours"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "availability_below_required_hours"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "unknown"
+              },
+              "rule_kind": {
+                "const": "availability_meets_required_hours"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "availability_contested",
+                  "availability_not_declared",
+                  "required_hours_not_published"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "pass"
+              },
+              "rule_kind": {
+                "const": "mandatory_qualification_evidenced"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "no_mandatory_qualification",
+                  "qualification_declared",
+                  "qualification_independently_verified"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "fail"
+              },
+              "rule_kind": {
+                "const": "mandatory_qualification_evidenced"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "qualification_contradicted_by_declaration",
+                  "qualification_contradicted_by_verification"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "unknown"
+              },
+              "rule_kind": {
+                "const": "mandatory_qualification_evidenced"
+              }
+            },
+            "required": [
+              "rule_kind",
+              "result"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason_code": {
+                "enum": [
+                  "qualification_contested",
+                  "qualification_not_evidenced",
+                  "qualification_only_inferred"
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "claim_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 64,
+            "pattern": "^claim_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Claim Ids",
+          "type": "array"
+        },
+        "participation_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 64,
+            "pattern": "^participation_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Participation Ids",
+          "type": "array"
+        },
+        "reason_code": {
+          "pattern": "^[a-z][a-z0-9_]{1,63}$",
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "requirement_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 64,
+            "pattern": "^requirement_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Requirement Ids",
+          "type": "array"
+        },
+        "result": {
+          "$ref": "#/$defs/RuleResult"
+        },
+        "rule_id": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*-[0-9]{3}$",
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "rule_kind": {
+          "$ref": "#/$defs/PolicyRuleKind"
+        },
+        "rule_version": {
+          "minimum": 1,
+          "title": "Rule Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "rule_id",
+        "rule_version",
+        "rule_kind",
+        "result",
+        "reason_code"
+      ],
+      "title": "RuleOutcome",
+      "type": "object"
+    },
+    "RuleResult": {
+      "enum": [
+        "pass",
+        "fail",
+        "unknown"
+      ],
+      "title": "RuleResult",
+      "type": "string"
+    },
+    "SourceEntityKey": {
+      "additionalProperties": false,
+      "description": "Unversioned locator of one authoritative source record.",
+      "properties": {
+        "entity_id": {
+          "description": "Identifier of the record in the source system. Source metadata only; never a portable ID.",
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "entity_type": {
+          "description": "Source-side logical entity type label declared by the adapter. Not a Drupal schema commitment.",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Entity Type",
+          "type": "string"
+        },
+        "source_system": {
+          "$ref": "#/$defs/SourceSystem"
+        }
+      },
+      "required": [
+        "source_system",
+        "entity_type",
+        "entity_id"
+      ],
+      "title": "SourceEntityKey",
+      "type": "object"
+    },
+    "SourceReference": {
+      "additionalProperties": false,
+      "description": "An authoritative record at one honestly labeled version.\n\nVersion currentness and access are deliberately NOT fields here: they are\nseparate, live checks reported by ``SourceCheckResult``.",
+      "properties": {
+        "entity": {
+          "$ref": "#/$defs/SourceEntityKey"
+        },
+        "organization_id": {
+          "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+          "maxLength": 64,
+          "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "version": {
+          "discriminator": {
+            "mapping": {
+              "logical_snapshot": "#/$defs/LogicalSnapshot",
+              "native_revision": "#/$defs/NativeRevision"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NativeRevision"
+            },
+            {
+              "$ref": "#/$defs/LogicalSnapshot"
+            }
+          ],
+          "title": "Version"
+        }
+      },
+      "required": [
+        "organization_id",
+        "entity",
+        "version"
+      ],
+      "title": "SourceReference",
+      "type": "object"
+    },
+    "SourceSystem": {
+      "description": "Authoritative source. ``fixture`` is the offline test substitute only.",
+      "enum": [
+        "drupal",
+        "fixture"
+      ],
+      "title": "SourceSystem",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/eligibility-result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "else": {
+        "else": {
+          "properties": {
+            "decision": {
+              "const": "eligible"
+            }
+          }
+        },
+        "if": {
+          "properties": {
+            "rule_outcomes": {
+              "contains": {
+                "properties": {
+                  "result": {
+                    "const": "unknown"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "decision": {
+              "const": "needs_information"
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "rule_outcomes": {
+            "contains": {
+              "properties": {
+                "result": {
+                  "const": "fail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "decision": {
+            "const": "ineligible"
+          }
+        }
+      }
+    }
+  ],
+  "description": "Assessment of ONE candidate for ONE opportunity version under ONE pinned policy version.\n\nThere is intentionally no candidate-level status, rejection, rank or score.",
+  "properties": {
+    "candidate_id": {
+      "description": "Opaque portable organization-scoped candidate identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^candidate_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "decision": {
+      "$ref": "#/$defs/EligibilityDecision"
+    },
+    "evaluated_at": {
+      "format": "date-time",
+      "title": "Evaluated At",
+      "type": "string"
+    },
+    "evaluated_by": {
+      "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+      "title": "Evaluated By",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^eligibility_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "opportunity_id": {
+      "description": "Opaque portable opportunity identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^opportunity_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Opportunity Id",
+      "type": "string"
+    },
+    "opportunity_ref": {
+      "$ref": "#/$defs/SourceReference"
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "policy": {
+      "$ref": "#/$defs/PolicyPin"
+    },
+    "rule_outcomes": {
+      "items": {
+        "$ref": "#/$defs/RuleOutcome"
+      },
+      "minItems": 1,
+      "title": "Rule Outcomes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "organization_id",
+    "candidate_id",
+    "opportunity_id",
+    "opportunity_ref",
+    "policy",
+    "rule_outcomes",
+    "decision",
+    "evaluated_at",
+    "evaluated_by"
+  ],
+  "title": "EligibilityResult",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.2"
+}

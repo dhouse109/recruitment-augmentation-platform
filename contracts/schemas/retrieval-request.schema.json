@@ -1,0 +1,48 @@
+{
+  "$defs": {
+    "RetrievalPurpose": {
+      "enum": [
+        "model_context",
+        "reviewer_display"
+      ],
+      "title": "RetrievalPurpose",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/retrieval-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Caller request for derived content. Contains no principal: identity is server-derived.",
+  "properties": {
+    "chunk_ids": {
+      "items": {
+        "maxLength": 64,
+        "pattern": "^chunk_[a-z0-9]+(?:_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Chunk Ids",
+      "type": "array"
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "purpose": {
+      "$ref": "#/$defs/RetrievalPurpose"
+    }
+  },
+  "required": [
+    "organization_id",
+    "purpose",
+    "chunk_ids"
+  ],
+  "title": "RetrievalRequest",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.2"
+}

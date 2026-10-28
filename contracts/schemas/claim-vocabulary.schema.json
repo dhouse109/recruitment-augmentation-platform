@@ -1,0 +1,79 @@
+{
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/claim-vocabulary.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Versioned allowlist of claim subject codes for one organization.",
+  "properties": {
+    "experience_areas": {
+      "items": {
+        "maxLength": 48,
+        "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "title": "Experience Areas",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^vocabulary_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "interest_areas": {
+      "items": {
+        "maxLength": 48,
+        "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "title": "Interest Areas",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "skills": {
+      "items": {
+        "maxLength": 48,
+        "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "title": "Skills",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "work_preferences": {
+      "items": {
+        "maxLength": 48,
+        "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "title": "Work Preferences",
+      "type": "array",
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "id",
+    "organization_id",
+    "version",
+    "skills",
+    "experience_areas",
+    "interest_areas",
+    "work_preferences"
+  ],
+  "title": "ClaimVocabulary",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.2"
+}
