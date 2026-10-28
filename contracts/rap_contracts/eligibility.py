@@ -29,6 +29,7 @@ from .claims import (
     ProgramParticipation,
     ProgramParticipationStatus,
     VocabularyPin,
+    index_vocabularies,
 )
 from .evidence import EvidenceBasis, EvidenceRecord, FieldPath
 from .invariants import ContractRecordSet, ContractViolation
@@ -165,7 +166,8 @@ class RuleResult(str, Enum):
 
 #: Allowed reason codes per (rule kind, result). There are deliberately no
 #: unknown codes for source-integrity or authorization failures, and no
-#: unknown code for the active-status rule (open decision O1).
+#: unknown code for the active-status rule: owner decision O1(a), 2026-10-28 --
+#: status is a required authoritative field and source failures fail closed.
 REASON_CODES: Mapping[PolicyRuleKind, Mapping[RuleResult, frozenset[str]]] = {
     PolicyRuleKind.OPPORTUNITY_STATUS_ACTIVE: {
         RuleResult.PASS: frozenset({"opportunity_active"}),
@@ -346,7 +348,7 @@ def check_requirements(
     methods: SnapshotMethodRegistry = DEFAULT_SNAPSHOT_METHODS,
 ) -> None:
     opportunities = {o.id: o for o in ctx.records.opportunities}
-    vocab_index = {(v.id, v.version): v for v in ctx.vocabularies}
+    vocab_index = index_vocabularies(ctx.vocabularies)
     seen_ids, hours_for, quals_for = set(), defaultdict(int), defaultdict(set)
     for req in ctx.requirements:
         if req.id in seen_ids:
@@ -409,6 +411,15 @@ def check_eligibility_result(result: EligibilityResult, ctx: EligibilityContext)
         raise ContractViolation("cross_org_reference", f"{result.id} uses another organization's policy")
     if policy.program_id is not None and opp.program_id != policy.program_id:
         raise ContractViolation("policy_scope_mismatch", f"{policy.id} does not cover {opp.id}")
+    for rule in policy.rules:
+        # Same-organization is not enough: a participation rule establishes membership in ONE
+        # program and can only assess an opportunity in that same program. An opportunity with
+        # no program cannot be assessed under a participation rule (fail closed).
+        if rule.program_id is not None and rule.program_id != opp.program_id:
+            raise ContractViolation(
+                "participation_program_mismatch",
+                f"{rule.rule_id} requires {rule.program_id}; {opp.id} is in {opp.program_id or 'no program'}",
+            )
     rules = {(r.rule_id, r.rule_version, r.kind): r for r in policy.rules}
     outcome_keys = {(o.rule_id, o.rule_version, o.rule_kind) for o in result.rule_outcomes}
     if outcome_keys != set(rules):

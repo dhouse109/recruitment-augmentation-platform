@@ -7,7 +7,7 @@
     "Eligibility results are EXPECTED LABELS written by hand (evaluated_by fixture-expected-label). No eligibility engine produced them.",
     "claim_e_python_inferred is a labeled example of an inferred claim; no model was run (inferred_by synthetic-inference-label).",
     "Candidate E availability is the sensitive-context case: the source answer is deliberately not represented in any claim, evidence locator, chunk or prompt-bound text. Only an 'unknown' availability claim exists.",
-    "Active-status rule has no 'unknown' case pending open decision O1."
+    "Active-status rule is pass/fail only: approved exception O1(a) to the three-outcome coverage target (status is a required authoritative field; source failures fail closed)."
   ],
   "capabilities": [
     {

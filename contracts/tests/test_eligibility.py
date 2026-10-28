@@ -63,7 +63,7 @@ class FixtureCaseTests(unittest.TestCase):
                     with self.subTest(kind=kind.value, result=res.value):
                         self.assertIn((kind, res), covered, "every representable outcome has a fixture case")
 
-    def test_active_rule_has_no_unknown_outcome_pending_o1(self):
+    def test_active_rule_is_pass_fail_only_per_o1(self):
         self.assertEqual(REASON_CODES[PolicyRuleKind.OPPORTUNITY_STATUS_ACTIVE][RuleResult.UNKNOWN], frozenset())
         with self.assertRaises(ValidationError):
             RuleOutcome(rule_id="PILOT-ACTIVE-001", rule_version=1, rule_kind="opportunity_status_active",
@@ -407,3 +407,114 @@ class PortabilityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ProgramScopeTests(unittest.TestCase):
+    """R1: a participation rule for Program A cannot establish eligibility for a Program B opportunity.
+
+    Builds a second program and opportunity in org_demo_001 locally (not added to the shared fixture).
+    """
+
+    def setUp(self):
+        import dataclasses
+
+        from rap_contracts.claims import ProgramParticipation
+        from rap_contracts.invariants import ContractRecordSet
+        from rap_contracts.models import Opportunity, Program
+        from rap_contracts.source_checks import canonical_json_sha256
+
+        base = support.ext_context()
+        program_b = Program.model_validate({
+            "id": "program_demo_002", "organization_id": "org_demo_001",
+            "source_ref": {"organization_id": "org_demo_001",
+                           "entity": {"source_system": "fixture", "entity_type": "program", "entity_id": "3002"},
+                           "version": {"kind": "logical_snapshot", "method": "sha256-canonical-json/v1",
+                                       "token": canonical_json_sha256({"fixture": "program-3002"}),
+                                       "captured_at": "2026-10-28T12:00:00Z",
+                                       "captured_by": "fixture-adapter/0.2.0-dev.foundations.2"}}})
+        self.opp_b_ref = {"organization_id": "org_demo_001",
+                          "entity": {"source_system": "fixture", "entity_type": "opportunity", "entity_id": "4004"},
+                          "version": {"kind": "native_revision", "revision_id": "44"}}
+        opp_b = Opportunity.model_validate({"id": "opportunity_demo_events", "organization_id": "org_demo_001",
+                                            "opportunity_type": "internship", "status": "active",
+                                            "program_id": "program_demo_002", "source_ref": self.opp_b_ref})
+        opp_none = Opportunity.model_validate({"id": "opportunity_demo_unaffiliated", "organization_id": "org_demo_001",
+                                               "opportunity_type": "job", "status": "active",
+                                               "source_ref": {**self.opp_b_ref, "entity": {**self.opp_b_ref["entity"], "entity_id": "4005"}}})
+        part_b = ProgramParticipation.model_validate({
+            "id": "participation_a_program_b", "organization_id": "org_demo_001", "candidate_id": "candidate_demo_a",
+            "program_id": "program_demo_002", "status": "confirmed", "evidence_ids": ["evidence_a_enrollment"]})
+        records = ContractRecordSet(**{**base.records.__dict__,
+                                       "programs": base.records.programs + (program_b,),
+                                       "opportunities": base.records.opportunities + (opp_b, opp_none)})
+        self.unscoped_policy_doc = {
+            "id": "policy_demo_org_wide", "organization_id": "org_demo_001", "version": 1,
+            "source_ref": {"organization_id": "org_demo_001",
+                           "entity": {"source_system": "fixture", "entity_type": "policy_set", "entity_id": "8002"},
+                           "version": {"kind": "native_revision", "revision_id": "82"}},
+            "rules": [{"rule_id": "ORG-ACTIVE-001", "rule_version": 1, "kind": "opportunity_status_active"},
+                      {"rule_id": "ORG-PROGRAM-002", "rule_version": 1, "kind": "program_participation_confirmed",
+                       "program_id": "program_demo_001"}]}
+        self.base, self.records, self.part_b = base, records, part_b
+        self.replace = dataclasses.replace
+
+    def _ctx(self, policy_doc, extra_parts=()):
+        return self.replace(self.base, records=self.records,
+                            policies=self.base.policies + (PolicySet.model_validate(policy_doc),),
+                            participations=self.base.participations + tuple(extra_parts))
+
+    def _result(self, policy_doc, opportunity_id, opportunity_ref, participation_id):
+        return EligibilityResult.model_validate({
+            "id": "eligibility_a_scope_case", "organization_id": "org_demo_001", "candidate_id": "candidate_demo_a",
+            "opportunity_id": opportunity_id, "opportunity_ref": opportunity_ref,
+            "policy": {"policy_set_id": policy_doc["id"], "version": policy_doc["version"], "source_ref": policy_doc["source_ref"]},
+            "rule_outcomes": [
+                {"rule_id": "ORG-ACTIVE-001", "rule_version": 1, "rule_kind": "opportunity_status_active",
+                 "result": "pass", "reason_code": "opportunity_active"},
+                {"rule_id": "ORG-PROGRAM-002", "rule_version": 1, "rule_kind": "program_participation_confirmed",
+                 "result": "pass", "reason_code": "participation_confirmed", "participation_ids": [participation_id]}],
+            "decision": "eligible", "evaluated_at": "2026-10-28T12:00:00Z",
+            "evaluated_by": "fixture-expected-label/0.2.0-dev.foundations.2"})
+
+    def _expect(self, ctx, result, code):
+        with self.assertRaises(ContractViolation) as caught:
+            check_eligibility_result(result, ctx)
+        self.assertEqual(caught.exception.code, code)
+
+    def test_program_a_participation_rejected_for_program_b_opportunity(self):
+        """Unscoped org-wide policy; rule names Program A; opportunity is in Program B; candidate is in Program A."""
+        ctx = self._ctx(self.unscoped_policy_doc)
+        result = self._result(self.unscoped_policy_doc, "opportunity_demo_events", self.opp_b_ref, "participation_a")
+        self._expect(ctx, result, "participation_program_mismatch")
+
+    def test_rejected_even_when_candidate_also_participates_in_program_b(self):
+        ctx = self._ctx(self.unscoped_policy_doc, [self.part_b])
+        result = self._result(self.unscoped_policy_doc, "opportunity_demo_events", self.opp_b_ref, "participation_a")
+        self._expect(ctx, result, "participation_program_mismatch")
+
+    def test_participation_rule_rejected_for_opportunity_without_program(self):
+        ctx = self._ctx(self.unscoped_policy_doc)
+        ref = {**self.opp_b_ref, "entity": {**self.opp_b_ref["entity"], "entity_id": "4005"}}
+        result = self._result(self.unscoped_policy_doc, "opportunity_demo_unaffiliated", ref, "participation_a")
+        self._expect(ctx, result, "participation_program_mismatch")
+
+    def test_program_scoped_policy_for_a_rejected_for_program_b_opportunity(self):
+        scoped = copy.deepcopy(self.unscoped_policy_doc)
+        scoped["program_id"] = "program_demo_001"
+        ctx = self._ctx(scoped)
+        result = self._result(scoped, "opportunity_demo_events", self.opp_b_ref, "participation_a")
+        self._expect(ctx, result, "policy_scope_mismatch")
+
+    def test_matching_program_b_rule_is_accepted(self):
+        doc_b = copy.deepcopy(self.unscoped_policy_doc)
+        doc_b["rules"][1]["program_id"] = "program_demo_002"
+        ctx = self._ctx(doc_b, [self.part_b])
+        check_eligibility_result(self._result(doc_b, "opportunity_demo_events", self.opp_b_ref, "participation_a_program_b"), ctx)
+        self._expect(ctx, self._result(doc_b, "opportunity_demo_events", self.opp_b_ref, "participation_a"),
+                     "unsupported_outcome")  # Program A record cannot satisfy a Program B rule
+
+    def test_policy_rule_program_must_match_policy_scope(self):
+        scoped = copy.deepcopy(self.unscoped_policy_doc)
+        scoped["program_id"] = "program_demo_002"
+        with self.assertRaises(ValidationError):
+            PolicySet.model_validate(scoped)

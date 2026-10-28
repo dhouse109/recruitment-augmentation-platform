@@ -296,6 +296,23 @@ def detect_conflicts(claims: Iterable[CandidateClaim]) -> list[ConflictGroup]:
     return groups
 
 
+def index_vocabularies(vocabularies: Iterable[ClaimVocabulary]) -> dict[tuple[str, int], ClaimVocabulary]:
+    """Index by (id, version). Two different definitions of one (id, version) are a violation.
+
+    An identical re-delivery is tolerated; a changed definition requires a new version.
+    """
+    index: dict[tuple[str, int], ClaimVocabulary] = {}
+    for vocab in vocabularies:
+        pin = (vocab.id, vocab.version)
+        prior = index.get(pin)
+        if prior is not None and prior != vocab:
+            raise ContractViolation(
+                "vocabulary_version_conflict", f"{vocab.id} v{vocab.version} has two different definitions"
+            )
+        index[pin] = vocab
+    return index
+
+
 def check_claims(
     claims: Iterable[CandidateClaim],
     evidence: Mapping[str, EvidenceRecord],
@@ -303,7 +320,7 @@ def check_claims(
     records: ContractRecordSet,
 ) -> None:
     claims = list(claims)
-    vocab_index = {(v.id, v.version): v for v in vocabularies}
+    vocab_index = index_vocabularies(vocabularies)
     candidates = {c.id: c for c in records.candidates}
     seen = set()
     for claim in claims:

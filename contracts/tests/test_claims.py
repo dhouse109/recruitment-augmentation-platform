@@ -347,3 +347,44 @@ class ParticipationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VocabularyVersionIntegrityTests(unittest.TestCase):
+    """R2: one (vocabulary id, version) identifies exactly one definition."""
+
+    def _conflicting(self, **changes):
+        doc = support.ext_raw()
+        doc["vocabularies"].append({**copy.deepcopy(doc["vocabularies"][0]), **changes})
+        return doc
+
+    def test_conflicting_definition_rejected_by_claim_checks(self):
+        doc = self._conflicting(skills=["data_analysis", "python", "spreadsheets", "web_content", "rust"])
+        expect_violation(self, "vocabulary_version_conflict", check_with, doc)
+
+    def test_conflict_detected_regardless_of_order(self):
+        doc = self._conflicting(skills=["python"])
+        doc["vocabularies"].reverse()
+        expect_violation(self, "vocabulary_version_conflict", check_with, doc)
+
+    def test_conflicting_definition_rejected_by_requirement_checks(self):
+        from rap_contracts.eligibility import check_requirements
+
+        doc = self._conflicting(skills=["python"])
+        expect_violation(self, "vocabulary_version_conflict", check_requirements,
+                         support.ext_context(doc), support.ext_capabilities())
+
+    def test_same_id_and_version_in_another_org_rejected(self):
+        doc = self._conflicting(organization_id="org_demo_002")
+        expect_violation(self, "vocabulary_version_conflict", check_with, doc)
+
+    def test_identical_duplicate_and_new_version_allowed(self):
+        check_with(self._conflicting())  # byte-identical re-delivery of the same version
+        check_with(self._conflicting(version=2, skills=["python"]))  # a new version may differ
+
+    def test_standalone_index_reports_conflict(self):
+        from rap_contracts.claims import index_vocabularies
+
+        vocab = ClaimVocabulary.model_validate(support.ext_raw()["vocabularies"][0])
+        changed = ClaimVocabulary.model_validate({**support.ext_raw()["vocabularies"][0], "interest_areas": ["data"]})
+        self.assertEqual(index_vocabularies([vocab, vocab]), {(vocab.id, vocab.version): vocab})
+        expect_violation(self, "vocabulary_version_conflict", index_vocabularies, [vocab, changed])
