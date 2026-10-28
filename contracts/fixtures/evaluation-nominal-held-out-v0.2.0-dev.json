@@ -1,0 +1,1439 @@
+{
+  "fixture_set": "contract-v0.2-evaluation-nominal-held-out",
+  "contract_version": "0.2.0-dev.foundations.4",
+  "data_policy": "Wholly synthetic. No real people, employers, applicants or records.",
+  "extends": "review-v0.2.0-dev.json",
+  "notes": [
+    "NOMINAL held-out: a structural demonstration only. Every case, label and record here is exposed (see exposure_log).",
+    "Not blinded and not usable for unbiased reporting or promotion. Genuine held-out data must live in external custody.",
+    "Held-out cases use only candidates d, e and f; golden cases use only candidates a, b and c."
+  ],
+  "manifest": {
+    "id": "evalset_nominal_held_out",
+    "version": 1,
+    "split": "held_out",
+    "custody": "repository_visible",
+    "held_out_integrity": "nominal_exposed",
+    "contract_version": "0.2.0-dev.foundations.4",
+    "data_policy": "synthetic_only",
+    "fixture_layers": [
+      {
+        "name": "foundations-v0.2.0-dev.json",
+        "sha256": "sha256:8e17e0bf16ac57b3891963a09b54af1abe974663bf6c93b53a5bcc7c754fb2eb"
+      },
+      {
+        "name": "eligibility-evidence-v0.2.0-dev.json",
+        "sha256": "sha256:acfbb6eb7e6838c8449bee5dbd935fcaa171b4a459f075bab7414cf83d3b74b5"
+      },
+      {
+        "name": "review-v0.2.0-dev.json",
+        "sha256": "sha256:a5c2ca84bf3309b4477324755bc3919d3517238b5be18f3e1693f33f56ea38f6"
+      }
+    ],
+    "case_records_sha256": "sha256:9491c548e51935557110278b2078bae7249916b55acafcb5370660211f197deb",
+    "case_pins": [
+      {
+        "case_id": "evalcase_h001",
+        "version": 1,
+        "sha256": "sha256:5c4090dba59fbc885b925e4b1dfee2f8b811a8684cd235b60d0a56373e9e0610"
+      },
+      {
+        "case_id": "evalcase_h002",
+        "version": 1,
+        "sha256": "sha256:c3a08bc04672da2c6332c94919f209ceec56084a2b66934c8e1389970148bb17"
+      },
+      {
+        "case_id": "evalcase_h003",
+        "version": 1,
+        "sha256": "sha256:d2e03daef270f1e9fa53e3b208375da1cfd58a63d413d9b384219f61ea6faedc"
+      },
+      {
+        "case_id": "evalcase_h004",
+        "version": 1,
+        "sha256": "sha256:22e0d2a743869c87780eb059e9d507b44f5bab565691f87aab4ba44748bf219d"
+      },
+      {
+        "case_id": "evalcase_h005",
+        "version": 1,
+        "sha256": "sha256:b2e83a4049fa8cb827bf1b0a84e86b1b4cdb3f6483836b1d21750fd4e857eff5"
+      }
+    ],
+    "exposure_log": [
+      {
+        "recorded_at": "2026-10-28T19:00:00Z",
+        "kind": "published_in_repository",
+        "description": "Seed labels EVAL-H001..H004 were published in docs/evaluation/metric-definitions-and-synthetic-gold-set.md (RAP-EVAL-001).",
+        "recorded_by": {
+          "principal_id": "principal_demo_owner",
+          "asserted_kind": "human",
+          "asserted_role": "project_owner",
+          "attestation_basis": "unverified_metadata"
+        }
+      },
+      {
+        "recorded_at": "2026-10-28T19:00:00Z",
+        "kind": "visible_to_ai_session",
+        "description": "All held-out cases, labels and records were authored in and are visible to AI coding and review sessions.",
+        "recorded_by": {
+          "principal_id": "principal_demo_owner",
+          "asserted_kind": "human",
+          "asserted_role": "project_owner",
+          "attestation_basis": "unverified_metadata"
+        }
+      },
+      {
+        "recorded_at": "2026-10-28T19:00:00Z",
+        "kind": "uploaded_to_project_knowledge",
+        "description": "Project handoff documents describing the held-out seed labels were uploaded to AI project knowledge.",
+        "recorded_by": {
+          "principal_id": "principal_demo_owner",
+          "asserted_kind": "human",
+          "asserted_role": "project_owner",
+          "attestation_basis": "unverified_metadata"
+        }
+      }
+    ]
+  },
+  "case_records": {
+    "candidates": [
+      {
+        "id": "candidate_demo_f",
+        "organization_id": "org_demo_001",
+        "identity_source": {
+          "source_system": "fixture",
+          "entity_type": "user",
+          "entity_id": "9006"
+        }
+      }
+    ],
+    "profiles": [
+      {
+        "id": "profile_demo_f",
+        "organization_id": "org_demo_001",
+        "candidate_id": "candidate_demo_f",
+        "source_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "candidate_profile",
+            "entity_id": "5006"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "601"
+          }
+        }
+      }
+    ],
+    "applications": [
+      {
+        "id": "application_demo_f_web",
+        "organization_id": "org_demo_001",
+        "candidate_id": "candidate_demo_f",
+        "target": {
+          "program_id": "program_demo_001",
+          "opportunity_id": "opportunity_demo_web"
+        },
+        "status": "submitted",
+        "source_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "application",
+            "entity_id": "7007"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "771"
+          }
+        },
+        "submission": {
+          "submitted_at": "2026-10-26T10:00:00Z",
+          "profile_id": "profile_demo_f",
+          "profile_ref": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "candidate_profile",
+              "entity_id": "5006"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "601"
+            }
+          },
+          "application_version": {
+            "kind": "native_revision",
+            "revision_id": "771"
+          }
+        }
+      }
+    ],
+    "evidence": [
+      {
+        "id": "evidence_f_profile_hours",
+        "organization_id": "org_demo_001",
+        "subject": {
+          "kind": "candidate",
+          "id": "candidate_demo_f"
+        },
+        "basis": "candidate_statement",
+        "source_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "candidate_profile",
+            "entity_id": "5006"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "601"
+          }
+        },
+        "field_path": "availability.weekly_hours"
+      },
+      {
+        "id": "evidence_f_enrollment",
+        "organization_id": "org_demo_001",
+        "subject": {
+          "kind": "candidate",
+          "id": "candidate_demo_f"
+        },
+        "basis": "authority_record",
+        "source_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "program_enrollment",
+            "entity_id": "6006"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "661"
+          }
+        },
+        "field_path": "status"
+      },
+      {
+        "id": "evidence_f_app_project",
+        "organization_id": "org_demo_001",
+        "subject": {
+          "kind": "candidate",
+          "id": "candidate_demo_f"
+        },
+        "basis": "candidate_statement",
+        "source_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "application",
+            "entity_id": "7007"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "771"
+          }
+        },
+        "field_path": "answers.project_description"
+      }
+    ],
+    "claims": [
+      {
+        "id": "claim_f_availability",
+        "organization_id": "org_demo_001",
+        "candidate_id": "candidate_demo_f",
+        "vocabulary": {
+          "id": "vocabulary_demo",
+          "version": 1
+        },
+        "claim_type": "availability",
+        "state": "declared",
+        "value": {
+          "kind": "availability",
+          "hours_per_week": 12
+        },
+        "evidence_ids": [
+          "evidence_f_profile_hours"
+        ]
+      },
+      {
+        "id": "claim_f_web_content_inferred",
+        "organization_id": "org_demo_001",
+        "candidate_id": "candidate_demo_f",
+        "vocabulary": {
+          "id": "vocabulary_demo",
+          "version": 1
+        },
+        "claim_type": "skill",
+        "state": "inferred",
+        "subject_code": "web_content",
+        "value": {
+          "kind": "skill",
+          "presence": "has"
+        },
+        "evidence_ids": [
+          "evidence_f_app_project"
+        ],
+        "inferred_by": "synthetic-inference-label/0.2.0-dev.foundations.4"
+      }
+    ],
+    "participations": [
+      {
+        "id": "participation_f",
+        "organization_id": "org_demo_001",
+        "candidate_id": "candidate_demo_f",
+        "program_id": "program_demo_001",
+        "status": "confirmed",
+        "evidence_ids": [
+          "evidence_f_enrollment"
+        ]
+      }
+    ],
+    "eligibility_results": [
+      {
+        "id": "eligibility_f_web",
+        "organization_id": "org_demo_001",
+        "candidate_id": "candidate_demo_f",
+        "opportunity_id": "opportunity_demo_web",
+        "opportunity_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "opportunity",
+            "entity_id": "4002"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "42"
+          }
+        },
+        "policy": {
+          "policy_set_id": "policy_demo_pilot",
+          "version": 1,
+          "source_ref": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "policy_set",
+              "entity_id": "8001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "81"
+            }
+          }
+        },
+        "rule_outcomes": [
+          {
+            "rule_id": "PILOT-ACTIVE-001",
+            "rule_version": 1,
+            "rule_kind": "opportunity_status_active",
+            "result": "pass",
+            "reason_code": "opportunity_active"
+          },
+          {
+            "rule_id": "PILOT-PROGRAM-002",
+            "rule_version": 1,
+            "rule_kind": "program_participation_confirmed",
+            "result": "pass",
+            "reason_code": "participation_confirmed",
+            "participation_ids": [
+              "participation_f"
+            ]
+          },
+          {
+            "rule_id": "PILOT-AVAIL-003",
+            "rule_version": 1,
+            "rule_kind": "availability_meets_required_hours",
+            "result": "pass",
+            "reason_code": "availability_meets_required_hours",
+            "claim_ids": [
+              "claim_f_availability"
+            ],
+            "requirement_ids": [
+              "requirement_web_hours"
+            ]
+          },
+          {
+            "rule_id": "PILOT-SKILL-004",
+            "rule_version": 1,
+            "rule_kind": "mandatory_qualification_evidenced",
+            "result": "pass",
+            "reason_code": "no_mandatory_qualification"
+          }
+        ],
+        "decision": "eligible",
+        "evaluated_at": "2026-10-28T12:00:00Z",
+        "evaluated_by": "fixture-expected-label/0.2.0-dev.foundations.4"
+      }
+    ],
+    "recommendations": [
+      {
+        "id": "recommendation_f_web_control",
+        "organization_id": "org_demo_001",
+        "candidate_id": "candidate_demo_f",
+        "opportunity_id": "opportunity_demo_web",
+        "opportunity_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "opportunity",
+            "entity_id": "4002"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "42"
+          }
+        },
+        "context": {
+          "kind": "application",
+          "application_id": "application_demo_f_web",
+          "application_ref": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "application",
+              "entity_id": "7007"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "771"
+            }
+          }
+        },
+        "eligibility_result_id": "eligibility_f_web",
+        "policy": {
+          "policy_set_id": "policy_demo_pilot",
+          "version": 1,
+          "source_ref": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "policy_set",
+              "entity_id": "8001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "81"
+            }
+          }
+        },
+        "supporting_claim_ids": [
+          "claim_f_availability"
+        ],
+        "evidence_ids": [
+          "evidence_f_profile_hours"
+        ],
+        "requirement_ids": [
+          "requirement_web_hours"
+        ],
+        "generated_by": "deterministic-baseline-label/0.2.0-dev.foundations.4",
+        "generated_at": "2026-10-28T19:00:00Z",
+        "status": "pending_verification"
+      },
+      {
+        "id": "recommendation_f_web_inferred",
+        "organization_id": "org_demo_001",
+        "candidate_id": "candidate_demo_f",
+        "opportunity_id": "opportunity_demo_web",
+        "opportunity_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "opportunity",
+            "entity_id": "4002"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "42"
+          }
+        },
+        "context": {
+          "kind": "application",
+          "application_id": "application_demo_f_web",
+          "application_ref": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "application",
+              "entity_id": "7007"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "771"
+            }
+          }
+        },
+        "eligibility_result_id": "eligibility_f_web",
+        "policy": {
+          "policy_set_id": "policy_demo_pilot",
+          "version": 1,
+          "source_ref": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "policy_set",
+              "entity_id": "8001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "81"
+            }
+          }
+        },
+        "supporting_claim_ids": [
+          "claim_f_availability",
+          "claim_f_web_content_inferred"
+        ],
+        "evidence_ids": [
+          "evidence_f_profile_hours"
+        ],
+        "requirement_ids": [
+          "requirement_web_hours"
+        ],
+        "generated_by": "deterministic-baseline-label/0.2.0-dev.foundations.4",
+        "generated_at": "2026-10-28T19:00:00Z",
+        "status": "pending_verification"
+      },
+      {
+        "id": "recommendation_d_data",
+        "organization_id": "org_demo_001",
+        "candidate_id": "candidate_demo_d",
+        "opportunity_id": "opportunity_demo_data",
+        "opportunity_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "opportunity",
+            "entity_id": "4001"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "41"
+          }
+        },
+        "context": {
+          "kind": "application",
+          "application_id": "application_demo_d_data",
+          "application_ref": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "application",
+              "entity_id": "7005"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "751"
+            }
+          }
+        },
+        "eligibility_result_id": "eligibility_d_data",
+        "policy": {
+          "policy_set_id": "policy_demo_pilot",
+          "version": 1,
+          "source_ref": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "policy_set",
+              "entity_id": "8001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "81"
+            }
+          }
+        },
+        "supporting_claim_ids": [
+          "claim_d_availability"
+        ],
+        "evidence_ids": [
+          "evidence_d_profile_hours"
+        ],
+        "requirement_ids": [
+          "requirement_data_hours"
+        ],
+        "generated_by": "deterministic-baseline-label/0.2.0-dev.foundations.4",
+        "generated_at": "2026-10-28T19:00:00Z",
+        "status": "pending_verification"
+      }
+    ],
+    "verifications": [
+      {
+        "id": "verification_f_web_control",
+        "organization_id": "org_demo_001",
+        "recommendation_id": "recommendation_f_web_control",
+        "outcome": "passed",
+        "checks": [
+          {
+            "code": "evidence_citations_resolve",
+            "status": "pass"
+          },
+          {
+            "code": "supporting_claims_declared",
+            "status": "pass"
+          },
+          {
+            "code": "eligibility_supports_recommendation",
+            "status": "pass"
+          },
+          {
+            "code": "policy_pin_matches",
+            "status": "pass"
+          },
+          {
+            "code": "organization_scope_consistent",
+            "status": "pass"
+          },
+          {
+            "code": "application_context_valid",
+            "status": "pass"
+          },
+          {
+            "code": "sources_current_and_allowed",
+            "status": "pass"
+          }
+        ],
+        "source_checks": [
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "application",
+                "entity_id": "7007"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "771"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "opportunity",
+                "entity_id": "4002"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "42"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "policy_set",
+                "entity_id": "8001"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "81"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "program_enrollment",
+                "entity_id": "6006"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "661"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "candidate_profile",
+                "entity_id": "5006"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "601"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          }
+        ],
+        "verified_by": "deterministic-verifier-label/0.2.0-dev.foundations.4",
+        "verified_at": "2026-10-28T19:05:00Z"
+      },
+      {
+        "id": "verification_f_web_lax",
+        "organization_id": "org_demo_001",
+        "recommendation_id": "recommendation_f_web_inferred",
+        "outcome": "passed",
+        "checks": [
+          {
+            "code": "evidence_citations_resolve",
+            "status": "pass"
+          },
+          {
+            "code": "supporting_claims_declared",
+            "status": "pass"
+          },
+          {
+            "code": "eligibility_supports_recommendation",
+            "status": "pass"
+          },
+          {
+            "code": "policy_pin_matches",
+            "status": "pass"
+          },
+          {
+            "code": "organization_scope_consistent",
+            "status": "pass"
+          },
+          {
+            "code": "application_context_valid",
+            "status": "pass"
+          },
+          {
+            "code": "sources_current_and_allowed",
+            "status": "pass"
+          }
+        ],
+        "source_checks": [
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "application",
+                "entity_id": "7007"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "771"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "opportunity",
+                "entity_id": "4002"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "42"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "policy_set",
+                "entity_id": "8001"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "81"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "program_enrollment",
+                "entity_id": "6006"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "661"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "candidate_profile",
+                "entity_id": "5006"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "601"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          }
+        ],
+        "verified_by": "deterministic-verifier-label/0.2.0-dev.foundations.4",
+        "verified_at": "2026-10-28T19:05:00Z"
+      },
+      {
+        "id": "verification_d_data_lax",
+        "organization_id": "org_demo_001",
+        "recommendation_id": "recommendation_d_data",
+        "outcome": "passed",
+        "checks": [
+          {
+            "code": "evidence_citations_resolve",
+            "status": "pass"
+          },
+          {
+            "code": "supporting_claims_declared",
+            "status": "pass"
+          },
+          {
+            "code": "eligibility_supports_recommendation",
+            "status": "pass"
+          },
+          {
+            "code": "policy_pin_matches",
+            "status": "pass"
+          },
+          {
+            "code": "organization_scope_consistent",
+            "status": "pass"
+          },
+          {
+            "code": "application_context_valid",
+            "status": "pass"
+          },
+          {
+            "code": "sources_current_and_allowed",
+            "status": "pass"
+          }
+        ],
+        "source_checks": [
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "application",
+                "entity_id": "7005"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "751"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "opportunity",
+                "entity_id": "4001"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "41"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "policy_set",
+                "entity_id": "8001"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "81"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "program_enrollment",
+                "entity_id": "6003"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "603"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          },
+          {
+            "source": {
+              "organization_id": "org_demo_001",
+              "entity": {
+                "source_system": "fixture",
+                "entity_type": "candidate_profile",
+                "entity_id": "5004"
+              },
+              "version": {
+                "kind": "native_revision",
+                "revision_id": "401"
+              }
+            },
+            "checked_at": "2026-10-28T19:05:00Z",
+            "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.4",
+            "version_status": "current",
+            "access_status": "allowed"
+          }
+        ],
+        "verified_by": "deterministic-verifier-label/0.2.0-dev.foundations.4",
+        "verified_at": "2026-10-28T19:05:00Z"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "evalcase_h001",
+      "version": 1,
+      "legacy_label": "EVAL-H001",
+      "split": "held_out",
+      "title": "Unknown program participation: participation rule unknown, needs_information",
+      "decision_refs": [
+        "D-004.06",
+        "D-004.10"
+      ],
+      "pilot_test_refs": [
+        "PILOT-T002"
+      ],
+      "label_class": "objective_rule_derived",
+      "provenance": {
+        "origin": "seed_proposal",
+        "origin_ref": "RAP-EVAL-001 v0.1.0 EVAL-H001",
+        "authored_by": "ai-assisted-authoring/0.2.0-dev.foundations.4",
+        "review_status": "proposed"
+      },
+      "adjudication_status": "not_adjudicated",
+      "scope": {
+        "candidates": [
+          "candidate_demo_e"
+        ],
+        "include_records": []
+      },
+      "initial_state": {
+        "authority": {
+          "baseline": "scope_sources_current_and_allowed",
+          "principals": [
+            "principal_demo_coordinator"
+          ],
+          "overrides": []
+        },
+        "review_store": "none"
+      },
+      "steps": [
+        {
+          "step_id": "s1",
+          "role": "target",
+          "operation": "eligibility_support",
+          "eligibility_result_id": "eligibility_e_data",
+          "expected": {
+            "result": "accepted",
+            "decision": "needs_information",
+            "rule_outcomes": [
+              {
+                "rule_id": "PILOT-ACTIVE-001",
+                "result": "pass",
+                "reason_code": "opportunity_active"
+              },
+              {
+                "rule_id": "PILOT-PROGRAM-002",
+                "result": "unknown",
+                "reason_code": "participation_not_recorded"
+              },
+              {
+                "rule_id": "PILOT-AVAIL-003",
+                "result": "unknown",
+                "reason_code": "availability_not_declared"
+              },
+              {
+                "rule_id": "PILOT-SKILL-004",
+                "result": "unknown",
+                "reason_code": "qualification_only_inferred"
+              }
+            ]
+          }
+        }
+      ],
+      "assertions": []
+    },
+    {
+      "id": "evalcase_h002",
+      "version": 1,
+      "legacy_label": "EVAL-H002",
+      "split": "held_out",
+      "title": "Another organization requests this organization's chunk",
+      "decision_refs": [
+        "D-004.01",
+        "D-004.11"
+      ],
+      "pilot_test_refs": [
+        "PILOT-T004",
+        "PILOT-T013"
+      ],
+      "label_class": "objective_rule_derived",
+      "provenance": {
+        "origin": "seed_proposal",
+        "origin_ref": "RAP-EVAL-001 v0.1.0 EVAL-H002",
+        "authored_by": "ai-assisted-authoring/0.2.0-dev.foundations.4",
+        "review_status": "proposed"
+      },
+      "adjudication_status": "not_adjudicated",
+      "scope": {
+        "candidates": [
+          "candidate_demo_d"
+        ],
+        "include_records": []
+      },
+      "initial_state": {
+        "authority": {
+          "baseline": "scope_sources_current_and_allowed",
+          "principals": [
+            "principal_lantern_coordinator"
+          ],
+          "overrides": []
+        },
+        "review_store": "none"
+      },
+      "steps": [
+        {
+          "step_id": "s1",
+          "role": "target",
+          "operation": "retrieval_admission",
+          "organization_id": "org_demo_002",
+          "purpose": "model_context",
+          "chunk_ids": [
+            "chunk_d_tampered"
+          ],
+          "principal_id": "principal_lantern_coordinator",
+          "authority_delta": [],
+          "expected": {
+            "admitted_chunk_ids": [],
+            "denied": [
+              {
+                "chunk_id": "chunk_d_tampered",
+                "code": "cross_org"
+              }
+            ],
+            "authority_calls": 0,
+            "content_loads": 0
+          },
+          "safety": [
+            {
+              "category": "cross_org_access",
+              "exposure_point": "model_context",
+              "disposition": "attempt_blocked"
+            }
+          ]
+        }
+      ],
+      "assertions": []
+    },
+    {
+      "id": "evalcase_h003",
+      "version": 1,
+      "legacy_label": "EVAL-H003",
+      "split": "held_out",
+      "title": "Explicit hard-rule failures: opportunity-scoped ineligible label",
+      "decision_refs": [
+        "D-004.05",
+        "D-004.06"
+      ],
+      "pilot_test_refs": [
+        "PILOT-T003"
+      ],
+      "label_class": "objective_rule_derived",
+      "provenance": {
+        "origin": "seed_proposal",
+        "origin_ref": "RAP-EVAL-001 v0.1.0 EVAL-H003",
+        "authored_by": "ai-assisted-authoring/0.2.0-dev.foundations.4",
+        "review_status": "proposed"
+      },
+      "adjudication_status": "not_adjudicated",
+      "scope": {
+        "candidates": [
+          "candidate_demo_d"
+        ],
+        "include_records": []
+      },
+      "initial_state": {
+        "authority": {
+          "baseline": "scope_sources_current_and_allowed",
+          "principals": [
+            "principal_demo_coordinator"
+          ],
+          "overrides": []
+        },
+        "review_store": "none"
+      },
+      "steps": [
+        {
+          "step_id": "s1",
+          "role": "target",
+          "operation": "eligibility_support",
+          "eligibility_result_id": "eligibility_d_data",
+          "expected": {
+            "result": "accepted",
+            "decision": "ineligible",
+            "rule_outcomes": [
+              {
+                "rule_id": "PILOT-ACTIVE-001",
+                "result": "pass",
+                "reason_code": "opportunity_active"
+              },
+              {
+                "rule_id": "PILOT-PROGRAM-002",
+                "result": "fail",
+                "reason_code": "participation_not_participating"
+              },
+              {
+                "rule_id": "PILOT-AVAIL-003",
+                "result": "fail",
+                "reason_code": "availability_below_required_hours"
+              },
+              {
+                "rule_id": "PILOT-SKILL-004",
+                "result": "fail",
+                "reason_code": "qualification_contradicted_by_declaration"
+              }
+            ]
+          }
+        }
+      ],
+      "assertions": []
+    },
+    {
+      "id": "evalcase_h004",
+      "version": 1,
+      "legacy_label": "EVAL-H004",
+      "split": "held_out",
+      "title": "Inferred claim cited past a lax passed verification (eligible held-out chain)",
+      "decision_refs": [
+        "D-004.04",
+        "D-004.10"
+      ],
+      "pilot_test_refs": [
+        "PILOT-T017"
+      ],
+      "label_class": "objective_rule_derived",
+      "provenance": {
+        "origin": "seed_proposal",
+        "origin_ref": "RAP-EVAL-001 v0.1.0 EVAL-H004 (revised per R3: eligible chain, control step)",
+        "authored_by": "ai-assisted-authoring/0.2.0-dev.foundations.4",
+        "review_status": "proposed"
+      },
+      "adjudication_status": "not_adjudicated",
+      "scope": {
+        "candidates": [
+          "candidate_demo_f"
+        ],
+        "include_records": [
+          "candidate_demo_f",
+          "profile_demo_f",
+          "application_demo_f_web",
+          "evidence_f_profile_hours",
+          "evidence_f_enrollment",
+          "evidence_f_app_project",
+          "claim_f_availability",
+          "claim_f_web_content_inferred",
+          "participation_f",
+          "eligibility_f_web",
+          "recommendation_f_web_control",
+          "recommendation_f_web_inferred",
+          "verification_f_web_control",
+          "verification_f_web_lax"
+        ]
+      },
+      "initial_state": {
+        "authority": {
+          "baseline": "scope_sources_current_and_allowed",
+          "principals": [
+            "principal_demo_coordinator"
+          ],
+          "overrides": []
+        },
+        "review_store": "none"
+      },
+      "steps": [
+        {
+          "step_id": "s1",
+          "role": "prerequisite",
+          "operation": "context_validation",
+          "expected": {
+            "result": "accepted"
+          }
+        },
+        {
+          "step_id": "s2",
+          "role": "prerequisite",
+          "operation": "eligibility_support",
+          "eligibility_result_id": "eligibility_f_web",
+          "expected": {
+            "result": "accepted",
+            "decision": "eligible",
+            "rule_outcomes": [
+              {
+                "rule_id": "PILOT-ACTIVE-001",
+                "result": "pass",
+                "reason_code": "opportunity_active"
+              },
+              {
+                "rule_id": "PILOT-PROGRAM-002",
+                "result": "pass",
+                "reason_code": "participation_confirmed"
+              },
+              {
+                "rule_id": "PILOT-AVAIL-003",
+                "result": "pass",
+                "reason_code": "availability_meets_required_hours"
+              },
+              {
+                "rule_id": "PILOT-SKILL-004",
+                "result": "pass",
+                "reason_code": "no_mandatory_qualification"
+              }
+            ]
+          }
+        },
+        {
+          "step_id": "s3",
+          "role": "control",
+          "operation": "verification_acceptance",
+          "verification_id": "verification_f_web_control",
+          "recommendation_id": "recommendation_f_web_control",
+          "expected": {
+            "result": "accepted"
+          },
+          "safety": []
+        },
+        {
+          "step_id": "s4",
+          "role": "target",
+          "operation": "verification_acceptance",
+          "verification_id": "verification_f_web_lax",
+          "recommendation_id": "recommendation_f_web_inferred",
+          "expected": {
+            "result": "violation",
+            "violation_code": "non_authoritative_input"
+          },
+          "safety": [
+            {
+              "category": "critical_unsupported_claim",
+              "exposure_point": "recommendation_output",
+              "disposition": "attempt_blocked"
+            }
+          ]
+        },
+        {
+          "step_id": "s5",
+          "role": "consequence",
+          "operation": "verification_transition",
+          "verification_id": "verification_f_web_lax",
+          "recommendation_id": "recommendation_f_web_inferred",
+          "via": "detached",
+          "expected": {
+            "status_after": "escalated"
+          },
+          "safety": [
+            {
+              "category": "critical_unsupported_claim",
+              "exposure_point": "recommendation_output",
+              "disposition": "attempt_blocked"
+            }
+          ],
+          "consequence_of": "s4"
+        }
+      ],
+      "assertions": []
+    },
+    {
+      "id": "evalcase_h005",
+      "version": 1,
+      "split": "held_out",
+      "title": "Recommendation for an ineligible opportunity is stopped at verification",
+      "decision_refs": [
+        "D-004.04",
+        "D-004.05"
+      ],
+      "pilot_test_refs": [
+        "PILOT-T017"
+      ],
+      "label_class": "objective_rule_derived",
+      "provenance": {
+        "origin": "new_case",
+        "origin_ref": "PR #7 plan R8-R11, owner-approved 2026-10-28",
+        "authored_by": "ai-assisted-authoring/0.2.0-dev.foundations.4",
+        "review_status": "proposed"
+      },
+      "adjudication_status": "not_adjudicated",
+      "scope": {
+        "candidates": [
+          "candidate_demo_d"
+        ],
+        "include_records": [
+          "recommendation_d_data",
+          "verification_d_data_lax"
+        ]
+      },
+      "initial_state": {
+        "authority": {
+          "baseline": "scope_sources_current_and_allowed",
+          "principals": [
+            "principal_demo_coordinator"
+          ],
+          "overrides": []
+        },
+        "review_store": "none"
+      },
+      "steps": [
+        {
+          "step_id": "s1",
+          "role": "prerequisite",
+          "operation": "context_validation",
+          "expected": {
+            "result": "accepted"
+          }
+        },
+        {
+          "step_id": "s2",
+          "role": "prerequisite",
+          "operation": "eligibility_support",
+          "eligibility_result_id": "eligibility_d_data",
+          "expected": {
+            "result": "accepted",
+            "decision": "ineligible",
+            "rule_outcomes": [
+              {
+                "rule_id": "PILOT-ACTIVE-001",
+                "result": "pass",
+                "reason_code": "opportunity_active"
+              },
+              {
+                "rule_id": "PILOT-PROGRAM-002",
+                "result": "fail",
+                "reason_code": "participation_not_participating"
+              },
+              {
+                "rule_id": "PILOT-AVAIL-003",
+                "result": "fail",
+                "reason_code": "availability_below_required_hours"
+              },
+              {
+                "rule_id": "PILOT-SKILL-004",
+                "result": "fail",
+                "reason_code": "qualification_contradicted_by_declaration"
+              }
+            ]
+          }
+        },
+        {
+          "step_id": "s3",
+          "role": "target",
+          "operation": "verification_acceptance",
+          "verification_id": "verification_d_data_lax",
+          "recommendation_id": "recommendation_d_data",
+          "expected": {
+            "result": "violation",
+            "violation_code": "not_eligible"
+          },
+          "safety": [
+            {
+              "category": "hard_eligibility_violation",
+              "exposure_point": "recommendation_output",
+              "disposition": "attempt_blocked"
+            }
+          ]
+        },
+        {
+          "step_id": "s4",
+          "role": "consequence",
+          "operation": "verification_transition",
+          "verification_id": "verification_d_data_lax",
+          "recommendation_id": "recommendation_d_data",
+          "via": "detached",
+          "expected": {
+            "status_after": "escalated"
+          },
+          "safety": [
+            {
+              "category": "hard_eligibility_violation",
+              "exposure_point": "recommendation_output",
+              "disposition": "attempt_blocked"
+            }
+          ],
+          "consequence_of": "s3"
+        }
+      ],
+      "assertions": []
+    }
+  ]
+}
