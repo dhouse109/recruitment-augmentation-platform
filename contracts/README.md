@@ -1,8 +1,8 @@
 # Portable Reference Contracts — Contract v0.2 (partial)
 
-**Version:** `0.2.0-dev.foundations.2` — partial development version, **proposed, NOT frozen**  
-**Covers:** D-004.01 identity, .02 profile/application separation, .07 source-version representation (PR #4); D-004.05 eligibility results, .06 versioned policy rules, .10 candidate claims, .11 evidence and retrieval admission (PR #5)  
-**Traceability, evidence and limits:** [`contract-v0.2-foundations.md`](../docs/models/contract-v0.2-foundations.md), [`contract-v0.2-eligibility-evidence.md`](../docs/models/contract-v0.2-eligibility-evidence.md)
+**Version:** `0.2.0-dev.foundations.3` — partial development version, **proposed, NOT frozen**  
+**Covers:** D-004.01 identity, .02 profile/application separation, .07 source-version representation (PR #4); D-004.05 eligibility results, .06 versioned policy rules, .10 candidate claims, .11 evidence and retrieval admission (PR #5); D-004.03 review authority, .04 verification and escalation, .08 idempotency and audit, .09 review reasons (PR #6)  
+**Traceability, evidence and limits:** [`contract-v0.2-foundations.md`](../docs/models/contract-v0.2-foundations.md), [`contract-v0.2-eligibility-evidence.md`](../docs/models/contract-v0.2-eligibility-evidence.md), [`contract-v0.2-review.md`](../docs/models/contract-v0.2-review.md)
 
 Pydantic v2 is used for these reference contracts only. It is not a selection of the application runtime. All data is synthetic.
 
@@ -16,10 +16,12 @@ Pydantic v2 is used for these reference contracts only. It is not a selection of
 | `rap_contracts/evidence.py` | `EvidenceRecord`, derived `RetrievalChunk`, retrieval request/response, fail-closed admission, pre-eligibility source gate |
 | `rap_contracts/claims.py` | Claim vocabulary, `CandidateClaim` states, conflict detection, `ProgramParticipation` |
 | `rap_contracts/eligibility.py` | `PolicySet`, `OpportunityRequirement`, `RuleOutcome`, `EligibilityResult`, outcome-support verifier (**not an engine**) |
+| `rap_contracts/recommendation.py` | `Recommendation` (application context), `VerificationResult`, transition table, verification acceptance |
+| `rap_contracts/review.py` | Review commands, trusted principal/grant shapes, reason vocabulary, `ReviewDecision`, `AuditEvent`, `ReviewOutcome`, pure evaluation, write-service protocol |
 | `rap_contracts/schema_export.py` | Deterministic JSON Schema generation and drift check |
 | `schemas/` | Generated JSON Schemas (do not edit by hand) |
-| `fixtures/` | Synthetic fixture sets: `foundations-…` (PR #4) and `eligibility-evidence-…` (extends it) |
-| `tests/` | `unittest` suites; `tests/support.py` holds the **mock** source authority and chunk store |
+| `fixtures/` | Synthetic fixture sets: `foundations-…` (PR #4), `eligibility-evidence-…` (PR #5) and `review-…` (PR #6), each extending the previous |
+| `tests/` | `unittest` suites; `tests/support.py` holds the **mock** source authority and chunk store; `tests/review_double.py` is an in-memory **test double** of the review-write service |
 | `requirements.txt` / `requirements-dev.txt` | Runtime pin / dev-only additions for tests |
 
 ## Reproduce
@@ -41,4 +43,4 @@ Regenerate schemas after an intentional model change with `python -m rap_contrac
 
 ## What passing tests do and do not mean
 
-Passing tests show that the contracts, invariants and fail-closed plumbing behave as specified on synthetic data. They do **not** show live Drupal authorization, source freshness, revision retention, database uniqueness, transactionality or append-only audit. Tests that use `FixtureSourceAuthority` or `FixtureChunkStore` are mock-level only. Fixture eligibility results are hand-written expected labels; passing tests do not demonstrate an eligibility engine, an index, or that a model ignores injected instructions.
+Passing tests show that the contracts, invariants and fail-closed plumbing behave as specified on synthetic data. They do **not** show live Drupal authorization, source freshness, revision retention, database uniqueness, transactionality or append-only audit. Tests that use `FixtureSourceAuthority` or `FixtureChunkStore` are mock-level only. Fixture eligibility results are hand-written expected labels; passing tests do not demonstrate an eligibility engine, an index, or that a model ignores injected instructions. The review test double proves nothing about authentication, transactions, concurrent idempotency or durable audit storage.

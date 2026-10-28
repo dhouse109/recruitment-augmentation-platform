@@ -1,7 +1,7 @@
 # Current Status — Recruitment Augmentation Platform
 
 **Phase:** Approved domain-policy decisions → Contract v0.2 revision planning  
-**Implementation authorization:** Contract work only, under explicitly scoped owner-authorized PRs (PR #4: Contract v0.2 foundations; PR #5: eligibility and evidence foundations). **No application implementation** is authorized; contracts and execution plan are not frozen.  
+**Implementation authorization:** Contract work only, under explicitly scoped owner-authorized PRs (PR #4: Contract v0.2 foundations; PR #5: eligibility and evidence foundations; PR #6: recommendation verification and human review foundations). **No application implementation** is authorized; contracts and execution plan are not frozen.  
 **Repository branch target:** `main` through reviewed PRs  
 **Pilot:** Fictional nonprofit internship placement; synthetic data only
 
@@ -23,7 +23,8 @@ See `docs/decisions/README.md` and the individual ADRs for authoritative detail.
 
 - **v0.2 foundations (`0.2.0-dev.foundations`, PR #4):** reference contracts, generated JSON Schemas, synthetic fixtures and local positive/negative tests for D-004.01, D-004.02 and the representation requirements of D-004.07. See `docs/models/contract-v0.2-foundations.md` for traceability, test evidence and the guarantees that local and mock tests cannot establish.
 - **v0.2 eligibility and evidence foundations (`0.2.0-dev.foundations.2`, PR #5):** reference contracts, schemas, synthetic fixtures and tests for D-004.05 (eligibility results), D-004.06 (versioned policy rules; fixture expected labels, **no engine**), D-004.10 (controlled claims) and D-004.11 (evidence, derived chunks, mock-level fail-closed retrieval admission). See `docs/models/contract-v0.2-eligibility-evidence.md`, including the approved active-status exception (O1) and open decisions O2–O5.
-- **Not yet implemented:** D-004.03, .04, .08, .09 and .12 contract areas; the deterministic eligibility engine.
+- **v0.2 recommendation verification and human review foundations (`0.2.0-dev.foundations.3`, PR #6):** reference contracts, schemas, synthetic fixtures and tests for D-004.03 (server-derived reviewer authority), D-004.04 (recommendations bound to a submitted application, substantive verification, escalation, exhaustive transitions), D-004.08 (semantic idempotency, linked audit corrections; **in-memory test double only**) and D-004.09 (versioned reason codes, conditional comments). See `docs/models/contract-v0.2-review.md`, including future Drupal write-service requirements and ambiguities N1–N6.
+- **Not yet implemented:** D-004.12 contract area; the deterministic eligibility and recommendation engines; the Drupal review-write service.
 
 The v0.1 contracts, domain mapping, and synthetic evaluation labels currently in documentation are proposals and design references. New source, fixtures, and runnable test code require a separate PR and verification. Earlier local modeling checks do not prove integrated source authorization, review transactionality, or model quality.
 
@@ -39,7 +40,7 @@ The v0.1 contracts, domain mapping, and synthetic evaluation labels currently in
 
 ## Work now authorized as planning/contract revision
 
-1. Produce a **Contract v0.2** proposal implementing D-004, including generated schemas, synthetic cases, negative tests, and observed test output. *D-004.01/.02/.07 in PR #4 (merged); D-004.05/.06/.10/.11 proposed in PR #5; remaining areas follow in separately scoped PRs.*
+1. Produce a **Contract v0.2** proposal implementing D-004, including generated schemas, synthetic cases, negative tests, and observed test output. *D-004.01/.02/.07 in PR #4 (merged); D-004.05/.06/.10/.11 in PR #5 (merged); D-004.03/.04/.08/.09 proposed in PR #6; D-004.12 follows in a separately scoped PR.*
 2. Propose the deterministic eligibility engine and Slice 0 execution plan; choose and document any supporting technology decisions separately.
 3. Define implementation stage gates and Claude instructions (`AGENTS.md`, `CLAUDE.md`) for later review.
 4. Request explicit authorization before full application implementation or claiming a contract freeze.
