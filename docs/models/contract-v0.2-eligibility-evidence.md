@@ -23,6 +23,9 @@ Pydantic v2 remains the reference-contract tool only, not an application-runtime
 | 4 | Admission fails closed before loading/exposing text; external responses do not reveal existence | Text is loaded only after scope, version-kind and live checks pass. `RetrievalResponse` lists every non-admitted id identically with no reason; specific `DenialCode`s are internal only |
 | 5 | Sensitive-context case stores/exposes no medical, disability or accommodation detail | Candidate E: availability is an `unknown` claim with no value or evidence; the source answer is not represented in any claim, evidence locator, chunk or request. A test scans all matching/prompt-reachable fixture sections for restricted terms |
 | 6 | Preserve PR #4 compatibility; verify schema differences | See [Compatibility](#compatibility-with-pr-4) |
+| O1 | **Approved (a), 2026-10-28.** `PILOT-ACTIVE-001` is pass/fail only: an **explicit exception** to the original pass/fail/unknown coverage target | No `unknown` reason code for the active-status rule (Pydantic and JSON Schema). Rationale: `Opportunity.status` is a required authoritative field, and a failed source check on the opportunity must block processing (refinement B), not become an eligibility unknown |
+| R1 | Review: a Program A participation rule cannot establish eligibility for a Program B opportunity in the same organization | `check_eligibility_result` requires every participation rule's `program_id` to equal the assessed opportunity's `program_id` (`participation_program_mismatch`). This applies regardless of whether the policy is program-scoped, and an opportunity with **no** program cannot be assessed under a participation rule (fail closed; widening later would be additive). Existing layers unchanged: a program-scoped policy must cover the opportunity (`policy_scope_mismatch`), its participation rules must name its program (model validator), and cited participation records must be for the rule's program (support check) |
+| R2 | Review: two different `ClaimVocabulary` definitions cannot share one (id, version) | `claims.index_vocabularies` raises `vocabulary_version_conflict`; used by both `check_claims` and `check_requirements`. An identical re-delivery is tolerated; a changed definition needs a new version. Versioned-vocabulary design unchanged |
 
 ## Evidence levels
 
@@ -52,8 +55,9 @@ Pydantic v2 remains the reference-contract tool only, not an application-runtime
 | Portable versioned `PolicySet` / `PolicyRule` / `RuleOutcome` | `eligibility.py` | `test_policy_rule_shape` | Schema |
 | (id, version) immutable; one source version per pin | `check_policy_sets` (`policy_version_conflict`) | `test_policy_versions_are_immutable` | Invariant |
 | Policy scope covers the opportunity | `policy_scope_mismatch` | `test_program_scoped_policy_cannot_assess_outside_its_program`, `test_policy_must_cover_opportunity_and_org` | Invariant |
+| Participation rule program equals the opportunity's program (R1) | `participation_program_mismatch` in `check_eligibility_result` | `ProgramScopeTests` (6; two programs in `org_demo_001`): Program A rule × Program B opportunity rejected, also when the candidate participates in both programs; rule × opportunity with no program rejected; program-scoped A policy × B opportunity rejected; matching B rule accepted only with a Program B record; rule/policy program mismatch rejected | Invariant + Support |
 | Reason code valid for rule kind and result | `REASON_CODES`; JSON Schema `allOf` per (kind, result) | `test_unknown_reason_codes_cannot_express_integrity_failures`, conformance cases | Schema (both validators) |
-| Four pilot rules with source-backed pass/fail/unknown | Fixture `rule_cases` (14) over 7 labeled results | `test_rule_case_catalog` (asserts every representable (kind, result) has a case) | Support |
+| Four pilot rules with source-backed pass/fail/unknown (active-status rule pass/fail only, O1) | Fixture `rule_cases` (14) over 7 labeled results | `test_rule_case_catalog` (asserts every representable (kind, result) has a case), `test_active_rule_is_pass_fail_only_per_o1` | Support |
 | Outcomes supported by cited inputs | `_verify_support` per rule kind | `OutcomeSupportTests` (10) | Support |
 | Missing qualification is not negative evidence | `fail` requires declared `lacks` | `test_missing_qualification_cannot_fail`, `test_inferred_lacks_cannot_fail` | Support |
 | Integrity failures fail closed before eligibility | `require_sources_admissible` | `IntegrityGateTests` (4; 5 failure modes) | Mock |
@@ -63,7 +67,7 @@ Pydantic v2 remains the reference-contract tool only, not an application-runtime
 
 | Rule | Pass | Fail | Unknown |
 |---|---|---|---|
-| `PILOT-ACTIVE-001` | A × data | A × ops (paused) | **none — open decision O1** |
+| `PILOT-ACTIVE-001` | A × data | A × ops (paused) | **not applicable — approved exception O1(a)** |
 | `PILOT-PROGRAM-002` | A × data | D × data (`not_participating`) | E × data (no record) |
 | `PILOT-AVAIL-003` | A × data (20 ≥ 12) | D × data (8 < 12) | B × data (not declared); E × data (sensitive context) |
 | `PILOT-SKILL-004` | A × data (two corroborating declarations) | D × data (declared "lacks") | B × data (contested); E × data (inferred only) |
@@ -74,6 +78,7 @@ Pydantic v2 remains the reference-contract tool only, not an application-runtime
 |---|---|---|---|
 | Controlled types: skill, experience, interest, availability, work preference | `ClaimType`; typed values with no free text | `test_fixture_claims_cover_all_types_and_states`, `test_unsupported_claim_types_and_extra_fields_rejected` | Schema |
 | Allowlisted codes from a versioned, org-scoped vocabulary | `ClaimVocabulary`, `VocabularyPin`; `check_claims` | `test_code_outside_vocabulary_rejected`, `test_wrong_or_foreign_vocabulary_rejected` | Invariant |
+| One definition per vocabulary (id, version) (R2) | `index_vocabularies` (`vocabulary_version_conflict`) | `VocabularyVersionIntegrityTests` (6): conflicting definition rejected by claim and requirement checks, in either order, and when the duplicate is in another organization; identical re-delivery and a new differing version allowed | Invariant |
 | `declared` / `inferred` / `unknown` / `contested` with state-appropriate provenance | `CandidateClaim` validator + JSON Schema `allOf` | `ClaimStateTests` (7), `test_malformed_claims_rejected_by_both` (13 cases) | Schema (both validators) |
 | Evidence from the candidate's own profile/application, or a declared verification source | `check_evidence_records`, `CLAIM_EVIDENCE_BASES` | `EvidenceProvenanceTests` (6) | Invariant |
 | Inferred values never silently authoritative | `check_claim_update` (`inferred_promotion`, `inferred_overwrite`); excluded from pass/fail and from conflicts | `InferredPromotionTests` (4), `test_inference_never_conflicts_with_or_overrides_a_fact` | Invariant + Support |
@@ -116,16 +121,17 @@ Pydantic v2 remains the reference-contract tool only, not an application-runtime
 6. **Declared-vs-inferred honesty at the source.** Whether an adapter labels a value as *declared* only when the candidate explicitly stated it is the adapter's responsibility. The contract prevents relabeling and excludes inferences from decisions; it cannot inspect the source text.
 7. **Completeness of the restricted-term screen and vocabularies.** These are defense-in-depth. Fairness, legality and accessibility of real criteria require qualified review (D-004.06).
 8. **Schedule and accommodation handling.** Whole weekly hours do not establish schedule compatibility, and accommodation processes are not modeled.
-9. **Record-set completeness.** Absence-based outcomes (`participation_not_recorded`, `no_mandatory_qualification`, `required_hours_not_published`, `availability_not_declared`) assume the context is complete. Only the authority can establish completeness.
+9. **Record-set completeness and uniqueness.** Vocabulary and policy (id, version) uniqueness is checked only within the record set supplied; a persistent store must enforce it. **Completeness:** Absence-based outcomes (`participation_not_recorded`, `no_mandatory_qualification`, `required_hours_not_published`, `availability_not_declared`) assume the context is complete. Only the authority can establish completeness.
 10. **Non-Python consumers.**
     - JSON Schemas now carry the claim-state rules, the reason-code table and the decision derivation.
     - They do not carry cross-record rules: vocabulary membership, conflicts, provenance, outcome support, or scope/version matching. A test documents these gaps.
 
 ## Open decisions requiring owner approval
 
+O1 was decided (option a, 2026-10-28) and is recorded above. Neither R1 nor R2 required resolving O2–O5.
+
 | # | Question | Current encoding (reversible) | Why approval is needed |
 |---|---|---|---|
-| **O1** | A genuine `unknown` for `PILOT-ACTIVE-001`? `Opportunity.status` is a required authoritative field, and under refinement B status-integrity failures fail closed, so no genuine-unknown input exists in today's contracts | No `unknown` reason code for this rule. Adding one later only widens accepted values, which is additive | Options: (a) accept the rule as pass/fail only; (b) add an unestablished/unpublished status to `Opportunity`, which changes a PR #4 schema; (c) source status from a separate record. **Recommend (a).** |
 | O2 | Should `EligibilityResult` link to a specific `Application`? | No link; results are per candidate × opportunity × policy version | Affects how D-004.03/.04 review flows reference eligibility |
 | O3 | Must `ClaimVocabulary` and `PolicySet` content carry their own Drupal source references? Policy does today; vocabulary is version-pinned only | Vocabulary has no `source_ref` | Governance/provenance of vocabulary changes |
 | O4 | Do any additional requirement kinds belong in the pilot (e.g. schedule windows, location mode)? | Only `weekly_hours` and `mandatory_qualification` | Fairness/accommodation review before adding |
@@ -133,7 +139,7 @@ Pydantic v2 remains the reference-contract tool only, not an application-runtime
 
 ## Test evidence
 
-**Run environment:** fresh `git clone` of branch `contracts/v0.2-eligibility-evidence` at commit `b99158f2bf64eec961b473e52e0856865dd452ef`; new virtualenvs; Python 3.13.17 (Linux).
+**Current run (after R1/R2 fixes):** fresh `git clone` of branch `contracts/v0.2-eligibility-evidence` at commit `3f34fb92fee732e250165e8f7bd9b57d169fa7c6`; new virtualenvs; Python 3.13.17 (Linux).
 
 *Runtime requirements only* (`contracts/requirements.txt`):
 
@@ -149,7 +155,7 @@ $ python -m rap_contracts.schema_export --check
 schema drift: NONE
 
 $ python -m unittest discover -s tests
-Ran 185 tests in 0.527s
+Ran 197 tests in 0.499s
 
 OK (skipped=9)
 ```
@@ -176,7 +182,7 @@ schema drift: NONE
 
 $ python -m unittest discover -s tests -v
 ...
-Ran 185 tests in 0.707s
+Ran 197 tests in 0.815s
 
 OK
 ```
@@ -190,18 +196,34 @@ OK
   | `test_source_versions` | 18 |
   | `test_schemas` | 8 |
   | `test_json_schema_conformance` | 9 |
-  | `test_claims` (new) | 34 |
-  | `test_eligibility` (new) | 40 |
+  | `test_claims` (new) | 40 (incl. 6 R2) |
+  | `test_eligibility` (new) | 46 (incl. 6 R1) |
   | `test_evidence` (new) | 23 |
 
-- All 185 tests reported `ok`; none failed, errored or skipped. Many tests iterate subTests.
-- PR #4 contributed 81 tests; this PR adds 104.
+- All 197 tests reported `ok`; none failed, errored or skipped. Many tests iterate subTests.
+- PR #4 contributed 81 tests; this PR adds 116.
 - Only Python 3.13.17 was tested. `jsonschema` is the only pinned dev dependency.
+- **R1/R2 regression evidence.** The 12 new tests were run against the *unfixed* code first. 8 failed or errored, reproducing both defects:
+  - R1: the three wrong-program cases were accepted.
+  - R2: conflicting definitions were silently accepted, and `index_vocabularies` did not exist.
+
+  The 4 that passed are behaviour that already worked:
+  - three R1 checks: program-scoped policy coverage, a matching Program B rule, and rule/policy program agreement;
+  - the R2 positive case: an identical re-delivery or a new version is allowed.
+
+  After the fix, all 12 pass.
+- **PR #4 compatibility (re-verified at `3f34fb9`):**
+  - `git diff --numstat 2e63a93 HEAD` shows `2 2` (only `$id` and `x-contract-version`) for each of the 7 PR #4 schemas.
+  - No schema file changed in the R1/R2 fix.
+  - `invariants.py`, `source_checks.py`, the PR #4 fixture and the PR #4 test modules are unchanged versus `main`.
+  - `Pr4CompatibilityTests` pass.
+
+**Previous runs (superseded):** commit `b99158f`, 185 tests OK (runtime-only: 9 skipped), drift NONE.
 
 **Supplementary local checks (not committed tooling):**
 
 - **pyflakes**, run from a scratch virtualenv only: clean on `rap_contracts/` and `tests/`.
-- **Mutation checks.** On scratch copies, each of the 15 safety boundaries below was disabled individually, and every one caused at least one test failure (failing-test counts in brackets):
+- **Mutation checks.** On scratch copies, 19 safety boundaries were disabled one at a time, and every one caused at least one test failure (failing-test counts in brackets). The first 15 were at `b99158f`:
   - qualification fail without a declared "lacks" claim [1];
   - inferred/contested claims accepted for pass/fail [2];
   - cross-org admission check removed [5];
@@ -217,12 +239,20 @@ OK
   - text loaded before the authority check [9];
   - participation-conflict check removed [1];
   - policy source pin not compared [1].
-- **Defects found and fixed during development:**
-  - `RetrievalChunk.text_pointer` accepted a URL, contradicting its contract; it now excludes `:`.
+
+  Added for R1/R2 at `3f34fb9`:
+  - participation-rule program check removed [3];
+  - opportunities without a program exempted from it [1];
+  - vocabulary conflict check removed [5];
+  - requirement checks bypassing the vocabulary index [1].
+- **Defects found and fixed:**
+  - `RetrievalChunk.text_pointer` accepted a URL; it now excludes `:`.
   - A test-side substring scan was replaced by an exact-shape assertion.
+  - Review finding R1: the participation-rule program was not compared with the opportunity's program under unscoped policies.
+  - Review finding R2: duplicate vocabulary (id, version) definitions were silently overwritten.
 
 <details>
-<summary>Full verbose test output (dev requirements, commit b99158f)</summary>
+<summary>Full verbose test output (dev requirements, commit 3f34fb9)</summary>
 
 ```text
 test_code_outside_vocabulary_rejected (test_claims.AllowlistAndSensitiveFieldTests) ... ok
@@ -259,11 +289,17 @@ test_conflicting_participation_records_rejected (test_claims.ParticipationTests)
 test_fixture_participations_valid (test_claims.ParticipationTests) ... ok
 test_participation_is_not_a_claim_type (test_claims.ParticipationTests) ... ok
 test_participation_requires_authority_record_evidence (test_claims.ParticipationTests) ... ok
+test_conflict_detected_regardless_of_order (test_claims.VocabularyVersionIntegrityTests) ... ok
+test_conflicting_definition_rejected_by_claim_checks (test_claims.VocabularyVersionIntegrityTests) ... ok
+test_conflicting_definition_rejected_by_requirement_checks (test_claims.VocabularyVersionIntegrityTests) ... ok
+test_identical_duplicate_and_new_version_allowed (test_claims.VocabularyVersionIntegrityTests) ... ok
+test_same_id_and_version_in_another_org_rejected (test_claims.VocabularyVersionIntegrityTests) ... ok
+test_standalone_index_reports_conflict (test_claims.VocabularyVersionIntegrityTests) ... ok
 test_decision_must_follow_outcomes (test_eligibility.DecisionConsistencyTests) ... ok
 test_fail_dominates_unknown (test_eligibility.DecisionConsistencyTests) ... ok
 test_one_outcome_per_rule (test_eligibility.DecisionConsistencyTests) ... ok
 test_unknown_reason_codes_cannot_express_integrity_failures (test_eligibility.DecisionConsistencyTests) ... ok
-test_active_rule_has_no_unknown_outcome_pending_o1 (test_eligibility.FixtureCaseTests) ... ok
+test_active_rule_is_pass_fail_only_per_o1 (test_eligibility.FixtureCaseTests) ... ok
 test_all_fixture_results_valid_and_supported (test_eligibility.FixtureCaseTests) ... ok
 test_expected_decisions (test_eligibility.FixtureCaseTests) ... ok
 test_rule_case_catalog (test_eligibility.FixtureCaseTests) ... ok
@@ -292,6 +328,12 @@ test_policy_versions_are_immutable (test_eligibility.PolicyVersionTests) ... ok
 test_program_scoped_policy_cannot_assess_outside_its_program (test_eligibility.PolicyVersionTests) ... ok
 test_rule_version_or_set_mismatch (test_eligibility.PolicyVersionTests) ... ok
 test_job_result_uses_same_contracts_with_independent_policy (test_eligibility.PortabilityTests) ... ok
+test_matching_program_b_rule_is_accepted (test_eligibility.ProgramScopeTests) ... ok
+test_participation_rule_rejected_for_opportunity_without_program (test_eligibility.ProgramScopeTests) ... ok
+test_policy_rule_program_must_match_policy_scope (test_eligibility.ProgramScopeTests) ... ok
+test_program_a_participation_rejected_for_program_b_opportunity (test_eligibility.ProgramScopeTests) ... ok
+test_program_scoped_policy_for_a_rejected_for_program_b_opportunity (test_eligibility.ProgramScopeTests) ... ok
+test_rejected_even_when_candidate_also_participates_in_program_b (test_eligibility.ProgramScopeTests) ... ok
 test_conflicting_or_duplicate_requirements_rejected (test_eligibility.RequirementTests) ... ok
 test_cross_org_requirement_rejected (test_eligibility.RequirementTests) ... ok
 test_fixture_requirements_valid (test_eligibility.RequirementTests) ... ok
@@ -412,7 +454,7 @@ test_both_version_kinds_validate (test_source_versions.VersionKindRepresentation
 test_malformed_versions_rejected (test_source_versions.VersionKindRepresentationTests) ... ok
 
 ----------------------------------------------------------------------
-Ran 185 tests in 0.707s
+Ran 197 tests in 0.815s
 
 OK
 ```
