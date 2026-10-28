@@ -1,0 +1,73 @@
+{
+  "$defs": {
+    "SourceEntityKey": {
+      "additionalProperties": false,
+      "description": "Unversioned locator of one authoritative source record.",
+      "properties": {
+        "entity_id": {
+          "description": "Identifier of the record in the source system. Source metadata only; never a portable ID.",
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "entity_type": {
+          "description": "Source-side logical entity type label declared by the adapter. Not a Drupal schema commitment.",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Entity Type",
+          "type": "string"
+        },
+        "source_system": {
+          "$ref": "#/$defs/SourceSystem"
+        }
+      },
+      "required": [
+        "source_system",
+        "entity_type",
+        "entity_id"
+      ],
+      "title": "SourceEntityKey",
+      "type": "object"
+    },
+    "SourceSystem": {
+      "description": "Authoritative source. ``fixture`` is the offline test substitute only.",
+      "enum": [
+        "drupal",
+        "fixture"
+      ],
+      "title": "SourceSystem",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations/candidate.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Stable, organization-scoped recruitment subject (D-004.01).\n\n``identity_source`` locates the authenticating account (e.g. a Drupal user).\nThe account is identity, not the candidate ID. One account maps to at most\none Candidate per organization; that uniqueness is a cross-record rule\n(``invariants.check_identity_mappings``) and must be enforced by the\nauthoritative store. ``identity_source`` is immutable through ordinary\nupdates; merges/corrections require a separately designed audited process.",
+  "properties": {
+    "id": {
+      "description": "Opaque portable organization-scoped candidate identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^candidate_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "identity_source": {
+      "$ref": "#/$defs/SourceEntityKey"
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "organization_id",
+    "identity_source"
+  ],
+  "title": "Candidate",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations"
+}

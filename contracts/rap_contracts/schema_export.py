@@ -1,0 +1,121 @@
+"""Reproducible JSON Schema generation for the v0.2 foundations contracts.
+
+Usage (from the ``contracts/`` directory):
+
+    python -m rap_contracts.schema_export          # (re)write schemas/
+    python -m rap_contracts.schema_export --check  # exit 1 on drift
+
+Output is deterministic for a given Pydantic version: keys sorted, 2-space
+indent, trailing newline. The Pydantic version is pinned in requirements.txt
+because generator changes can alter output.
+
+JSON Schema expresses structure only. Cross-record invariants (organization
+equality across records, identity uniqueness, lifecycle transitions, version
+kind vs. capability, source freshness/authorization) are NOT expressible here
+and are enforced only by the Python invariant functions -- and, ultimately,
+by the authoritative service.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from pydantic import BaseModel
+
+from .models import (
+    CONTRACT_VERSION,
+    Application,
+    Candidate,
+    CandidateProfile,
+    Opportunity,
+    Program,
+    SourceCheckResult,
+    SourceReference,
+)
+
+#: Stable identifier namespace. ``$id`` values are identifiers, not fetchable URLs.
+SCHEMA_ID_BASE = "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas"
+JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
+
+EXPORTED_MODELS: dict[str, type[BaseModel]] = {
+    "application": Application,
+    "candidate": Candidate,
+    "candidate-profile": CandidateProfile,
+    "opportunity": Opportunity,
+    "program": Program,
+    "source-check-result": SourceCheckResult,
+    "source-reference": SourceReference,
+}
+
+DEFAULT_SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schemas"
+
+
+def schema_id(name: str) -> str:
+    return f"{SCHEMA_ID_BASE}/{CONTRACT_VERSION}/{name}.schema.json"
+
+
+def build_schema(name: str, model: type[BaseModel]) -> dict:
+    body = model.model_json_schema(mode="validation")
+    return {
+        "$schema": JSON_SCHEMA_DIALECT,
+        "$id": schema_id(name),
+        "x-contract-version": CONTRACT_VERSION,
+        "x-contract-status": "partial development version; proposed; NOT frozen",
+        **body,
+    }
+
+
+def render(schema: dict) -> str:
+    return json.dumps(schema, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+def expected_files() -> dict[str, str]:
+    return {f"{name}.schema.json": render(build_schema(name, model)) for name, model in EXPORTED_MODELS.items()}
+
+
+def write_schemas(directory: Path = DEFAULT_SCHEMA_DIR) -> list[Path]:
+    directory.mkdir(parents=True, exist_ok=True)
+    written = []
+    for filename, text in expected_files().items():
+        path = directory / filename
+        path.write_text(text, encoding="utf-8", newline="\n")
+        written.append(path)
+    return written
+
+
+def find_drift(directory: Path = DEFAULT_SCHEMA_DIR) -> list[str]:
+    """Return human-readable drift problems; empty list means committed schemas match."""
+    problems: list[str] = []
+    expected = expected_files()
+    present = {p.name for p in directory.glob("*.schema.json")} if directory.is_dir() else set()
+    for filename in sorted(set(expected) - present):
+        problems.append(f"missing: {filename}")
+    for filename in sorted(present - set(expected)):
+        problems.append(f"unexpected: {filename}")
+    for filename in sorted(set(expected) & present):
+        if (directory / filename).read_text(encoding="utf-8") != expected[filename]:
+            problems.append(f"changed: {filename}")
+    return problems
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--check", action="store_true", help="report drift instead of writing")
+    parser.add_argument("--dir", type=Path, default=DEFAULT_SCHEMA_DIR)
+    args = parser.parse_args(argv)
+    if args.check:
+        problems = find_drift(args.dir)
+        for line in problems:
+            print(line)
+        print("schema drift: NONE" if not problems else f"schema drift: {len(problems)} problem(s)")
+        return 1 if problems else 0
+    for path in write_schemas(args.dir):
+        print(f"wrote {path.name}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
