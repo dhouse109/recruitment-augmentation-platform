@@ -528,5 +528,128 @@ class SchemaRoundTripTests(Harness):
         self.assertIsInstance(verification, VerificationResult)
 
 
+class EligibilitySupportIntegrationTests(unittest.TestCase):
+    """R1: acceptance and approval re-validate the linked EligibilityResult with PR #5's support verifier.
+
+    The mutation keeps the result 'eligible' and structurally valid, but claims the
+    Python qualification was *independently verified* when only candidate
+    declarations exist. No independent-verification evidence is added.
+    """
+
+    @staticmethod
+    def _inconsistent_doc():
+        doc = support.ext_raw()
+        res = next(r for r in doc["eligibility_results"] if r["id"] == "eligibility_a_data")
+        skill = next(o for o in res["rule_outcomes"] if o["rule_id"] == "PILOT-SKILL-004")
+        assert skill["reason_code"] == "qualification_declared"
+        skill["reason_code"] = "qualification_independently_verified"
+        assert res["decision"] == "eligible"
+        return doc
+
+    def _assert_no_effects(self, svc, status):
+        self.assertEqual(svc.decisions, {})
+        self.assertEqual(svc.events, [])
+        self.assertEqual(svc.idempotency, {})
+        self.assertEqual(svc.replay_log, [])
+        self.assertIs(svc.recommendations[REC].status, status)
+
+    def test_pr5_support_verifier_rejects_the_inconsistent_result(self):
+        from rap_contracts.eligibility import EligibilityResult, check_eligibility_result
+
+        doc = self._inconsistent_doc()
+        result = next(r for r in support.ext_results(doc) if r.id == "eligibility_a_data")
+        self.assertIsInstance(result, EligibilityResult)  # structurally valid and still 'eligible'
+        with self.assertRaises(ContractViolation) as caught:
+            check_eligibility_result(result, support.ext_context(doc))
+        self.assertEqual(caught.exception.code, "unsupported_outcome")
+
+    def test_verification_cannot_be_accepted_and_recommendation_escalates(self):
+        from rap_contracts.recommendation import accept_verification, apply_verification
+
+        ctx = support.recommendation_context(self._inconsistent_doc())
+        recs, verifications, _ = support.review_models()
+        rec = next(r for r in recs if r.id == REC)
+        verification = next(v for v in verifications if v.recommendation_id == REC)
+        with self.assertRaises(ContractViolation) as caught:
+            accept_verification(verification, rec, ctx)
+        self.assertEqual(caught.exception.code, "unsupported_outcome")
+        self.assertIs(apply_verification(rec, verification, ctx).status, RecommendationStatus.ESCALATED)
+
+    def test_inconsistent_context_before_verification_blocks_approval(self):
+        svc = support.review_service(context=support.recommendation_context(self._inconsistent_doc()))
+        self.assertIs(svc.recommendations[REC].status, RecommendationStatus.ESCALATED)
+        out = svc.submit_review(COORD, cmd())
+        self.assertIs(out.status, OutcomeStatus.REJECTED)
+        self.assertIs(out.error, ExternalCode.INVALID_STATE)
+        self._assert_no_effects(svc, RecommendationStatus.ESCALATED)
+
+    def test_inconsistent_context_after_verification_blocks_approval(self):
+        svc = support.review_service()
+        self.assertIs(svc.recommendations[REC].status, RecommendationStatus.READY_FOR_REVIEW)
+        svc.context = support.recommendation_context(self._inconsistent_doc())  # records changed after verification
+        out = svc.submit_review(COORD, cmd())
+        self.assertIs(out.status, OutcomeStatus.REJECTED)
+        self.assertIs(out.error, ExternalCode.REVIEW_STALE)
+        self.assertEqual(svc.rejection_log[-1][0], "unsupported_outcome")
+        self._assert_no_effects(svc, RecommendationStatus.READY_FOR_REVIEW)
+        # Key not consumed: once the records are consistent again, the same command records normally.
+        svc.context = support.recommendation_context()
+        self.assertIs(svc.submit_review(COORD, cmd()).status, OutcomeStatus.RECORDED)
+
+
+class ContextPrerequisiteTests(unittest.TestCase):
+    """R1.2: caller-supplied RecommendationContext is validated, not assumed trusted."""
+
+    def _expect_rejected(self, doc, code):
+        from rap_contracts.recommendation import check_recommendation, validate_recommendation_inputs
+
+        ctx = support.recommendation_context(doc)
+        rec = next(r for r in support.review_models()[0] if r.id == REC)
+        for fn, args in ((validate_recommendation_inputs, (ctx,)), (check_recommendation, (rec, ctx))):
+            with self.subTest(fn=fn.__name__):
+                with self.assertRaises(ContractViolation) as caught:
+                    fn(*args)
+                self.assertEqual(caught.exception.code, code)
+
+    def test_fixture_context_validates(self):
+        from rap_contracts.recommendation import validate_recommendation_inputs
+
+        validate_recommendation_inputs(support.recommendation_context())
+
+    def test_invalid_policy_claims_evidence_and_requirements_rejected(self):
+        cases = []
+        doc = support.ext_raw()
+        doc["policies"].append({**copy.deepcopy(doc["policies"][0]), "rules": doc["policies"][0]["rules"][:3]})
+        cases.append(("policy version conflict", doc, "policy_version_conflict"))
+        doc = support.ext_raw()
+        extra = copy.deepcopy(next(c for c in doc["claims"] if c["id"] == "claim_a_python_application"))
+        extra.update(id="claim_a_python_conflict", value={"kind": "skill", "presence": "lacks"})
+        doc["claims"].append(extra)
+        cases.append(("unresolved claim conflict", doc, "unresolved_conflict"))
+        doc = support.ext_raw()
+        ev = next(e for e in doc["evidence"] if e["id"] == "evidence_a_profile_hours")
+        ev["source_ref"] = copy.deepcopy(next(e for e in doc["evidence"] if e["id"] == "evidence_d_profile_hours")["source_ref"])
+        cases.append(("evidence provenance", doc, "evidence_provenance"))
+        doc = support.ext_raw()
+        doc["requirements"][0]["source_ref"]["version"]["revision_id"] = "40"
+        cases.append(("requirement source version", doc, "requirement_source_mismatch"))
+        doc = support.ext_raw()
+        doc["vocabularies"].append({**copy.deepcopy(doc["vocabularies"][0]), "skills": ["python"]})
+        cases.append(("claim vocabulary conflict", doc, "vocabulary_version_conflict"))
+        for label, doc, code in cases:
+            with self.subTest(label):
+                self._expect_rejected(doc, code)
+
+    def test_mislabelled_eligibility_index_rejected(self):
+        from rap_contracts.recommendation import validate_recommendation_inputs
+
+        ctx = support.recommendation_context()
+        results = dict(ctx.eligibility_results)
+        results["eligibility_a_data"] = results["eligibility_a_web"]
+        with self.assertRaises(ContractViolation) as caught:
+            validate_recommendation_inputs(dataclasses.replace(ctx, eligibility_results=results))
+        self.assertEqual(caught.exception.code, "eligibility_index_mismatch")
+
+
 if __name__ == "__main__":
     unittest.main()

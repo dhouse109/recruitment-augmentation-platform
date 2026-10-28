@@ -16,7 +16,7 @@ from typing import Annotated, Iterable, Literal, Mapping
 
 from pydantic import AwareDatetime, ConfigDict, Field, model_validator
 
-from .claims import ClaimState
+from .claims import ClaimState, check_claims, check_participations
 from .eligibility import (
     ClaimIdRef,
     EligibilityContext,
@@ -25,10 +25,14 @@ from .eligibility import (
     EligibilityResult,
     PolicyPin,
     RequirementId,
+    check_eligibility_result,
+    check_eligibility_results,
+    check_policy_sets,
+    check_requirements,
     eligibility_source_refs,
 )
-from .evidence import EvidenceId, EvidenceSubjectKind
-from .invariants import ContractViolation
+from .evidence import EvidenceId, EvidenceSubjectKind, check_evidence_records
+from .invariants import ContractViolation, check_record_set
 from .models import (
     AccessStatus,
     ApplicationId,
@@ -40,9 +44,12 @@ from .models import (
     OrganizationId,
     SourceCheckResult,
     SourceReference,
+    SourceSystem,
+    SourceSystemCapabilities,
     VersionStatus,
     _ID_BODY,
 )
+from .source_checks import check_record_set_versions
 
 RecommendationId = Annotated[str, Field(pattern=rf"^recommendation_{_ID_BODY}$", max_length=64)]
 VerificationId = Annotated[str, Field(pattern=rf"^verification_{_ID_BODY}$", max_length=64)]
@@ -169,8 +176,38 @@ class Recommendation(ContractModel):
 
 @dataclass(frozen=True)
 class RecommendationContext:
+    """Records a recommendation is checked against. Caller-supplied: never assumed valid.
+
+    ``validate_recommendation_inputs`` re-runs the PR #4/#5 deterministic
+    validators over it on every recommendation check.
+    """
+
     eligibility: EligibilityContext
     eligibility_results: Mapping[str, EligibilityResult]
+    capabilities: Mapping[SourceSystem, SourceSystemCapabilities]
+
+
+def validate_recommendation_inputs(ctx: RecommendationContext) -> None:
+    """Deterministic prerequisite validation of the whole context (owner review R1).
+
+    Reuses the existing validators; adds no policy logic. Order: records and
+    source versions (PR #4) -> evidence provenance -> claims -> participation ->
+    policy sets -> published requirements -> every eligibility result's rule
+    support (PR #5). This is NOT a live authority/freshness check; those remain
+    separate (``review.collect_live_checks``).
+    """
+    e = ctx.eligibility
+    for key, result in ctx.eligibility_results.items():
+        if key != result.id:
+            raise ContractViolation("eligibility_index_mismatch", f"eligibility index key {key} holds {result.id}")
+    check_record_set(e.records)
+    check_record_set_versions(e.records, ctx.capabilities)
+    check_evidence_records(e.evidence, e.records, ctx.capabilities)
+    check_claims(e.claims, e.evidence, e.vocabularies, e.records)
+    check_participations(e.participations, e.evidence, e.records)
+    check_policy_sets(e.policies, e.records, ctx.capabilities)
+    check_requirements(e, ctx.capabilities)
+    check_eligibility_results(ctx.eligibility_results.values(), e)
 
 
 def index_eligibility_results(results: Iterable[EligibilityResult]) -> dict[str, EligibilityResult]:
@@ -224,6 +261,11 @@ def check_recommendation(rec: Recommendation, ctx: RecommendationContext) -> Non
         raise ContractViolation("not_eligible", f"{rec.id}: eligibility decision is {elig.decision.value}")
     if elig.policy != rec.policy or elig.opportunity_ref != rec.opportunity_ref:
         raise ContractViolation("policy_version_mismatch", f"{rec.id}: policy/opportunity pins differ from the eligibility result")
+
+    # R1: do not trust the supplied context, and verify the linked result's rule
+    # outcomes are supported by their cited inputs -- not only that it says 'eligible'.
+    validate_recommendation_inputs(ctx)
+    check_eligibility_result(elig, ctx.eligibility)
 
     check_application_context(rec, ctx)
 

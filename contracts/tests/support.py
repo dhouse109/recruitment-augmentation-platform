@@ -202,7 +202,8 @@ def review_raw() -> dict[str, Any]:
 def recommendation_context(doc: dict[str, Any] | None = None):
     from rap_contracts.recommendation import RecommendationContext, index_eligibility_results
 
-    return RecommendationContext(eligibility=ext_context(doc), eligibility_results=index_eligibility_results(ext_results(doc)))
+    return RecommendationContext(eligibility=ext_context(doc), eligibility_results=index_eligibility_results(ext_results(doc)),
+                                 capabilities=ext_capabilities())
 
 
 def review_models(doc: dict[str, Any] | None = None):
