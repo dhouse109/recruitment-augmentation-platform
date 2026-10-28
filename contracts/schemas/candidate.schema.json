@@ -38,7 +38,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/candidate.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/candidate.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Stable, organization-scoped recruitment subject (D-004.01).\n\n``identity_source`` locates the authenticating account (e.g. a Drupal user).\nThe account is identity, not the candidate ID. One account maps to at most\none Candidate per organization; that uniqueness is a cross-record rule\n(``invariants.check_identity_mappings``) and must be enforced by the\nauthoritative store. ``identity_source`` is immutable through ordinary\nupdates; merges/corrections require a separately designed audited process.",
@@ -69,5 +69,5 @@
   "title": "Candidate",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.3"
+  "x-contract-version": "0.2.0-dev.foundations.4"
 }

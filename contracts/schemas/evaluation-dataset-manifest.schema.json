@@ -1,0 +1,268 @@
+{
+  "$defs": {
+    "AttestationBasis": {
+      "description": "How the attribution was established. Only a future trusted service may issue the last value.",
+      "enum": [
+        "unverified_metadata",
+        "mock_authenticated",
+        "trusted_service_authenticated"
+      ],
+      "title": "AttestationBasis",
+      "type": "string"
+    },
+    "CasePin": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "description": "Opaque synthetic evaluation case identifier.",
+          "maxLength": 64,
+          "pattern": "^evalcase_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "case_id",
+        "version",
+        "sha256"
+      ],
+      "title": "CasePin",
+      "type": "object"
+    },
+    "Custody": {
+      "enum": [
+        "repository_visible",
+        "external_access_controlled"
+      ],
+      "title": "Custody",
+      "type": "string"
+    },
+    "ExposureEntry": {
+      "additionalProperties": false,
+      "description": "A recorded known exposure. Not proof that the log is complete or durable.",
+      "properties": {
+        "description": {
+          "maxLength": 300,
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]*$",
+          "title": "Description",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "published_in_repository",
+            "visible_to_ai_session",
+            "uploaded_to_project_knowledge",
+            "other"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "recorded_at": {
+          "format": "date-time",
+          "title": "Recorded At",
+          "type": "string"
+        },
+        "recorded_by": {
+          "$ref": "#/$defs/RecordAttribution"
+        }
+      },
+      "required": [
+        "recorded_at",
+        "kind",
+        "description",
+        "recorded_by"
+      ],
+      "title": "ExposureEntry",
+      "type": "object"
+    },
+    "FixtureLayerPin": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[a-z0-9.-]+\\.json$",
+          "title": "Name",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "sha256"
+      ],
+      "title": "FixtureLayerPin",
+      "type": "object"
+    },
+    "HeldOutIntegrity": {
+      "description": "Declared status. ``custodied_unexposed`` is a claim until a trusted custodian attests it.",
+      "enum": [
+        "not_applicable",
+        "nominal_exposed",
+        "custodied_unexposed"
+      ],
+      "title": "HeldOutIntegrity",
+      "type": "string"
+    },
+    "RecordAttribution": {
+      "additionalProperties": false,
+      "description": "Who a record says acted. ``asserted_*`` fields are claims, not authentication or authorization.\n\nA Pydantic model cannot verify ``attestation_basis``. A value of\n``trusted_service_authenticated`` is meaningful only when written by the\nfuture evaluation-record service (``promotion.EvaluationRecordService``),\nwhich must authenticate the principal and check an explicit role grant.",
+      "properties": {
+        "asserted_kind": {
+          "enum": [
+            "human",
+            "service"
+          ],
+          "title": "Asserted Kind",
+          "type": "string"
+        },
+        "asserted_role": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{1,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asserted Role"
+        },
+        "attestation_basis": {
+          "$ref": "#/$defs/AttestationBasis"
+        },
+        "principal_id": {
+          "maxLength": 64,
+          "pattern": "^principal_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Principal Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "principal_id",
+        "asserted_kind",
+        "attestation_basis"
+      ],
+      "title": "RecordAttribution",
+      "type": "object"
+    },
+    "Split": {
+      "enum": [
+        "golden",
+        "held_out"
+      ],
+      "title": "Split",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/evaluation-dataset-manifest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Versioned split manifest.\n\n``repository_visible`` manifests pin each case by content hash. Externally\ncustodied manifests carry only salted commitments: no case IDs, labels or\nscenario details, and never the salt.",
+  "properties": {
+    "case_pins": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CasePin"
+      },
+      "title": "Case Pins",
+      "type": "array"
+    },
+    "case_records_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Case Records Sha256"
+    },
+    "commitments": {
+      "default": [],
+      "items": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "title": "Commitments",
+      "type": "array"
+    },
+    "contract_version": {
+      "pattern": "^0\\.2\\.0-dev\\.[a-z]+\\.[0-9]+$",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "custody": {
+      "$ref": "#/$defs/Custody"
+    },
+    "data_policy": {
+      "const": "synthetic_only",
+      "title": "Data Policy",
+      "type": "string"
+    },
+    "exposure_log": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ExposureEntry"
+      },
+      "title": "Exposure Log",
+      "type": "array"
+    },
+    "fixture_layers": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/FixtureLayerPin"
+      },
+      "title": "Fixture Layers",
+      "type": "array"
+    },
+    "held_out_integrity": {
+      "$ref": "#/$defs/HeldOutIntegrity"
+    },
+    "id": {
+      "description": "Opaque synthetic evaluation dataset manifest identifier.",
+      "maxLength": 64,
+      "pattern": "^evalset_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "split": {
+      "$ref": "#/$defs/Split"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "split",
+    "custody",
+    "held_out_integrity",
+    "contract_version",
+    "data_policy"
+  ],
+  "title": "EvaluationDatasetManifest",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.4"
+}

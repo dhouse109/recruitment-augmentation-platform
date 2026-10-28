@@ -1,0 +1,1652 @@
+{
+  "$defs": {
+    "AccessStatus": {
+      "enum": [
+        "allowed",
+        "denied"
+      ],
+      "title": "AccessStatus",
+      "type": "string"
+    },
+    "AuditEventTotalAssertion": {
+      "additionalProperties": false,
+      "properties": {
+        "equals": {
+          "minimum": 0,
+          "title": "Equals",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "audit_event_total",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "equals"
+      ],
+      "title": "AuditEventTotalAssertion",
+      "type": "object"
+    },
+    "AuthorityOverride": {
+      "additionalProperties": false,
+      "description": "Declared MOCK authority answer for one (principal, exact source version).",
+      "properties": {
+        "access_status": {
+          "$ref": "#/$defs/AccessStatus"
+        },
+        "principal_id": {
+          "maxLength": 64,
+          "pattern": "^principal_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Principal Id",
+          "type": "string"
+        },
+        "source_ref": {
+          "$ref": "#/$defs/SourceReference"
+        },
+        "version_status": {
+          "$ref": "#/$defs/VersionStatus"
+        }
+      },
+      "required": [
+        "principal_id",
+        "source_ref",
+        "version_status",
+        "access_status"
+      ],
+      "title": "AuthorityOverride",
+      "type": "object"
+    },
+    "AuthorityState": {
+      "additionalProperties": false,
+      "description": "MOCK authority baseline: every source version in scope is current and allowed for ``principals``,\nexcept the declared ``overrides``. Any other (principal, version) pair fails closed.",
+      "properties": {
+        "baseline": {
+          "const": "scope_sources_current_and_allowed",
+          "title": "Baseline",
+          "type": "string"
+        },
+        "overrides": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuthorityOverride"
+          },
+          "title": "Overrides",
+          "type": "array"
+        },
+        "principals": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^principal_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Principals",
+          "type": "array"
+        }
+      },
+      "required": [
+        "baseline",
+        "principals"
+      ],
+      "title": "AuthorityState",
+      "type": "object"
+    },
+    "CaseAdjudicationStatus": {
+      "enum": [
+        "not_adjudicated",
+        "adjudicated",
+        "disputed",
+        "unresolved"
+      ],
+      "title": "CaseAdjudicationStatus",
+      "type": "string"
+    },
+    "CaseScope": {
+      "additionalProperties": false,
+      "description": "Declared dependencies.\n\nThe context contains the shared base records plus every candidate-scoped\nrecord owned by ``candidates`` in the pinned base fixture layers, plus the\ncase-file records named in ``include_records``. Nothing else is loaded.",
+      "properties": {
+        "candidates": {
+          "items": {
+            "description": "Opaque portable organization-scoped candidate identifier. Independent of Drupal IDs and never derived from personal information.",
+            "maxLength": 64,
+            "pattern": "^candidate_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Candidates",
+          "type": "array"
+        },
+        "include_records": {
+          "default": [],
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Include Records",
+          "type": "array"
+        }
+      },
+      "required": [
+        "candidates"
+      ],
+      "title": "CaseScope",
+      "type": "object"
+    },
+    "ContextValidationStep": {
+      "additionalProperties": false,
+      "description": "``recommendation.validate_recommendation_inputs`` over the case's scoped context.",
+      "properties": {
+        "authority_delta": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuthorityOverride"
+          },
+          "title": "Authority Delta",
+          "type": "array"
+        },
+        "consequence_of": {
+          "anyOf": [
+            {
+              "pattern": "^s[0-9]{1,2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consequence Of"
+        },
+        "expected": {
+          "$ref": "#/$defs/ValidationExpectation"
+        },
+        "operation": {
+          "const": "context_validation",
+          "title": "Operation",
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/StepRole"
+        },
+        "safety": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SafetyExpectation"
+          },
+          "title": "Safety",
+          "type": "array"
+        },
+        "state_from": {
+          "default": [],
+          "items": {
+            "pattern": "^s[0-9]{1,2}$",
+            "type": "string"
+          },
+          "title": "State From",
+          "type": "array"
+        },
+        "step_id": {
+          "pattern": "^s[0-9]{1,2}$",
+          "title": "Step Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "role",
+        "operation",
+        "expected"
+      ],
+      "title": "ContextValidationStep",
+      "type": "object"
+    },
+    "DenialCode": {
+      "description": "Internal-only denial reasons (logs/audit). Never returned to the caller.",
+      "enum": [
+        "unknown_chunk",
+        "cross_org",
+        "invalid_source_version",
+        "source_check_failed",
+        "access_denied",
+        "not_current",
+        "withdrawn",
+        "deleted",
+        "unavailable",
+        "content_unavailable",
+        "content_integrity",
+        "review_content"
+      ],
+      "title": "DenialCode",
+      "type": "string"
+    },
+    "DeniedChunk": {
+      "additionalProperties": false,
+      "properties": {
+        "chunk_id": {
+          "maxLength": 64,
+          "pattern": "^chunk_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "code": {
+          "$ref": "#/$defs/DenialCode"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "code"
+      ],
+      "title": "DeniedChunk",
+      "type": "object"
+    },
+    "EligibilityDecision": {
+      "description": "Opportunity- and policy-version-scoped assessment. Never a candidate-level outcome.",
+      "enum": [
+        "eligible",
+        "ineligible",
+        "needs_information"
+      ],
+      "title": "EligibilityDecision",
+      "type": "string"
+    },
+    "EligibilitySupportExpectation": {
+      "additionalProperties": false,
+      "description": "Expected validator result plus the label's decision and EVERY rule outcome (rule-level labels).",
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/EligibilityDecision"
+        },
+        "result": {
+          "$ref": "#/$defs/ExpectedResult"
+        },
+        "rule_outcomes": {
+          "items": {
+            "$ref": "#/$defs/ExpectedRuleOutcome"
+          },
+          "minItems": 1,
+          "title": "Rule Outcomes",
+          "type": "array"
+        },
+        "violation_code": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Violation Code"
+        }
+      },
+      "required": [
+        "result",
+        "decision",
+        "rule_outcomes"
+      ],
+      "title": "EligibilitySupportExpectation",
+      "type": "object"
+    },
+    "EligibilitySupportStep": {
+      "additionalProperties": false,
+      "description": "``eligibility.check_eligibility_result``: is a hand-written label supported? Not an engine.",
+      "properties": {
+        "authority_delta": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuthorityOverride"
+          },
+          "title": "Authority Delta",
+          "type": "array"
+        },
+        "consequence_of": {
+          "anyOf": [
+            {
+              "pattern": "^s[0-9]{1,2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consequence Of"
+        },
+        "eligibility_result_id": {
+          "maxLength": 64,
+          "pattern": "^eligibility_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Eligibility Result Id",
+          "type": "string"
+        },
+        "expected": {
+          "$ref": "#/$defs/EligibilitySupportExpectation"
+        },
+        "operation": {
+          "const": "eligibility_support",
+          "title": "Operation",
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/StepRole"
+        },
+        "safety": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SafetyExpectation"
+          },
+          "title": "Safety",
+          "type": "array"
+        },
+        "state_from": {
+          "default": [],
+          "items": {
+            "pattern": "^s[0-9]{1,2}$",
+            "type": "string"
+          },
+          "title": "State From",
+          "type": "array"
+        },
+        "step_id": {
+          "pattern": "^s[0-9]{1,2}$",
+          "title": "Step Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "role",
+        "operation",
+        "eligibility_result_id",
+        "expected"
+      ],
+      "title": "EligibilitySupportStep",
+      "type": "object"
+    },
+    "ExpectedResult": {
+      "enum": [
+        "accepted",
+        "violation"
+      ],
+      "title": "ExpectedResult",
+      "type": "string"
+    },
+    "ExpectedRuleOutcome": {
+      "additionalProperties": false,
+      "properties": {
+        "reason_code": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/$defs/RuleResult"
+        },
+        "rule_id": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*-[0-9]{3}$",
+          "title": "Rule Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule_id",
+        "result",
+        "reason_code"
+      ],
+      "title": "ExpectedRuleOutcome",
+      "type": "object"
+    },
+    "ExposurePoint": {
+      "enum": [
+        "model_context",
+        "reviewer_display",
+        "recommendation_output",
+        "review_write",
+        "record_linkage"
+      ],
+      "title": "ExposurePoint",
+      "type": "string"
+    },
+    "ExternalCode": {
+      "description": "Caller-visible rejection codes. Nonexistent and unauthorized targets are indistinguishable.",
+      "enum": [
+        "unauthenticated",
+        "not_permitted",
+        "invalid_command",
+        "idempotency_conflict",
+        "invalid_state",
+        "review_stale"
+      ],
+      "title": "ExternalCode",
+      "type": "string"
+    },
+    "HumanReviewCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ReviewAction"
+        },
+        "comment": {
+          "anyOf": [
+            {
+              "description": "Reviewer-authored text. Stored only on ReviewDecision; never in audit events, evidence, chunks, claims or prompts.",
+              "maxLength": 2000,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comment"
+        },
+        "idempotency_key": {
+          "description": "Client-generated opaque request identity.",
+          "pattern": "^[A-Za-z0-9_-]{16,128}$",
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "reason": {
+          "$ref": "#/$defs/ReasonPin"
+        },
+        "recommendation_id": {
+          "maxLength": 64,
+          "pattern": "^recommendation_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Recommendation Id",
+          "type": "string"
+        },
+        "verification_id": {
+          "maxLength": 64,
+          "pattern": "^verification_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Verification Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "idempotency_key",
+        "recommendation_id",
+        "verification_id",
+        "action",
+        "reason"
+      ],
+      "title": "HumanReviewCommand",
+      "type": "object"
+    },
+    "InitialState": {
+      "additionalProperties": false,
+      "properties": {
+        "authority": {
+          "$ref": "#/$defs/AuthorityState"
+        },
+        "review_store": {
+          "default": "none",
+          "enum": [
+            "none",
+            "empty"
+          ],
+          "title": "Review Store",
+          "type": "string"
+        }
+      },
+      "required": [
+        "authority"
+      ],
+      "title": "InitialState",
+      "type": "object"
+    },
+    "LabelClass": {
+      "enum": [
+        "objective_rule_derived",
+        "subjective"
+      ],
+      "title": "LabelClass",
+      "type": "string"
+    },
+    "LabelProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "authored_by": {
+          "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+          "title": "Authored By",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "seed_proposal",
+            "new_case"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "origin_ref": {
+          "maxLength": 300,
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]*$",
+          "title": "Origin Ref",
+          "type": "string"
+        },
+        "review_status": {
+          "$ref": "#/$defs/LabelReviewStatus"
+        }
+      },
+      "required": [
+        "origin",
+        "origin_ref",
+        "authored_by",
+        "review_status"
+      ],
+      "title": "LabelProvenance",
+      "type": "object"
+    },
+    "LabelReviewStatus": {
+      "enum": [
+        "proposed",
+        "owner_reviewed",
+        "adjudicated"
+      ],
+      "title": "LabelReviewStatus",
+      "type": "string"
+    },
+    "LogicalSnapshot": {
+      "additionalProperties": false,
+      "description": "A version token computed by an adapter when no native revision exists.\n\nProvenance: ``captured_by`` computed ``token`` with ``method`` over the\nauthoritative record as read at ``captured_at``. A well-formed token proves\nneither currentness nor authorization; only the authority can confirm that\na token still corresponds to the record and that the caller may read it.",
+      "properties": {
+        "captured_at": {
+          "format": "date-time",
+          "title": "Captured At",
+          "type": "string"
+        },
+        "captured_by": {
+          "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+          "title": "Captured By",
+          "type": "string"
+        },
+        "kind": {
+          "const": "logical_snapshot",
+          "title": "Kind",
+          "type": "string"
+        },
+        "method": {
+          "description": "Snapshot method identifier, e.g. 'sha256-canonical-json/v1'. Open set; consumers accept only registered methods.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*/v[1-9][0-9]*$",
+          "title": "Method",
+          "type": "string"
+        },
+        "token": {
+          "description": "'<scheme>:<value>' token. Method-specific format is checked against a snapshot-method registry.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*:[A-Za-z0-9._~-]{8,256}$",
+          "title": "Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "method",
+        "token",
+        "captured_at",
+        "captured_by"
+      ],
+      "title": "LogicalSnapshot",
+      "type": "object"
+    },
+    "NativeRevision": {
+      "additionalProperties": false,
+      "description": "A revision identifier issued natively by the source system.\n\n``:`` is excluded from the pattern so a prefixed logical snapshot token\n(``sha256:...``) cannot be relabeled as a native revision.",
+      "properties": {
+        "kind": {
+          "const": "native_revision",
+          "title": "Kind",
+          "type": "string"
+        },
+        "revision_id": {
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Revision Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "revision_id"
+      ],
+      "title": "NativeRevision",
+      "type": "object"
+    },
+    "OutcomeStatus": {
+      "enum": [
+        "recorded",
+        "replayed",
+        "rejected"
+      ],
+      "title": "OutcomeStatus",
+      "type": "string"
+    },
+    "ReasonPin": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "vocabulary_id": {
+          "maxLength": 64,
+          "pattern": "^review_reasons_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Vocabulary Id",
+          "type": "string"
+        },
+        "vocabulary_version": {
+          "minimum": 1,
+          "title": "Vocabulary Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vocabulary_id",
+        "vocabulary_version",
+        "code"
+      ],
+      "title": "ReasonPin",
+      "type": "object"
+    },
+    "RecommendationCheckStep": {
+      "additionalProperties": false,
+      "description": "``recommendation.check_recommendation``.",
+      "properties": {
+        "authority_delta": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuthorityOverride"
+          },
+          "title": "Authority Delta",
+          "type": "array"
+        },
+        "consequence_of": {
+          "anyOf": [
+            {
+              "pattern": "^s[0-9]{1,2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consequence Of"
+        },
+        "expected": {
+          "$ref": "#/$defs/ValidationExpectation"
+        },
+        "operation": {
+          "const": "recommendation_check",
+          "title": "Operation",
+          "type": "string"
+        },
+        "recommendation_id": {
+          "maxLength": 64,
+          "pattern": "^recommendation_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Recommendation Id",
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/StepRole"
+        },
+        "safety": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SafetyExpectation"
+          },
+          "title": "Safety",
+          "type": "array"
+        },
+        "state_from": {
+          "default": [],
+          "items": {
+            "pattern": "^s[0-9]{1,2}$",
+            "type": "string"
+          },
+          "title": "State From",
+          "type": "array"
+        },
+        "step_id": {
+          "pattern": "^s[0-9]{1,2}$",
+          "title": "Step Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "role",
+        "operation",
+        "recommendation_id",
+        "expected"
+      ],
+      "title": "RecommendationCheckStep",
+      "type": "object"
+    },
+    "RecommendationStatus": {
+      "enum": [
+        "pending_verification",
+        "ready_for_review",
+        "escalated",
+        "needs_information",
+        "approved_for_follow_up",
+        "dismissed",
+        "obsolete"
+      ],
+      "title": "RecommendationStatus",
+      "type": "string"
+    },
+    "RecordSetValidationStep": {
+      "additionalProperties": false,
+      "description": "``invariants.check_record_set`` over the case's scoped records.",
+      "properties": {
+        "authority_delta": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuthorityOverride"
+          },
+          "title": "Authority Delta",
+          "type": "array"
+        },
+        "consequence_of": {
+          "anyOf": [
+            {
+              "pattern": "^s[0-9]{1,2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consequence Of"
+        },
+        "expected": {
+          "$ref": "#/$defs/ValidationExpectation"
+        },
+        "operation": {
+          "const": "record_set_validation",
+          "title": "Operation",
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/StepRole"
+        },
+        "safety": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SafetyExpectation"
+          },
+          "title": "Safety",
+          "type": "array"
+        },
+        "state_from": {
+          "default": [],
+          "items": {
+            "pattern": "^s[0-9]{1,2}$",
+            "type": "string"
+          },
+          "title": "State From",
+          "type": "array"
+        },
+        "step_id": {
+          "pattern": "^s[0-9]{1,2}$",
+          "title": "Step Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "role",
+        "operation",
+        "expected"
+      ],
+      "title": "RecordSetValidationStep",
+      "type": "object"
+    },
+    "RetrievalAdmissionStep": {
+      "additionalProperties": false,
+      "description": "``evidence.admit_chunks`` against the MOCK authority and chunk store.",
+      "properties": {
+        "authority_delta": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuthorityOverride"
+          },
+          "title": "Authority Delta",
+          "type": "array"
+        },
+        "chunk_ids": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^chunk_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Chunk Ids",
+          "type": "array"
+        },
+        "consequence_of": {
+          "anyOf": [
+            {
+              "pattern": "^s[0-9]{1,2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consequence Of"
+        },
+        "expected": {
+          "$ref": "#/$defs/RetrievalExpectation"
+        },
+        "operation": {
+          "const": "retrieval_admission",
+          "title": "Operation",
+          "type": "string"
+        },
+        "organization_id": {
+          "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+          "maxLength": 64,
+          "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "principal_id": {
+          "maxLength": 64,
+          "pattern": "^principal_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Principal Id",
+          "type": "string"
+        },
+        "purpose": {
+          "$ref": "#/$defs/RetrievalPurpose"
+        },
+        "role": {
+          "$ref": "#/$defs/StepRole"
+        },
+        "safety": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SafetyExpectation"
+          },
+          "title": "Safety",
+          "type": "array"
+        },
+        "state_from": {
+          "default": [],
+          "items": {
+            "pattern": "^s[0-9]{1,2}$",
+            "type": "string"
+          },
+          "title": "State From",
+          "type": "array"
+        },
+        "step_id": {
+          "pattern": "^s[0-9]{1,2}$",
+          "title": "Step Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "role",
+        "operation",
+        "organization_id",
+        "purpose",
+        "chunk_ids",
+        "principal_id",
+        "expected"
+      ],
+      "title": "RetrievalAdmissionStep",
+      "type": "object"
+    },
+    "RetrievalExpectation": {
+      "additionalProperties": false,
+      "description": "Internal admission outcome. Denial codes are internal; callers never see them.",
+      "properties": {
+        "admitted_chunk_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 64,
+            "pattern": "^chunk_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Admitted Chunk Ids",
+          "type": "array"
+        },
+        "authority_calls": {
+          "minimum": 0,
+          "title": "Authority Calls",
+          "type": "integer"
+        },
+        "content_loads": {
+          "minimum": 0,
+          "title": "Content Loads",
+          "type": "integer"
+        },
+        "denied": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DeniedChunk"
+          },
+          "title": "Denied",
+          "type": "array"
+        }
+      },
+      "required": [
+        "authority_calls",
+        "content_loads"
+      ],
+      "title": "RetrievalExpectation",
+      "type": "object"
+    },
+    "RetrievalPurpose": {
+      "enum": [
+        "model_context",
+        "reviewer_display"
+      ],
+      "title": "RetrievalPurpose",
+      "type": "string"
+    },
+    "ReviewAction": {
+      "description": "ADR-0004 vocabulary. The legacy ``reject_suggestion`` is intentionally absent.",
+      "enum": [
+        "approve_for_follow_up",
+        "request_information",
+        "dismiss_suggestion"
+      ],
+      "title": "ReviewAction",
+      "type": "string"
+    },
+    "ReviewCommandStep": {
+      "additionalProperties": false,
+      "description": "``submit_review`` on the case's in-memory review TEST DOUBLE.",
+      "properties": {
+        "authority_delta": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuthorityOverride"
+          },
+          "title": "Authority Delta",
+          "type": "array"
+        },
+        "command": {
+          "$ref": "#/$defs/HumanReviewCommand"
+        },
+        "consequence_of": {
+          "anyOf": [
+            {
+              "pattern": "^s[0-9]{1,2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consequence Of"
+        },
+        "credential": {
+          "anyOf": [
+            {
+              "description": "Fictional mock credential for the in-memory review test double. Not a secret.",
+              "maxLength": 64,
+              "pattern": "^credential-[a-z0-9]+(-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Credential"
+        },
+        "expected": {
+          "$ref": "#/$defs/ReviewExpectation"
+        },
+        "operation": {
+          "const": "review_command",
+          "title": "Operation",
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/StepRole"
+        },
+        "safety": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SafetyExpectation"
+          },
+          "title": "Safety",
+          "type": "array"
+        },
+        "state_from": {
+          "default": [],
+          "items": {
+            "pattern": "^s[0-9]{1,2}$",
+            "type": "string"
+          },
+          "title": "State From",
+          "type": "array"
+        },
+        "step_id": {
+          "pattern": "^s[0-9]{1,2}$",
+          "title": "Step Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "role",
+        "operation",
+        "command",
+        "expected"
+      ],
+      "title": "ReviewCommandStep",
+      "type": "object"
+    },
+    "ReviewExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "decisions_delta": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Decisions Delta",
+          "type": "integer"
+        },
+        "events_delta": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Events Delta",
+          "type": "integer"
+        },
+        "external_code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalCode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "internal_code": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Internal Code"
+        },
+        "outcome": {
+          "$ref": "#/$defs/OutcomeStatus"
+        },
+        "same_decision_as": {
+          "anyOf": [
+            {
+              "pattern": "^s[0-9]{1,2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Same Decision As"
+        },
+        "status_after": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecommendationStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "outcome",
+        "decisions_delta",
+        "events_delta"
+      ],
+      "title": "ReviewExpectation",
+      "type": "object"
+    },
+    "RuleResult": {
+      "enum": [
+        "pass",
+        "fail",
+        "unknown"
+      ],
+      "title": "RuleResult",
+      "type": "string"
+    },
+    "SafetyCategory": {
+      "enum": [
+        "cross_org_access",
+        "unauthorized_source_access",
+        "stale_or_withdrawn_source",
+        "hard_eligibility_violation",
+        "critical_unsupported_claim",
+        "unauthorized_review_write",
+        "prohibited_review_transition",
+        "source_content_integrity",
+        "prompt_injection_compliance"
+      ],
+      "title": "SafetyCategory",
+      "type": "string"
+    },
+    "SafetyExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/SafetyCategory"
+        },
+        "disposition": {
+          "enum": [
+            "attempt_blocked",
+            "not_observable"
+          ],
+          "title": "Disposition",
+          "type": "string"
+        },
+        "exposure_point": {
+          "$ref": "#/$defs/ExposurePoint"
+        }
+      },
+      "required": [
+        "category",
+        "exposure_point",
+        "disposition"
+      ],
+      "title": "SafetyExpectation",
+      "type": "object"
+    },
+    "SourceEntityKey": {
+      "additionalProperties": false,
+      "description": "Unversioned locator of one authoritative source record.",
+      "properties": {
+        "entity_id": {
+          "description": "Identifier of the record in the source system. Source metadata only; never a portable ID.",
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "entity_type": {
+          "description": "Source-side logical entity type label declared by the adapter. Not a Drupal schema commitment.",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Entity Type",
+          "type": "string"
+        },
+        "source_system": {
+          "$ref": "#/$defs/SourceSystem"
+        }
+      },
+      "required": [
+        "source_system",
+        "entity_type",
+        "entity_id"
+      ],
+      "title": "SourceEntityKey",
+      "type": "object"
+    },
+    "SourceReference": {
+      "additionalProperties": false,
+      "description": "An authoritative record at one honestly labeled version.\n\nVersion currentness and access are deliberately NOT fields here: they are\nseparate, live checks reported by ``SourceCheckResult``.",
+      "properties": {
+        "entity": {
+          "$ref": "#/$defs/SourceEntityKey"
+        },
+        "organization_id": {
+          "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+          "maxLength": 64,
+          "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "version": {
+          "discriminator": {
+            "mapping": {
+              "logical_snapshot": "#/$defs/LogicalSnapshot",
+              "native_revision": "#/$defs/NativeRevision"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NativeRevision"
+            },
+            {
+              "$ref": "#/$defs/LogicalSnapshot"
+            }
+          ],
+          "title": "Version"
+        }
+      },
+      "required": [
+        "organization_id",
+        "entity",
+        "version"
+      ],
+      "title": "SourceReference",
+      "type": "object"
+    },
+    "SourceSystem": {
+      "description": "Authoritative source. ``fixture`` is the offline test substitute only.",
+      "enum": [
+        "drupal",
+        "fixture"
+      ],
+      "title": "SourceSystem",
+      "type": "string"
+    },
+    "Split": {
+      "enum": [
+        "golden",
+        "held_out"
+      ],
+      "title": "Split",
+      "type": "string"
+    },
+    "StepRole": {
+      "enum": [
+        "prerequisite",
+        "control",
+        "target",
+        "consequence"
+      ],
+      "title": "StepRole",
+      "type": "string"
+    },
+    "TransitionExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "status_after": {
+          "$ref": "#/$defs/RecommendationStatus"
+        }
+      },
+      "required": [
+        "status_after"
+      ],
+      "title": "TransitionExpectation",
+      "type": "object"
+    },
+    "ValidationExpectation": {
+      "additionalProperties": false,
+      "description": "Outcome of a validator that either returns or raises a named ``ContractViolation``.",
+      "properties": {
+        "result": {
+          "$ref": "#/$defs/ExpectedResult"
+        },
+        "violation_code": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Violation Code"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "ValidationExpectation",
+      "type": "object"
+    },
+    "VerificationAcceptanceStep": {
+      "additionalProperties": false,
+      "description": "``recommendation.accept_verification`` (recomputes substance; raises a named violation).",
+      "properties": {
+        "authority_delta": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuthorityOverride"
+          },
+          "title": "Authority Delta",
+          "type": "array"
+        },
+        "consequence_of": {
+          "anyOf": [
+            {
+              "pattern": "^s[0-9]{1,2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consequence Of"
+        },
+        "expected": {
+          "$ref": "#/$defs/ValidationExpectation"
+        },
+        "operation": {
+          "const": "verification_acceptance",
+          "title": "Operation",
+          "type": "string"
+        },
+        "recommendation_id": {
+          "maxLength": 64,
+          "pattern": "^recommendation_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Recommendation Id",
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/StepRole"
+        },
+        "safety": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SafetyExpectation"
+          },
+          "title": "Safety",
+          "type": "array"
+        },
+        "state_from": {
+          "default": [],
+          "items": {
+            "pattern": "^s[0-9]{1,2}$",
+            "type": "string"
+          },
+          "title": "State From",
+          "type": "array"
+        },
+        "step_id": {
+          "pattern": "^s[0-9]{1,2}$",
+          "title": "Step Id",
+          "type": "string"
+        },
+        "verification_id": {
+          "maxLength": 64,
+          "pattern": "^verification_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Verification Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "role",
+        "operation",
+        "verification_id",
+        "recommendation_id",
+        "expected"
+      ],
+      "title": "VerificationAcceptanceStep",
+      "type": "object"
+    },
+    "VerificationTransitionStep": {
+      "additionalProperties": false,
+      "description": "``recommendation.apply_verification``; via ``review_store`` it is applied inside the case's review double.",
+      "properties": {
+        "authority_delta": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuthorityOverride"
+          },
+          "title": "Authority Delta",
+          "type": "array"
+        },
+        "consequence_of": {
+          "anyOf": [
+            {
+              "pattern": "^s[0-9]{1,2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consequence Of"
+        },
+        "expected": {
+          "$ref": "#/$defs/TransitionExpectation"
+        },
+        "operation": {
+          "const": "verification_transition",
+          "title": "Operation",
+          "type": "string"
+        },
+        "recommendation_id": {
+          "maxLength": 64,
+          "pattern": "^recommendation_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Recommendation Id",
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/StepRole"
+        },
+        "safety": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SafetyExpectation"
+          },
+          "title": "Safety",
+          "type": "array"
+        },
+        "state_from": {
+          "default": [],
+          "items": {
+            "pattern": "^s[0-9]{1,2}$",
+            "type": "string"
+          },
+          "title": "State From",
+          "type": "array"
+        },
+        "step_id": {
+          "pattern": "^s[0-9]{1,2}$",
+          "title": "Step Id",
+          "type": "string"
+        },
+        "verification_id": {
+          "maxLength": 64,
+          "pattern": "^verification_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Verification Id",
+          "type": "string"
+        },
+        "via": {
+          "enum": [
+            "detached",
+            "review_store"
+          ],
+          "title": "Via",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "role",
+        "operation",
+        "verification_id",
+        "recommendation_id",
+        "via",
+        "expected"
+      ],
+      "title": "VerificationTransitionStep",
+      "type": "object"
+    },
+    "VersionStatus": {
+      "enum": [
+        "current",
+        "superseded",
+        "withdrawn",
+        "deleted",
+        "unavailable"
+      ],
+      "title": "VersionStatus",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/evaluation-case.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One versioned synthetic case: declared scope, initial state, ordered steps and expectations.",
+  "properties": {
+    "adjudication_status": {
+      "$ref": "#/$defs/CaseAdjudicationStatus"
+    },
+    "assertions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/AuditEventTotalAssertion"
+      },
+      "title": "Assertions",
+      "type": "array"
+    },
+    "decision_refs": {
+      "items": {
+        "pattern": "^D-00[1-4](\\.(0[1-9]|1[0-2]))?$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Decision Refs",
+      "type": "array"
+    },
+    "id": {
+      "description": "Opaque synthetic evaluation case identifier.",
+      "maxLength": 64,
+      "pattern": "^evalcase_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "initial_state": {
+      "$ref": "#/$defs/InitialState"
+    },
+    "label_class": {
+      "$ref": "#/$defs/LabelClass"
+    },
+    "legacy_label": {
+      "anyOf": [
+        {
+          "description": "Seed label in RAP-EVAL-001 v0.1.0.",
+          "pattern": "^EVAL-[GH][0-9]{3}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Legacy Label"
+    },
+    "pilot_test_refs": {
+      "default": [],
+      "items": {
+        "pattern": "^PILOT-T0[0-9]{2}$",
+        "type": "string"
+      },
+      "title": "Pilot Test Refs",
+      "type": "array"
+    },
+    "provenance": {
+      "$ref": "#/$defs/LabelProvenance"
+    },
+    "scope": {
+      "$ref": "#/$defs/CaseScope"
+    },
+    "split": {
+      "$ref": "#/$defs/Split"
+    },
+    "steps": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "context_validation": "#/$defs/ContextValidationStep",
+            "eligibility_support": "#/$defs/EligibilitySupportStep",
+            "recommendation_check": "#/$defs/RecommendationCheckStep",
+            "record_set_validation": "#/$defs/RecordSetValidationStep",
+            "retrieval_admission": "#/$defs/RetrievalAdmissionStep",
+            "review_command": "#/$defs/ReviewCommandStep",
+            "verification_acceptance": "#/$defs/VerificationAcceptanceStep",
+            "verification_transition": "#/$defs/VerificationTransitionStep"
+          },
+          "propertyName": "operation"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/RecordSetValidationStep"
+          },
+          {
+            "$ref": "#/$defs/ContextValidationStep"
+          },
+          {
+            "$ref": "#/$defs/EligibilitySupportStep"
+          },
+          {
+            "$ref": "#/$defs/RecommendationCheckStep"
+          },
+          {
+            "$ref": "#/$defs/VerificationAcceptanceStep"
+          },
+          {
+            "$ref": "#/$defs/VerificationTransitionStep"
+          },
+          {
+            "$ref": "#/$defs/RetrievalAdmissionStep"
+          },
+          {
+            "$ref": "#/$defs/ReviewCommandStep"
+          }
+        ]
+      },
+      "minItems": 1,
+      "title": "Steps",
+      "type": "array"
+    },
+    "title": {
+      "maxLength": 300,
+      "minLength": 1,
+      "pattern": "^[^\\r\\n]*$",
+      "title": "Title",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "split",
+    "title",
+    "decision_refs",
+    "label_class",
+    "provenance",
+    "adjudication_status",
+    "scope",
+    "initial_state",
+    "steps"
+  ],
+  "title": "EvaluationCase",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.4"
+}

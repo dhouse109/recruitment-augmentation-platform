@@ -214,7 +214,7 @@
       "type": "object"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/opportunity-requirement.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/opportunity-requirement.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "A published requirement, versioned by the exact authoritative source it came from.\n\n``source_ref`` must be the opportunity's own source at the same version as\nthe Opportunity record, or the exact source of a policy set that covers the\nopportunity. The Opportunity contract itself is unchanged.",
@@ -279,5 +279,5 @@
   "title": "OpportunityRequirement",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.3"
+  "x-contract-version": "0.2.0-dev.foundations.4"
 }

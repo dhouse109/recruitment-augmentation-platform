@@ -9,7 +9,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/program-participation.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/program-participation.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Authoritative participation record. Absence of a record means 'unknown'.\n\nNot a CandidateClaim: it has no inferred/declared state and must be backed\nby authority-record evidence from a declared participation authority.",
@@ -66,5 +66,5 @@
   "title": "ProgramParticipation",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.3"
+  "x-contract-version": "0.2.0-dev.foundations.4"
 }

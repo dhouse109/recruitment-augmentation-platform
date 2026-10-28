@@ -1,5 +1,5 @@
 {
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/claim-vocabulary.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/claim-vocabulary.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Versioned allowlist of claim subject codes for one organization.",
@@ -75,5 +75,5 @@
   "title": "ClaimVocabulary",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.3"
+  "x-contract-version": "0.2.0-dev.foundations.4"
 }

@@ -144,5 +144,55 @@ class Pr5CompatibilityTests(unittest.TestCase):
         check_eligibility_results(support.ext_results(), support.ext_context())
 
 
+#: PR #6 schema bodies as merged on main @ 9f21486f (same digest rule as above).
+PR6_SCHEMA_BODY_DIGESTS = {
+    "audit-event": "f3bf8597b1a1c9eebb8fff6aa5f82f9ba92fe29984f8263e64b560c992dd1212",
+    "human-review-command": "0acfc19ef37bab54509875c02c01d8ecf2f670abb87012d95214739aa0d883f6",
+    "recommendation": "d91980bf415c3c8bdb71837740dfadb0aaf246555350e2262e746dd251b4e593",
+    "review-correction-command": "35fb038bb4be1d89a92000c654fbac18bb647b062f0fe3b039f17d5a1706e5e6",
+    "review-decision": "2452f8bddd03c00c0e86f3d4b4b02d1a655f4f190abbc2f01c40e73cc39fa28d",
+    "review-outcome": "1d8d5f8416d661b9df21821b153388cee4c1086aeeea4c12623f9f3ba6f0add4",
+    "review-reason-vocabulary": "2d7cc349968887601796aefb71c9b38e7f905ef9172989ddf726d0516edd9ed2",
+    "verification-result": "ec1dc610df4e46193e130f61c4a1726a4099159cbf38a7d3895b7752af673a08",
+}
+
+#: Schemas added in 0.2.0-dev.foundations.4 (D-004.12). Everything else must be pre-existing.
+PR7_NEW_SCHEMAS = {
+    "adjudication-record", "case-observation", "evaluation-case", "evaluation-dataset-manifest", "evaluation-run",
+    "held-out-gate-attestation", "metric-definition-set", "promotion-decision", "reviewer-rubric", "safety-gate-policy",
+}
+
+
+class Pr6CompatibilityTests(unittest.TestCase):
+    def test_pr6_schema_bodies_unchanged(self):
+        for name, digest in PR6_SCHEMA_BODY_DIGESTS.items():
+            with self.subTest(schema=name):
+                body = build_schema(name, EXPORTED_MODELS[name])
+                body.pop("$id")
+                body.pop("x-contract-version")
+                canonical = json.dumps(body, sort_keys=True, separators=(",", ":"))
+                self.assertEqual(hashlib.sha256(canonical.encode()).hexdigest(), digest)
+
+    def test_pr6_fixture_and_review_flow_still_valid(self):
+        import support
+
+        recs, verifications, _ = support.review_models()
+        svc = support.review_service()
+        self.assertEqual(svc.recommendations["recommendation_a_data"].status.value, "ready_for_review")
+        self.assertEqual(svc.recommendations["recommendation_a_web"].status.value, "escalated")
+        self.assertEqual(svc.submit_review("credential-demo-coordinator", support.review_command()).status.value, "recorded")
+        self.assertEqual(len(recs), 3)
+        self.assertEqual(len(verifications), 3)
+
+    def test_only_evaluation_schemas_are_new(self):
+        prior = set(PR4_SCHEMA_BODY_DIGESTS) | set(PR5_SCHEMA_BODY_DIGESTS) | set(PR6_SCHEMA_BODY_DIGESTS)
+        self.assertEqual(set(EXPORTED_MODELS) - prior, PR7_NEW_SCHEMAS)
+        self.assertTrue(prior <= set(EXPORTED_MODELS))  # nothing removed
+        self.assertEqual(len(prior), 25)
+
+    def test_version_label_sorts_after_pr6(self):
+        self.assertEqual(CONTRACT_VERSION, "0.2.0-dev.foundations.4")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,241 @@
+{
+  "$defs": {
+    "CaseRef": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "description": "Opaque synthetic evaluation case identifier.",
+          "maxLength": 64,
+          "pattern": "^evalcase_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "case_id",
+        "version"
+      ],
+      "title": "CaseRef",
+      "type": "object"
+    },
+    "DefinitionsPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Opaque synthetic evaluation definitions set identifier.",
+          "maxLength": 64,
+          "pattern": "^evaldefs_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "DefinitionsPin",
+      "type": "object"
+    },
+    "ManifestPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Opaque synthetic evaluation dataset manifest identifier.",
+          "maxLength": 64,
+          "pattern": "^evalset_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "root": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Root",
+          "type": "string"
+        },
+        "split": {
+          "$ref": "#/$defs/Split"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "split",
+        "root"
+      ],
+      "title": "ManifestPin",
+      "type": "object"
+    },
+    "ObservationBasis": {
+      "enum": [
+        "schema_validation",
+        "reference_validator",
+        "mock_authority",
+        "in_memory_double",
+        "deterministic_baseline_execution",
+        "offline_model_execution",
+        "integrated_service",
+        "live_system"
+      ],
+      "title": "ObservationBasis",
+      "type": "string"
+    },
+    "RunKind": {
+      "enum": [
+        "fixture_conformance",
+        "deterministic_baseline",
+        "single_model",
+        "multi_agent"
+      ],
+      "title": "RunKind",
+      "type": "string"
+    },
+    "SafetyCategory": {
+      "enum": [
+        "cross_org_access",
+        "unauthorized_source_access",
+        "stale_or_withdrawn_source",
+        "hard_eligibility_violation",
+        "critical_unsupported_claim",
+        "unauthorized_review_write",
+        "prohibited_review_transition",
+        "source_content_integrity",
+        "prompt_injection_compliance"
+      ],
+      "title": "SafetyCategory",
+      "type": "string"
+    },
+    "SafetyCategoryRule": {
+      "additionalProperties": false,
+      "description": "Coverage obligations for one category. Held-out obligations are counts only: no held-out case ids.",
+      "properties": {
+        "accepted_bases": {
+          "items": {
+            "$ref": "#/$defs/ObservationBasis"
+          },
+          "minItems": 1,
+          "title": "Accepted Bases",
+          "type": "array"
+        },
+        "applies_to_run_kinds": {
+          "items": {
+            "$ref": "#/$defs/RunKind"
+          },
+          "minItems": 1,
+          "title": "Applies To Run Kinds",
+          "type": "array"
+        },
+        "category": {
+          "$ref": "#/$defs/SafetyCategory"
+        },
+        "held_out_coverage_required": {
+          "default": false,
+          "title": "Held Out Coverage Required",
+          "type": "boolean"
+        },
+        "held_out_min_cases": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Held Out Min Cases",
+          "type": "integer"
+        },
+        "mandatory_golden_cases": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CaseRef"
+          },
+          "title": "Mandatory Golden Cases",
+          "type": "array"
+        },
+        "zero_tolerance": {
+          "title": "Zero Tolerance",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "category",
+        "zero_tolerance",
+        "applies_to_run_kinds",
+        "accepted_bases"
+      ],
+      "title": "SafetyCategoryRule",
+      "type": "object"
+    },
+    "Split": {
+      "enum": [
+        "golden",
+        "held_out"
+      ],
+      "title": "Split",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/safety-gate-policy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "categories": {
+      "items": {
+        "$ref": "#/$defs/SafetyCategoryRule"
+      },
+      "minItems": 1,
+      "title": "Categories",
+      "type": "array"
+    },
+    "definitions": {
+      "$ref": "#/$defs/DefinitionsPin"
+    },
+    "golden_manifest": {
+      "$ref": "#/$defs/ManifestPin"
+    },
+    "held_out_manifest": {
+      "$ref": "#/$defs/ManifestPin"
+    },
+    "id": {
+      "description": "Opaque synthetic evaluation definitions set identifier.",
+      "maxLength": 64,
+      "pattern": "^evaldefs_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "approved"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "status",
+    "definitions",
+    "golden_manifest",
+    "held_out_manifest",
+    "categories"
+  ],
+  "title": "SafetyGatePolicy",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.4"
+}

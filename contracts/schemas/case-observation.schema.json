@@ -1,0 +1,638 @@
+{
+  "$defs": {
+    "CaseOutcome": {
+      "enum": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "not_evaluated"
+      ],
+      "title": "CaseOutcome",
+      "type": "string"
+    },
+    "DenialCode": {
+      "description": "Internal-only denial reasons (logs/audit). Never returned to the caller.",
+      "enum": [
+        "unknown_chunk",
+        "cross_org",
+        "invalid_source_version",
+        "source_check_failed",
+        "access_denied",
+        "not_current",
+        "withdrawn",
+        "deleted",
+        "unavailable",
+        "content_unavailable",
+        "content_integrity",
+        "review_content"
+      ],
+      "title": "DenialCode",
+      "type": "string"
+    },
+    "DeniedChunk": {
+      "additionalProperties": false,
+      "properties": {
+        "chunk_id": {
+          "maxLength": 64,
+          "pattern": "^chunk_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "code": {
+          "$ref": "#/$defs/DenialCode"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "code"
+      ],
+      "title": "DeniedChunk",
+      "type": "object"
+    },
+    "EligibilityDecision": {
+      "description": "Opportunity- and policy-version-scoped assessment. Never a candidate-level outcome.",
+      "enum": [
+        "eligible",
+        "ineligible",
+        "needs_information"
+      ],
+      "title": "EligibilityDecision",
+      "type": "string"
+    },
+    "ExpectedResult": {
+      "enum": [
+        "accepted",
+        "violation"
+      ],
+      "title": "ExpectedResult",
+      "type": "string"
+    },
+    "ExpectedRuleOutcome": {
+      "additionalProperties": false,
+      "properties": {
+        "reason_code": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/$defs/RuleResult"
+        },
+        "rule_id": {
+          "maxLength": 64,
+          "pattern": "^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*-[0-9]{3}$",
+          "title": "Rule Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule_id",
+        "result",
+        "reason_code"
+      ],
+      "title": "ExpectedRuleOutcome",
+      "type": "object"
+    },
+    "ExposurePoint": {
+      "enum": [
+        "model_context",
+        "reviewer_display",
+        "recommendation_output",
+        "review_write",
+        "record_linkage"
+      ],
+      "title": "ExposurePoint",
+      "type": "string"
+    },
+    "ExternalCode": {
+      "description": "Caller-visible rejection codes. Nonexistent and unauthorized targets are indistinguishable.",
+      "enum": [
+        "unauthenticated",
+        "not_permitted",
+        "invalid_command",
+        "idempotency_conflict",
+        "invalid_state",
+        "review_stale"
+      ],
+      "title": "ExternalCode",
+      "type": "string"
+    },
+    "Measurement": {
+      "additionalProperties": false,
+      "description": "A value exists only when it was observed. No fabricated zeros.",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/MeasurementStatus"
+        },
+        "unit": {
+          "enum": [
+            "milliseconds",
+            "usd",
+            "count"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "status",
+        "unit"
+      ],
+      "title": "Measurement",
+      "type": "object"
+    },
+    "MeasurementStatus": {
+      "enum": [
+        "observed",
+        "not_run",
+        "not_measured",
+        "not_applicable",
+        "errored"
+      ],
+      "title": "MeasurementStatus",
+      "type": "string"
+    },
+    "ObservationBasis": {
+      "enum": [
+        "schema_validation",
+        "reference_validator",
+        "mock_authority",
+        "in_memory_double",
+        "deterministic_baseline_execution",
+        "offline_model_execution",
+        "integrated_service",
+        "live_system"
+      ],
+      "title": "ObservationBasis",
+      "type": "string"
+    },
+    "ObservedRecord": {
+      "additionalProperties": false,
+      "description": "What a step produced, as codes and identifiers only. Never source or chunk text.",
+      "properties": {
+        "admitted_chunk_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 64,
+            "pattern": "^chunk_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Admitted Chunk Ids",
+          "type": "array"
+        },
+        "authority_calls": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Authority Calls"
+        },
+        "content_loads": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Loads"
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EligibilityDecision"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "decision_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "pattern": "^review_decision_[a-z0-9]+(?:_[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Id"
+        },
+        "decisions_delta": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decisions Delta"
+        },
+        "denied": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DeniedChunk"
+          },
+          "title": "Denied",
+          "type": "array"
+        },
+        "error_type": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Type"
+        },
+        "events_delta": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Events Delta"
+        },
+        "external_code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalCode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "internal_code": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Internal Code"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExpectedResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "review_outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutcomeStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rule_outcomes": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExpectedRuleOutcome"
+          },
+          "title": "Rule Outcomes",
+          "type": "array"
+        },
+        "status_after": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecommendationStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "violation_code": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Violation Code"
+        }
+      },
+      "title": "ObservedRecord",
+      "type": "object"
+    },
+    "Operation": {
+      "enum": [
+        "record_set_validation",
+        "context_validation",
+        "eligibility_support",
+        "recommendation_check",
+        "verification_acceptance",
+        "verification_transition",
+        "retrieval_admission",
+        "review_command"
+      ],
+      "title": "Operation",
+      "type": "string"
+    },
+    "OutcomeStatus": {
+      "enum": [
+        "recorded",
+        "replayed",
+        "rejected"
+      ],
+      "title": "OutcomeStatus",
+      "type": "string"
+    },
+    "RecommendationStatus": {
+      "enum": [
+        "pending_verification",
+        "ready_for_review",
+        "escalated",
+        "needs_information",
+        "approved_for_follow_up",
+        "dismissed",
+        "obsolete"
+      ],
+      "title": "RecommendationStatus",
+      "type": "string"
+    },
+    "RuleResult": {
+      "enum": [
+        "pass",
+        "fail",
+        "unknown"
+      ],
+      "title": "RuleResult",
+      "type": "string"
+    },
+    "SafetyCategory": {
+      "enum": [
+        "cross_org_access",
+        "unauthorized_source_access",
+        "stale_or_withdrawn_source",
+        "hard_eligibility_violation",
+        "critical_unsupported_claim",
+        "unauthorized_review_write",
+        "prohibited_review_transition",
+        "source_content_integrity",
+        "prompt_injection_compliance"
+      ],
+      "title": "SafetyCategory",
+      "type": "string"
+    },
+    "SafetyDisposition": {
+      "enum": [
+        "attempt_blocked",
+        "unblocked_violation",
+        "not_exercised",
+        "not_observable"
+      ],
+      "title": "SafetyDisposition",
+      "type": "string"
+    },
+    "SafetyObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/SafetyCategory"
+        },
+        "disposition": {
+          "$ref": "#/$defs/SafetyDisposition"
+        },
+        "exposure_point": {
+          "$ref": "#/$defs/ExposurePoint"
+        }
+      },
+      "required": [
+        "category",
+        "exposure_point",
+        "disposition"
+      ],
+      "title": "SafetyObservation",
+      "type": "object"
+    },
+    "Split": {
+      "enum": [
+        "golden",
+        "held_out"
+      ],
+      "title": "Split",
+      "type": "string"
+    },
+    "StepObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "basis": {
+          "$ref": "#/$defs/ObservationBasis"
+        },
+        "observed": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ObservedRecord"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "operation": {
+          "$ref": "#/$defs/Operation"
+        },
+        "role": {
+          "$ref": "#/$defs/StepRole"
+        },
+        "safety": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SafetyObservation"
+          },
+          "title": "Safety",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/StepStatus"
+        },
+        "step_id": {
+          "pattern": "^s[0-9]{1,2}$",
+          "title": "Step Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "role",
+        "operation",
+        "status",
+        "basis"
+      ],
+      "title": "StepObservation",
+      "type": "object"
+    },
+    "StepRole": {
+      "enum": [
+        "prerequisite",
+        "control",
+        "target",
+        "consequence"
+      ],
+      "title": "StepRole",
+      "type": "string"
+    },
+    "StepStatus": {
+      "enum": [
+        "matched",
+        "mismatched",
+        "not_evaluated",
+        "errored"
+      ],
+      "title": "StepStatus",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/case-observation.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Internal evaluation artifact. Holds internal denial/violation codes: never shown to callers or reviewers.",
+  "properties": {
+    "assertions_hold": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Assertions Hold"
+    },
+    "case_id": {
+      "description": "Opaque synthetic evaluation case identifier.",
+      "maxLength": 64,
+      "pattern": "^evalcase_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "case_sha256": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Case Sha256",
+      "type": "string"
+    },
+    "case_version": {
+      "minimum": 1,
+      "title": "Case Version",
+      "type": "integer"
+    },
+    "cost": {
+      "$ref": "#/$defs/Measurement"
+    },
+    "execution_status": {
+      "enum": [
+        "executed",
+        "not_run",
+        "errored"
+      ],
+      "title": "Execution Status",
+      "type": "string"
+    },
+    "latency": {
+      "$ref": "#/$defs/Measurement"
+    },
+    "outcome": {
+      "$ref": "#/$defs/CaseOutcome"
+    },
+    "run_id": {
+      "description": "Opaque synthetic evaluation run identifier.",
+      "maxLength": 64,
+      "pattern": "^evalrun_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "split": {
+      "$ref": "#/$defs/Split"
+    },
+    "steps": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/StepObservation"
+      },
+      "title": "Steps",
+      "type": "array"
+    },
+    "visibility": {
+      "const": "internal_only",
+      "default": "internal_only",
+      "title": "Visibility",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "case_id",
+    "case_version",
+    "case_sha256",
+    "split",
+    "execution_status",
+    "outcome",
+    "latency",
+    "cost"
+  ],
+  "title": "CaseObservation",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.4"
+}
