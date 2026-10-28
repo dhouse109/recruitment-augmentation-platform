@@ -34,6 +34,7 @@ This PR contains **no** Drupal review-write service, authentication infrastructu
 | E6 | Comments outside matching, evidence, chunks and prompts | Comments live only on `ReviewDecision`; `AuditEvent` has no free-text fields. `REVIEW_CONTENT_ENTITY_TYPES` blocks review records as `EvidenceRecord` sources and as retrieval chunks. The regex/token screen is documented as defense-in-depth |
 | E7 | Cite candidate/opportunity evidence and published requirements; retrieved text is not proof (partial O5) | `Recommendation.evidence_ids` may cite candidate- or opportunity-subject `EvidenceRecord`s; `requirement_ids` cite published requirements. There is no chunk-id field, so retrieved text cannot be cited as proof |
 | E8 | O3, O4 stay open | Unchanged |
+| R1 | Review: verify the underlying eligibility result's rule support, not only its `eligible` status; do not trust caller-supplied context | `check_recommendation` — used by `accept_verification` and again at approval — now runs `validate_recommendation_inputs(ctx)` and then PR #5 `check_eligibility_result` on the linked result. `validate_recommendation_inputs` re-applies the existing validators to the whole supplied `RecommendationContext`: record set and source versions (PR #4), evidence provenance, claims, participation, policy sets, published requirements, and every eligibility result's rule support (PR #5). It also rejects a mislabelled eligibility index. `RecommendationContext` now carries adapter capabilities for these checks. This is deterministic support validation only: no new policy logic and no engine. Live authority/freshness checks remain separate |
 
 ## Check order at the write boundary
 
@@ -50,7 +51,7 @@ This PR contains **no** Drupal review-write service, authentication infrastructu
    - transition legality → `invalid_state`;
    - reason and comment rules → `invalid_command`;
    - the command must reference the current verification;
-   - **approve only:** verification acceptance, recommendation checks, and the live recheck of every dependency → `review_stale`.
+   - **approve only:** verification acceptance and recommendation checks (both re-run the deterministic prerequisite validation and PR #5 eligibility support — R1), then the live recheck of every dependency → `review_stale`.
 6. **Commit together:** decision, event, recommendation status and idempotency record. Rejected commands commit nothing and do not consume the key.
 
 ## Evidence levels
@@ -85,6 +86,8 @@ This PR contains **no** Drupal review-write service, authentication infrastructu
 | Approval revalidates sources, application, policy, eligibility and access | `evaluate_review` + `collect_live_checks` | `LiveRecheckTests` (4: seven source-change/revocation cases, authority error, withdrawn application in records, eligibility removed), `test_live_recheck_runs_for_every_dependency_for_this_reviewer` | Mock boundary |
 | Escalation path: request information / dismiss | Transitions from `escalated`/`needs_information` | `EscalationPathTests` (4) incl. dismissal with withdrawn/denied sources and unauthorized escalation | Mock boundary |
 | Verification ≠ authorization | No reviewer/decision fields on `VerificationResult` | `test_verification_is_not_authorization` | Schema |
+| Linked eligibility result's rule outcomes supported by cited inputs (R1) | `check_recommendation` → `check_eligibility_result` (PR #5) | `EligibilitySupportIntegrationTests` (4): `qualification_declared` → `qualification_independently_verified` with no verification evidence is rejected by PR #5 (`unsupported_outcome`). The verification is not accepted and escalates. Approval is rejected whether the records change before verification (`invalid_state`) or after it (`review_stale`), with no decision, event, status change or idempotency record, and the key stays reusable | Invariant + Support + Mock boundary |
+| Caller-supplied context validated before use (R1) | `validate_recommendation_inputs` | `ContextPrerequisiteTests` (3): fixture context valid; policy version conflict, unresolved claim conflict, evidence provenance, requirement source version and claim-vocabulary conflict each rejected by both `validate_recommendation_inputs` and `check_recommendation`; mislabelled eligibility index rejected | Invariant + Support |
 
 ### D-004.08 — Idempotency and audit
 
@@ -154,16 +157,18 @@ This PR contains **no** Drupal review-write service, authentication infrastructu
     - JSON Schemas now carry the outcome/decision/error consistency, audit lineage, correction pairing and claim-state rules.
     - They do **not** carry: verification-outcome derivation from checks, vocabulary-dependent comment rules, the dismissal-comment invariant, the transition table, or authority checks. Tests document these gaps.
 
-## New ambiguities — documented, not silently committed
+## Decisions N1–N6 (owner-approved 2026-10-28)
 
-| # | Question | Current encoding (reversible) |
+These were reversible defaults; the owner approved them with the qualifications below.
+
+| # | Decision | Encoding |
 |---|---|---|
-| N1 | Should rejected review attempts produce a security audit record? | No `AuditEvent` for rejections. The test double keeps an internal rejection log; Drupal logging is undecided |
-| N2 | What happens to an `approved_for_follow_up` recommendation when sources later change? | Terminal; post-approval follow-up workflow is out of scope |
-| N3 | May a coordinator other than the original reviewer correct a decision? | Yes, if authorized; the corrector is attributed on the new decision and event |
-| N4 | Idempotency-key scope | One namespace per service. A collision across reviewers fails closed as a conflict |
-| N5 | Replay after the recommendation's state or sources changed | Replay returns the committed outcome after re-authentication and re-authorization; state is not re-evaluated, because the action is not re-executed |
-| N6 | Opportunities with no program | Only an organization-wide grant can cover them |
+| N1 | Rejected commands produce **no** review audit event. **Future Drupal security logging must record denied attempts separately.** | No `AuditEvent` for rejections. The test double's internal `rejection_log` is test-only and is not that security log |
+| N2 | Historical approvals remain recorded. **Any later outbound action requires independent, current authorization.** | `approved_for_follow_up` is terminal; no outbound actions exist in this contract |
+| N3 | Another appropriately authorized coordinator may create a linked correction **without changing the original record** | `evaluate_correction` attributes the corrector; prior decision/event unchanged (`test_correction_is_a_new_linked_decision_and_event`) |
+| N4 | One service-wide idempotency namespace | `InMemoryReviewService.idempotency` keyed by key only; a cross-reviewer collision fails closed (`test_different_reviewer_cannot_replay_or_reuse_key`) |
+| N5 | An authorized idempotent replay returns the prior committed outcome **without re-executing** the review | `test_same_key_same_payload_replays_without_effects` (no new decision/event/authority calls), `test_replay_requires_current_authentication_and_authorization` |
+| N6 | Opportunities without a program require an **organization-wide** coordinator grant | `check_reviewer_authority`: a grant covers only if `program_id is None` or matches; for a program-less opportunity only `program_id=None` grants match |
 
 ## Open decisions carried forward
 
@@ -173,7 +178,7 @@ This PR contains **no** Drupal review-write service, authentication infrastructu
 
 ## Test evidence
 
-**Run environment:** fresh `git clone` of branch `contracts/v0.2-review` at commit `36d2701fb4f6a9655001578536ab972554312f0e`; new virtualenvs; Python 3.13.17 (Linux).
+**Current run (after R1):** fresh `git clone` of branch `contracts/v0.2-review` at commit `374b95d06e8c3160d3cd470e97b808f384ee9e25`; new virtualenvs; Python 3.13.17 (Linux).
 
 *Runtime requirements only* (`contracts/requirements.txt`):
 
@@ -189,7 +194,7 @@ $ python -m rap_contracts.schema_export --check
 schema drift: NONE
 
 $ python -m unittest discover -s tests
-Ran 281 tests in 0.948s
+Ran 288 tests in 1.189s
 
 OK (skipped=12)
 ```
@@ -216,7 +221,7 @@ schema drift: NONE
 
 $ python -m unittest discover -s tests -v
 ...
-Ran 281 tests in 1.403s
+Ran 288 tests in 1.543s
 
 OK
 ```
@@ -234,12 +239,25 @@ OK
   | `test_eligibility` | 46 |
   | `test_evidence` | 23 |
   | `test_recommendation` (new) | 33 |
-  | `test_review` (new) | 46 |
+  | `test_review` (new) | 53 (incl. 7 for R1) |
 
-- All 281 tests reported `ok`; none failed, errored or skipped. Many tests iterate subTests.
-- PRs #4 and #5 contributed 197 tests; this PR adds 84.
+- All 288 tests reported `ok`; none failed, errored or skipped. Many tests iterate subTests.
+- PRs #4 and #5 contributed 197 tests; this PR adds 91.
 - Only Python 3.13.17 was tested. `jsonschema` is the only pinned dev dependency.
 - The conformance tests also validate records **generated by the test double**: a recorded, a replayed, a rejected and a correction outcome, plus their decisions and events.
+- **R1 regression evidence.** The 7 R1 tests were run against the unfixed code (`3dd1312`) first:
+  - PR #5's verifier already rejected the mislabelled result.
+  - PR #6, however, **accepted the verification and approved the recommendation** (3 failures).
+  - The prerequisite-validation function did not yet exist (7 errors).
+
+  After the fix, all 7 pass.
+- **PR #4/#5 compatibility (re-verified at `374b95d`):**
+  - No schema file changed in the R1 fix.
+  - The 17 existing schemas still differ from `main` only in `$id`/`x-contract-version` (`2 2` × 17).
+  - PR #4/#5 code (`invariants.py`, `source_checks.py`, `claims.py`, `eligibility.py`), fixtures and test modules are unchanged versus `main`.
+  - `Pr4CompatibilityTests` and `Pr5CompatibilityTests` pass.
+
+**Previous run (superseded):** commit `36d2701` — 281 tests OK (runtime-only: 12 skipped), drift NONE.
 
 **Supplementary local checks (not committed tooling):**
 
@@ -264,12 +282,23 @@ OK
   - stale verification id accepted [1];
   - inferred claim accepted as support [1];
   - dismissal-comment rule not enforced in the vocabulary [2].
-- **Defects found and fixed during development:**
+- **R1 mutation checks:**
+  - **Caught:**
+    - context validation call removed [5];
+    - claim checks removed [2];
+    - evidence provenance removed [2];
+    - policy-set checks removed [2];
+    - requirement checks removed [2];
+    - eligibility index-key check removed [1];
+    - **both** eligibility support checks removed [3].
+  - **Survived [0], by design:** removing *only* the explicit linked-result call, or *only* the all-results call inside `validate_recommendation_inputs`. These two layers are deliberately redundant, and each alone rejects the R1 case. The explicit call keeps the linked result verified even if context validation is narrowed later.
+- **Defects found and fixed:**
   - `recommendation_source_refs` raised a bare `KeyError` when an eligibility result was missing, so the boundary would have crashed instead of failing closed. It now raises `unknown_reference`, which `approval_dependencies` converts to `review_stale`. Regression test: `test_eligibility_changed_before_review_blocks_approval`.
   - The `ReviewOutcome` JSON Schema forbade audit ids on rejections, but the Pydantic validator did not. Both now agree, which the conformance case "rejected with events" checks.
+  - **Review finding R1:** recommendation acceptance and approval checked only the linked result's `eligible` decision and pins, not its rule-outcome support, and trusted the supplied context.
 
 <details>
-<summary>Full verbose test output (dev requirements, commit 36d2701)</summary>
+<summary>Full verbose test output (dev requirements, commit 374b95d)</summary>
 
 ```text
 test_code_outside_vocabulary_rejected (test_claims.AllowlistAndSensitiveFieldTests) ... ok
@@ -493,11 +522,18 @@ test_coordinator_approves_verified_eligible_recommendation (test_review.Authoriz
 test_live_recheck_runs_for_every_dependency_for_this_reviewer (test_review.AuthorizedApprovalTests) ... ok
 test_org_wide_grant_may_approve (test_review.AuthorizedApprovalTests) ... ok
 test_other_org_coordinator_approves_own_org (test_review.AuthorizedApprovalTests) ... ok
+test_fixture_context_validates (test_review.ContextPrerequisiteTests) ... ok
+test_invalid_policy_claims_evidence_and_requirements_rejected (test_review.ContextPrerequisiteTests) ... ok
+test_mislabelled_eligibility_index_rejected (test_review.ContextPrerequisiteTests) ... ok
 test_correction_authority_and_idempotency (test_review.CorrectionTests) ... ok
 test_correction_cannot_change_or_reverse_the_action (test_review.CorrectionTests) ... ok
 test_correction_is_a_new_linked_decision_and_event (test_review.CorrectionTests) ... ok
 test_correction_requires_note_and_screens_text (test_review.CorrectionTests) ... ok
 test_only_latest_decision_in_chain_can_be_corrected (test_review.CorrectionTests) ... ok
+test_inconsistent_context_after_verification_blocks_approval (test_review.EligibilitySupportIntegrationTests) ... ok
+test_inconsistent_context_before_verification_blocks_approval (test_review.EligibilitySupportIntegrationTests) ... ok
+test_pr5_support_verifier_rejects_the_inconsistent_result (test_review.EligibilitySupportIntegrationTests) ... ok
+test_verification_cannot_be_accepted_and_recommendation_escalates (test_review.EligibilitySupportIntegrationTests) ... ok
 test_dismissal_allowed_even_when_sources_are_stale_or_withdrawn (test_review.EscalationPathTests) ... ok
 test_needs_information_then_dismiss (test_review.EscalationPathTests) ... ok
 test_request_information_on_escalated_without_freshness_or_side_effects (test_review.EscalationPathTests) ... ok
@@ -555,7 +591,7 @@ test_both_version_kinds_validate (test_source_versions.VersionKindRepresentation
 test_malformed_versions_rejected (test_source_versions.VersionKindRepresentationTests) ... ok
 
 ----------------------------------------------------------------------
-Ran 281 tests in 1.403s
+Ran 288 tests in 1.543s
 
 OK
 ```
