@@ -28,6 +28,15 @@ from pydantic import BaseModel
 from .claims import CandidateClaim, ClaimVocabulary, ProgramParticipation
 from .eligibility import EligibilityResult, OpportunityRequirement, PolicySet
 from .evidence import EvidenceRecord, RetrievalChunk, RetrievalRequest, RetrievalResponse
+from .recommendation import Recommendation, VerificationResult
+from .review import (
+    AuditEvent,
+    HumanReviewCommand,
+    ReviewCorrectionCommand,
+    ReviewDecision,
+    ReviewOutcome,
+    ReviewReasonVocabulary,
+)
 from .models import (
     CONTRACT_VERSION,
     Application,
@@ -62,6 +71,15 @@ EXPORTED_MODELS: dict[str, type[BaseModel]] = {
     "retrieval-chunk": RetrievalChunk,
     "retrieval-request": RetrievalRequest,
     "retrieval-response": RetrievalResponse,
+    # Added in 0.2.0-dev.foundations.3 (D-004.03/.04/.08/.09)
+    "audit-event": AuditEvent,
+    "human-review-command": HumanReviewCommand,
+    "recommendation": Recommendation,
+    "review-correction-command": ReviewCorrectionCommand,
+    "review-decision": ReviewDecision,
+    "review-outcome": ReviewOutcome,
+    "review-reason-vocabulary": ReviewReasonVocabulary,
+    "verification-result": VerificationResult,
 }
 
 DEFAULT_SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schemas"

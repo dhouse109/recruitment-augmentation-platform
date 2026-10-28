@@ -184,7 +184,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/retrieval-response.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/retrieval-response.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Externally observable result.\n\nEvery requested chunk that is not admitted is listed in ``unavailable_chunk_ids``\nwith no reason. Nonexistent, cross-organization, unauthorized, stale,\nwithdrawn, deleted and integrity-failed chunks are indistinguishable here.",
@@ -221,5 +221,5 @@
   "title": "RetrievalResponse",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.2"
+  "x-contract-version": "0.2.0-dev.foundations.3"
 }

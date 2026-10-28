@@ -184,3 +184,68 @@ def scenario_authority(principal: str = COORDINATOR) -> FixtureSourceAuthority:
         authority.set(principal, SourceReference.model_validate(override["source_ref"]),
                       VersionStatus(override["version_status"]), AccessStatus(override["access_status"]))
     return authority
+
+
+# ---------------------------------------------------------------------------
+# Review fixture (extends the eligibility/evidence fixture)
+# ---------------------------------------------------------------------------
+
+REVIEW_FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "review-v0.2.0-dev.json"
+REVIEW_PRINCIPAL_AUTHENTICATED_AT = datetime(2026, 10, 28, 13, 55, tzinfo=timezone.utc)
+
+
+def review_raw() -> dict[str, Any]:
+    with REVIEW_FIXTURE_PATH.open(encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def recommendation_context(doc: dict[str, Any] | None = None):
+    from rap_contracts.recommendation import RecommendationContext, index_eligibility_results
+
+    return RecommendationContext(eligibility=ext_context(doc), eligibility_results=index_eligibility_results(ext_results(doc)))
+
+
+def review_models(doc: dict[str, Any] | None = None):
+    from rap_contracts.recommendation import Recommendation, VerificationResult
+    from rap_contracts.review import ReviewReasonVocabulary
+
+    doc = doc if doc is not None else review_raw()
+    return (
+        [Recommendation.model_validate(r) for r in doc["recommendations"]],
+        [VerificationResult.model_validate(v) for v in doc["verifications"]],
+        [ReviewReasonVocabulary.model_validate(v) for v in doc["reason_vocabularies"]],
+    )
+
+
+def review_service(doc: dict[str, Any] | None = None, authority: "FixtureSourceAuthority | None" = None,
+                   context=None):
+    """Fresh in-memory TEST DOUBLE seeded from the review fixture, with verifications applied."""
+    from review_double import InMemoryReviewService, MockAuthenticator, MockAuthorizer
+    from rap_contracts.review import AuthenticatedPrincipal, ReviewerGrant
+
+    doc = doc if doc is not None else review_raw()
+    principals, grants = {}, {}
+    for p in doc["mock_principals"]:
+        principals[p["credential"]] = AuthenticatedPrincipal(
+            principal_id=p["principal"], kind=p["kind"], authenticated_by="mock-authenticator/0",
+            authenticated_at=REVIEW_PRINCIPAL_AUTHENTICATED_AT)
+        grants[p["principal"]] = tuple(ReviewerGrant.model_validate(g) for g in p["grants"])
+    recs, verifications, vocabularies = review_models(doc)
+    return InMemoryReviewService(
+        authenticator=MockAuthenticator(principals), authorizer=MockAuthorizer(grants),
+        authority=authority if authority is not None else scenario_authority(),
+        context=context if context is not None else recommendation_context(),
+        recommendations=recs, verifications=verifications, reason_vocabularies=vocabularies)
+
+
+def review_command(recommendation_id="recommendation_a_data", action="approve_for_follow_up",
+                   code="meets_published_criteria", comment=None, key="key-demo-0000000001",
+                   verification_id=None, vocabulary=("review_reasons_demo", 1)):
+    from rap_contracts.review import HumanReviewCommand
+
+    payload = {"idempotency_key": key, "recommendation_id": recommendation_id,
+               "verification_id": verification_id or recommendation_id.replace("recommendation_", "verification_") + "_1",
+               "action": action, "reason": {"vocabulary_id": vocabulary[0], "vocabulary_version": vocabulary[1], "code": code}}
+    if comment is not None:
+        payload["comment"] = comment
+    return HumanReviewCommand.model_validate(payload)

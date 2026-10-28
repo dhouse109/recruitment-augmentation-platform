@@ -18,8 +18,8 @@ from typing import Annotated, Literal, Union
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
-# Semver pre-release precedence: 0.2.0-dev.foundations < 0.2.0-dev.foundations.2
-CONTRACT_VERSION = "0.2.0-dev.foundations.2"
+# Semver pre-release precedence: 0.2.0-dev.foundations < .foundations.2 < .foundations.3
+CONTRACT_VERSION = "0.2.0-dev.foundations.3"
 
 # ---------------------------------------------------------------------------
 # Identifiers

@@ -1,0 +1,325 @@
+{
+  "$defs": {
+    "ApplicationContext": {
+      "additionalProperties": false,
+      "description": "Binds a recommendation to one submitted application at an exact source version.\n\nThis is the only context kind in this contract version. Other kinds (for\nexample discovery without an application) are NOT representable; adding one\nrequires explicit design and must also be added to the reviewable allowlist.",
+      "properties": {
+        "application_id": {
+          "description": "Opaque portable application identifier. Independent of Drupal IDs and never derived from personal information.",
+          "maxLength": 64,
+          "pattern": "^application_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Application Id",
+          "type": "string"
+        },
+        "application_ref": {
+          "$ref": "#/$defs/SourceReference"
+        },
+        "kind": {
+          "const": "application",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "application_id",
+        "application_ref"
+      ],
+      "title": "ApplicationContext",
+      "type": "object"
+    },
+    "LogicalSnapshot": {
+      "additionalProperties": false,
+      "description": "A version token computed by an adapter when no native revision exists.\n\nProvenance: ``captured_by`` computed ``token`` with ``method`` over the\nauthoritative record as read at ``captured_at``. A well-formed token proves\nneither currentness nor authorization; only the authority can confirm that\na token still corresponds to the record and that the caller may read it.",
+      "properties": {
+        "captured_at": {
+          "format": "date-time",
+          "title": "Captured At",
+          "type": "string"
+        },
+        "captured_by": {
+          "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+          "title": "Captured By",
+          "type": "string"
+        },
+        "kind": {
+          "const": "logical_snapshot",
+          "title": "Kind",
+          "type": "string"
+        },
+        "method": {
+          "description": "Snapshot method identifier, e.g. 'sha256-canonical-json/v1'. Open set; consumers accept only registered methods.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*/v[1-9][0-9]*$",
+          "title": "Method",
+          "type": "string"
+        },
+        "token": {
+          "description": "'<scheme>:<value>' token. Method-specific format is checked against a snapshot-method registry.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*:[A-Za-z0-9._~-]{8,256}$",
+          "title": "Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "method",
+        "token",
+        "captured_at",
+        "captured_by"
+      ],
+      "title": "LogicalSnapshot",
+      "type": "object"
+    },
+    "NativeRevision": {
+      "additionalProperties": false,
+      "description": "A revision identifier issued natively by the source system.\n\n``:`` is excluded from the pattern so a prefixed logical snapshot token\n(``sha256:...``) cannot be relabeled as a native revision.",
+      "properties": {
+        "kind": {
+          "const": "native_revision",
+          "title": "Kind",
+          "type": "string"
+        },
+        "revision_id": {
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Revision Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "revision_id"
+      ],
+      "title": "NativeRevision",
+      "type": "object"
+    },
+    "PolicyPin": {
+      "additionalProperties": false,
+      "properties": {
+        "policy_set_id": {
+          "maxLength": 64,
+          "pattern": "^policy_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Policy Set Id",
+          "type": "string"
+        },
+        "source_ref": {
+          "$ref": "#/$defs/SourceReference"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "policy_set_id",
+        "version",
+        "source_ref"
+      ],
+      "title": "PolicyPin",
+      "type": "object"
+    },
+    "RecommendationStatus": {
+      "enum": [
+        "pending_verification",
+        "ready_for_review",
+        "escalated",
+        "needs_information",
+        "approved_for_follow_up",
+        "dismissed",
+        "obsolete"
+      ],
+      "title": "RecommendationStatus",
+      "type": "string"
+    },
+    "SourceEntityKey": {
+      "additionalProperties": false,
+      "description": "Unversioned locator of one authoritative source record.",
+      "properties": {
+        "entity_id": {
+          "description": "Identifier of the record in the source system. Source metadata only; never a portable ID.",
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "entity_type": {
+          "description": "Source-side logical entity type label declared by the adapter. Not a Drupal schema commitment.",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Entity Type",
+          "type": "string"
+        },
+        "source_system": {
+          "$ref": "#/$defs/SourceSystem"
+        }
+      },
+      "required": [
+        "source_system",
+        "entity_type",
+        "entity_id"
+      ],
+      "title": "SourceEntityKey",
+      "type": "object"
+    },
+    "SourceReference": {
+      "additionalProperties": false,
+      "description": "An authoritative record at one honestly labeled version.\n\nVersion currentness and access are deliberately NOT fields here: they are\nseparate, live checks reported by ``SourceCheckResult``.",
+      "properties": {
+        "entity": {
+          "$ref": "#/$defs/SourceEntityKey"
+        },
+        "organization_id": {
+          "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+          "maxLength": 64,
+          "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "version": {
+          "discriminator": {
+            "mapping": {
+              "logical_snapshot": "#/$defs/LogicalSnapshot",
+              "native_revision": "#/$defs/NativeRevision"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NativeRevision"
+            },
+            {
+              "$ref": "#/$defs/LogicalSnapshot"
+            }
+          ],
+          "title": "Version"
+        }
+      },
+      "required": [
+        "organization_id",
+        "entity",
+        "version"
+      ],
+      "title": "SourceReference",
+      "type": "object"
+    },
+    "SourceSystem": {
+      "description": "Authoritative source. ``fixture`` is the offline test substitute only.",
+      "enum": [
+        "drupal",
+        "fixture"
+      ],
+      "title": "SourceSystem",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/recommendation.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A structured suggestion for coordinator follow-up review. No free-text rationale in this version.",
+  "properties": {
+    "candidate_id": {
+      "description": "Opaque portable organization-scoped candidate identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^candidate_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "context": {
+      "$ref": "#/$defs/ApplicationContext"
+    },
+    "eligibility_result_id": {
+      "maxLength": 64,
+      "pattern": "^eligibility_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Eligibility Result Id",
+      "type": "string"
+    },
+    "evidence_ids": {
+      "items": {
+        "maxLength": 64,
+        "pattern": "^evidence_[a-z0-9]+(?:_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Ids",
+      "type": "array"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "generated_by": {
+      "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+      "title": "Generated By",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^recommendation_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "opportunity_id": {
+      "description": "Opaque portable opportunity identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^opportunity_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Opportunity Id",
+      "type": "string"
+    },
+    "opportunity_ref": {
+      "$ref": "#/$defs/SourceReference"
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "policy": {
+      "$ref": "#/$defs/PolicyPin"
+    },
+    "requirement_ids": {
+      "default": [],
+      "items": {
+        "maxLength": 64,
+        "pattern": "^requirement_[a-z0-9]+(?:_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "title": "Requirement Ids",
+      "type": "array"
+    },
+    "status": {
+      "$ref": "#/$defs/RecommendationStatus"
+    },
+    "supporting_claim_ids": {
+      "items": {
+        "maxLength": 64,
+        "pattern": "^claim_[a-z0-9]+(?:_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Supporting Claim Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "organization_id",
+    "candidate_id",
+    "opportunity_id",
+    "opportunity_ref",
+    "context",
+    "eligibility_result_id",
+    "policy",
+    "supporting_claim_ids",
+    "evidence_ids",
+    "generated_by",
+    "generated_at",
+    "status"
+  ],
+  "title": "Recommendation",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.3"
+}

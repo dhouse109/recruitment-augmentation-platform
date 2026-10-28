@@ -103,7 +103,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/source-reference.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/source-reference.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "An authoritative record at one honestly labeled version.\n\nVersion currentness and access are deliberately NOT fields here: they are\nseparate, live checks reported by ``SourceCheckResult``.",
@@ -145,5 +145,5 @@
   "title": "SourceReference",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.2"
+  "x-contract-version": "0.2.0-dev.foundations.3"
 }

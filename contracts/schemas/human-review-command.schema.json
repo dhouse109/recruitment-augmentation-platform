@@ -1,0 +1,99 @@
+{
+  "$defs": {
+    "ReasonPin": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "vocabulary_id": {
+          "maxLength": 64,
+          "pattern": "^review_reasons_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Vocabulary Id",
+          "type": "string"
+        },
+        "vocabulary_version": {
+          "minimum": 1,
+          "title": "Vocabulary Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vocabulary_id",
+        "vocabulary_version",
+        "code"
+      ],
+      "title": "ReasonPin",
+      "type": "object"
+    },
+    "ReviewAction": {
+      "description": "ADR-0004 vocabulary. The legacy ``reject_suggestion`` is intentionally absent.",
+      "enum": [
+        "approve_for_follow_up",
+        "request_information",
+        "dismiss_suggestion"
+      ],
+      "title": "ReviewAction",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/human-review-command.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "$ref": "#/$defs/ReviewAction"
+    },
+    "comment": {
+      "anyOf": [
+        {
+          "description": "Reviewer-authored text. Stored only on ReviewDecision; never in audit events, evidence, chunks, claims or prompts.",
+          "maxLength": 2000,
+          "minLength": 1,
+          "pattern": "^[^\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Comment"
+    },
+    "idempotency_key": {
+      "description": "Client-generated opaque request identity.",
+      "pattern": "^[A-Za-z0-9_-]{16,128}$",
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "reason": {
+      "$ref": "#/$defs/ReasonPin"
+    },
+    "recommendation_id": {
+      "maxLength": 64,
+      "pattern": "^recommendation_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Recommendation Id",
+      "type": "string"
+    },
+    "verification_id": {
+      "maxLength": 64,
+      "pattern": "^verification_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Verification Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "idempotency_key",
+    "recommendation_id",
+    "verification_id",
+    "action",
+    "reason"
+  ],
+  "title": "HumanReviewCommand",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.3"
+}

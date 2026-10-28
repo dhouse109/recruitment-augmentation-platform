@@ -48,6 +48,11 @@ FieldPath = Annotated[
 ContentHash = Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")]
 
 
+#: Added in 0.2.0-dev.foundations.3: review records (and their free-text comments)
+#: are never evidence and never indexed for retrieval or prompts.
+REVIEW_CONTENT_ENTITY_TYPES: frozenset[str] = frozenset({"review_decision", "audit_event"})
+
+
 def content_sha256(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -136,6 +141,8 @@ def check_evidence_records(
         statement_entities.setdefault(app.candidate_id, set()).add(app.source_ref.entity)
 
     for ev in evidence.values():
+        if ev.source_ref.entity.entity_type in REVIEW_CONTENT_ENTITY_TYPES:
+            raise ContractViolation("review_content_not_evidence", f"evidence {ev.id} points at review content")
         check_version_kind(ev.source_ref, capabilities, methods)
         caps = capabilities[ev.source_ref.entity.source_system]
         subject_org = None
@@ -292,6 +299,7 @@ class DenialCode(str, Enum):
     UNAVAILABLE = "unavailable"
     CONTENT_UNAVAILABLE = "content_unavailable"
     CONTENT_INTEGRITY = "content_integrity"
+    REVIEW_CONTENT = "review_content"  # added in 0.2.0-dev.foundations.3
 
 
 _VIOLATION_TO_DENIAL = {
@@ -357,6 +365,9 @@ def admit_chunks(
             continue
         if chunk.organization_id != request.organization_id or chunk.source_ref.organization_id != request.organization_id:
             denied.append(InternalDenial(chunk_id, DenialCode.CROSS_ORG))
+            continue
+        if chunk.source_ref.entity.entity_type in REVIEW_CONTENT_ENTITY_TYPES:
+            denied.append(InternalDenial(chunk_id, DenialCode.REVIEW_CONTENT))
             continue
         try:
             check_version_kind(chunk.source_ref, capabilities, methods)

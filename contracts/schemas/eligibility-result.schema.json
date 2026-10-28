@@ -573,7 +573,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/eligibility-result.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/eligibility-result.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "allOf": [
@@ -702,5 +702,5 @@
   "title": "EligibilityResult",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.2"
+  "x-contract-version": "0.2.0-dev.foundations.3"
 }

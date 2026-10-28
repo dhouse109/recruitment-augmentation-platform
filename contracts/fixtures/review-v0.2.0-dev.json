@@ -1,0 +1,768 @@
+{
+  "fixture_set": "contract-v0.2-review",
+  "contract_version": "0.2.0-dev.foundations.3",
+  "extends": "eligibility-evidence-v0.2.0-dev.json",
+  "data_policy": "Wholly synthetic. Credentials below are fictional mock tokens for an in-memory test double, not secrets.",
+  "notes": [
+    "Recommendations and verifications are hand-authored LABELS (generated_by deterministic-baseline-label, verified_by deterministic-verifier-label). No recommendation engine or verifier ran.",
+    "Recommendations start in pending_verification; tests apply verification through the system transition.",
+    "recommendation_a_web's verification failed (citation check) and must escalate, never reach ready_for_review."
+  ],
+  "recommendations": [
+    {
+      "id": "recommendation_a_data",
+      "organization_id": "org_demo_001",
+      "candidate_id": "candidate_demo_a",
+      "opportunity_id": "opportunity_demo_data",
+      "opportunity_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {
+          "source_system": "fixture",
+          "entity_type": "opportunity",
+          "entity_id": "4001"
+        },
+        "version": {
+          "kind": "native_revision",
+          "revision_id": "41"
+        }
+      },
+      "context": {
+        "kind": "application",
+        "application_id": "application_demo_a_data",
+        "application_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "application",
+            "entity_id": "7001"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "711"
+          }
+        }
+      },
+      "eligibility_result_id": "eligibility_a_data",
+      "policy": {
+        "policy_set_id": "policy_demo_pilot",
+        "version": 1,
+        "source_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "policy_set",
+            "entity_id": "8001"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "81"
+          }
+        }
+      },
+      "supporting_claim_ids": [
+        "claim_a_python_profile",
+        "claim_a_python_application",
+        "claim_a_availability"
+      ],
+      "evidence_ids": [
+        "evidence_a_profile_python",
+        "evidence_a_app_python",
+        "evidence_a_profile_hours",
+        "evidence_data_posting"
+      ],
+      "requirement_ids": [
+        "requirement_data_hours",
+        "requirement_data_python"
+      ],
+      "generated_by": "deterministic-baseline-label/0.2.0-dev.foundations.3",
+      "generated_at": "2026-10-28T13:00:00Z",
+      "status": "pending_verification"
+    },
+    {
+      "id": "recommendation_a_web",
+      "organization_id": "org_demo_001",
+      "candidate_id": "candidate_demo_a",
+      "opportunity_id": "opportunity_demo_web",
+      "opportunity_ref": {
+        "organization_id": "org_demo_001",
+        "entity": {
+          "source_system": "fixture",
+          "entity_type": "opportunity",
+          "entity_id": "4002"
+        },
+        "version": {
+          "kind": "native_revision",
+          "revision_id": "42"
+        }
+      },
+      "context": {
+        "kind": "application",
+        "application_id": "application_demo_a_data",
+        "application_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "application",
+            "entity_id": "7001"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "711"
+          }
+        }
+      },
+      "eligibility_result_id": "eligibility_a_web",
+      "policy": {
+        "policy_set_id": "policy_demo_pilot",
+        "version": 1,
+        "source_ref": {
+          "organization_id": "org_demo_001",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "policy_set",
+            "entity_id": "8001"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "81"
+          }
+        }
+      },
+      "supporting_claim_ids": [
+        "claim_a_availability"
+      ],
+      "evidence_ids": [
+        "evidence_a_profile_hours"
+      ],
+      "requirement_ids": [
+        "requirement_web_hours"
+      ],
+      "generated_by": "deterministic-baseline-label/0.2.0-dev.foundations.3",
+      "generated_at": "2026-10-28T13:00:00Z",
+      "status": "pending_verification"
+    },
+    {
+      "id": "recommendation_c_job",
+      "organization_id": "org_demo_002",
+      "candidate_id": "candidate_demo_c",
+      "opportunity_id": "opportunity_demo_job",
+      "opportunity_ref": {
+        "organization_id": "org_demo_002",
+        "entity": {
+          "source_system": "fixture",
+          "entity_type": "opportunity",
+          "entity_id": "4101"
+        },
+        "version": {
+          "kind": "native_revision",
+          "revision_id": "51"
+        }
+      },
+      "context": {
+        "kind": "application",
+        "application_id": "application_demo_c_job",
+        "application_ref": {
+          "organization_id": "org_demo_002",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "application",
+            "entity_id": "7101"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "811"
+          }
+        }
+      },
+      "eligibility_result_id": "eligibility_c_job",
+      "policy": {
+        "policy_set_id": "policy_lantern_jobs",
+        "version": 1,
+        "source_ref": {
+          "organization_id": "org_demo_002",
+          "entity": {
+            "source_system": "fixture",
+            "entity_type": "policy_set",
+            "entity_id": "8101"
+          },
+          "version": {
+            "kind": "native_revision",
+            "revision_id": "91"
+          }
+        }
+      },
+      "supporting_claim_ids": [
+        "claim_c_availability"
+      ],
+      "evidence_ids": [
+        "evidence_c_profile_hours"
+      ],
+      "requirement_ids": [
+        "requirement_job_hours"
+      ],
+      "generated_by": "deterministic-baseline-label/0.2.0-dev.foundations.3",
+      "generated_at": "2026-10-28T13:00:00Z",
+      "status": "pending_verification"
+    }
+  ],
+  "verifications": [
+    {
+      "id": "verification_a_data_1",
+      "organization_id": "org_demo_001",
+      "recommendation_id": "recommendation_a_data",
+      "outcome": "passed",
+      "checks": [
+        {
+          "code": "evidence_citations_resolve",
+          "status": "pass"
+        },
+        {
+          "code": "supporting_claims_declared",
+          "status": "pass"
+        },
+        {
+          "code": "eligibility_supports_recommendation",
+          "status": "pass"
+        },
+        {
+          "code": "policy_pin_matches",
+          "status": "pass"
+        },
+        {
+          "code": "organization_scope_consistent",
+          "status": "pass"
+        },
+        {
+          "code": "application_context_valid",
+          "status": "pass"
+        },
+        {
+          "code": "sources_current_and_allowed",
+          "status": "pass"
+        }
+      ],
+      "source_checks": [
+        {
+          "source": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "application",
+              "entity_id": "7001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "711"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "opportunity",
+              "entity_id": "4001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "41"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "policy_set",
+              "entity_id": "8001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "81"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "program_enrollment",
+              "entity_id": "6001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "601"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "candidate_profile",
+              "entity_id": "5001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "102"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        }
+      ],
+      "verified_by": "deterministic-verifier-label/0.2.0-dev.foundations.3",
+      "verified_at": "2026-10-28T13:05:00Z"
+    },
+    {
+      "id": "verification_a_web_1",
+      "organization_id": "org_demo_001",
+      "recommendation_id": "recommendation_a_web",
+      "outcome": "failed",
+      "checks": [
+        {
+          "code": "evidence_citations_resolve",
+          "status": "fail"
+        },
+        {
+          "code": "supporting_claims_declared",
+          "status": "pass"
+        },
+        {
+          "code": "eligibility_supports_recommendation",
+          "status": "pass"
+        },
+        {
+          "code": "policy_pin_matches",
+          "status": "pass"
+        },
+        {
+          "code": "organization_scope_consistent",
+          "status": "pass"
+        },
+        {
+          "code": "application_context_valid",
+          "status": "pass"
+        },
+        {
+          "code": "sources_current_and_allowed",
+          "status": "pass"
+        }
+      ],
+      "source_checks": [
+        {
+          "source": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "application",
+              "entity_id": "7001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "711"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "opportunity",
+              "entity_id": "4002"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "42"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "policy_set",
+              "entity_id": "8001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "81"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "program_enrollment",
+              "entity_id": "6001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "601"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_001",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "candidate_profile",
+              "entity_id": "5001"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "102"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        }
+      ],
+      "verified_by": "deterministic-verifier-label/0.2.0-dev.foundations.3",
+      "verified_at": "2026-10-28T13:05:00Z"
+    },
+    {
+      "id": "verification_c_job_1",
+      "organization_id": "org_demo_002",
+      "recommendation_id": "recommendation_c_job",
+      "outcome": "passed",
+      "checks": [
+        {
+          "code": "evidence_citations_resolve",
+          "status": "pass"
+        },
+        {
+          "code": "supporting_claims_declared",
+          "status": "pass"
+        },
+        {
+          "code": "eligibility_supports_recommendation",
+          "status": "pass"
+        },
+        {
+          "code": "policy_pin_matches",
+          "status": "pass"
+        },
+        {
+          "code": "organization_scope_consistent",
+          "status": "pass"
+        },
+        {
+          "code": "application_context_valid",
+          "status": "pass"
+        },
+        {
+          "code": "sources_current_and_allowed",
+          "status": "pass"
+        }
+      ],
+      "source_checks": [
+        {
+          "source": {
+            "organization_id": "org_demo_002",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "application",
+              "entity_id": "7101"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "811"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_002",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "opportunity",
+              "entity_id": "4101"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "51"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_002",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "policy_set",
+              "entity_id": "8101"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "91"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        },
+        {
+          "source": {
+            "organization_id": "org_demo_002",
+            "entity": {
+              "source_system": "fixture",
+              "entity_type": "candidate_profile",
+              "entity_id": "5003"
+            },
+            "version": {
+              "kind": "native_revision",
+              "revision_id": "301"
+            }
+          },
+          "checked_at": "2026-10-28T13:05:00Z",
+          "checked_by": "fixture-authority-mock/0.2.0-dev.foundations.3",
+          "version_status": "current",
+          "access_status": "allowed"
+        }
+      ],
+      "verified_by": "deterministic-verifier-label/0.2.0-dev.foundations.3",
+      "verified_at": "2026-10-28T13:05:00Z"
+    }
+  ],
+  "reason_vocabularies": [
+    {
+      "id": "review_reasons_demo",
+      "organization_id": "org_demo_001",
+      "version": 1,
+      "reasons": [
+        {
+          "code": "meets_published_criteria",
+          "actions": [
+            "approve_for_follow_up"
+          ],
+          "comment": "optional"
+        },
+        {
+          "code": "checklist_complete",
+          "actions": [
+            "approve_for_follow_up"
+          ],
+          "comment": "forbidden"
+        },
+        {
+          "code": "coordinator_exception",
+          "actions": [
+            "approve_for_follow_up"
+          ],
+          "comment": "required"
+        },
+        {
+          "code": "availability_details_needed",
+          "actions": [
+            "request_information"
+          ],
+          "comment": "optional"
+        },
+        {
+          "code": "qualification_evidence_needed",
+          "actions": [
+            "request_information"
+          ],
+          "comment": "optional"
+        },
+        {
+          "code": "verification_issue_followup",
+          "actions": [
+            "request_information"
+          ],
+          "comment": "optional"
+        },
+        {
+          "code": "other_information_needed",
+          "actions": [
+            "request_information"
+          ],
+          "comment": "required"
+        },
+        {
+          "code": "opportunity_no_longer_suitable",
+          "actions": [
+            "dismiss_suggestion"
+          ],
+          "comment": "required"
+        },
+        {
+          "code": "duplicate_suggestion",
+          "actions": [
+            "dismiss_suggestion"
+          ],
+          "comment": "required"
+        },
+        {
+          "code": "verification_failed",
+          "actions": [
+            "dismiss_suggestion"
+          ],
+          "comment": "required"
+        }
+      ]
+    },
+    {
+      "id": "review_reasons_lantern",
+      "organization_id": "org_demo_002",
+      "version": 1,
+      "reasons": [
+        {
+          "code": "meets_published_criteria",
+          "actions": [
+            "approve_for_follow_up"
+          ],
+          "comment": "optional"
+        },
+        {
+          "code": "other_dismissal",
+          "actions": [
+            "dismiss_suggestion"
+          ],
+          "comment": "required"
+        }
+      ]
+    }
+  ],
+  "mock_principals": [
+    {
+      "credential": "credential-demo-coordinator",
+      "principal": "principal_demo_coordinator",
+      "kind": "human",
+      "grants": [
+        {
+          "organization_id": "org_demo_001",
+          "program_id": "program_demo_001",
+          "role": "program_coordinator"
+        }
+      ]
+    },
+    {
+      "credential": "credential-demo-coordinator-two",
+      "principal": "principal_demo_coordinator_two",
+      "kind": "human",
+      "grants": [
+        {
+          "organization_id": "org_demo_001",
+          "program_id": "program_demo_001",
+          "role": "program_coordinator"
+        }
+      ]
+    },
+    {
+      "credential": "credential-demo-org-lead",
+      "principal": "principal_demo_org_lead",
+      "kind": "human",
+      "grants": [
+        {
+          "organization_id": "org_demo_001",
+          "program_id": null,
+          "role": "program_coordinator"
+        }
+      ]
+    },
+    {
+      "credential": "credential-demo-other-program",
+      "principal": "principal_demo_other_program",
+      "kind": "human",
+      "grants": [
+        {
+          "organization_id": "org_demo_001",
+          "program_id": "program_demo_002",
+          "role": "program_coordinator"
+        }
+      ]
+    },
+    {
+      "credential": "credential-demo-viewer",
+      "principal": "principal_demo_viewer",
+      "kind": "human",
+      "grants": [
+        {
+          "organization_id": "org_demo_001",
+          "program_id": "program_demo_001",
+          "role": "program_viewer"
+        }
+      ]
+    },
+    {
+      "credential": "credential-demo-pipeline",
+      "principal": "principal_demo_pipeline",
+      "kind": "service",
+      "grants": [
+        {
+          "organization_id": "org_demo_001",
+          "program_id": "program_demo_001",
+          "role": "program_coordinator"
+        }
+      ]
+    },
+    {
+      "credential": "credential-lantern-coordinator",
+      "principal": "principal_lantern_coordinator",
+      "kind": "human",
+      "grants": [
+        {
+          "organization_id": "org_demo_002",
+          "program_id": null,
+          "role": "program_coordinator"
+        }
+      ]
+    }
+  ]
+}
