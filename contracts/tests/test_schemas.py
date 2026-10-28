@@ -1,5 +1,6 @@
 """Reproducible JSON Schema generation and drift detection."""
 
+import hashlib
 import json
 import shutil
 import tempfile
@@ -74,6 +75,41 @@ class SchemaIdentityTests(unittest.TestCase):
 
     def test_development_label(self):
         self.assertIn("-dev.", CONTRACT_VERSION)
+
+
+
+#: PR #4 schema bodies as merged on main @ 2e63a939 (sha256 of canonical JSON
+#: excluding "$id" and "x-contract-version", which change with the version label).
+PR4_SCHEMA_BODY_DIGESTS = {
+    "application": "b82bdb102e442c05ff9b20913a3004235a12cdc1d83c20568d06661e43c6b29d",
+    "candidate-profile": "20050691aede1b32ef04c2d9ad2e6ab2583de4fce9ed492017c3ca11cfae5ad8",
+    "candidate": "73446f0410dd4f84ed967f064a3efffd0e3505a9f60a589871ec456980d5f1d7",
+    "opportunity": "1bd3ddb46879851b493764fca516b0413f87340242626b9a6764851f3d653863",
+    "program": "522953bd22255c6097164277430ab9f0c28d55ad603844eaabd7c45fcf07da7c",
+    "source-check-result": "4ea2ce7ff35ebd177afe30cd22379a401e0a0a3fd8aead5026adf96db09e4d83",
+    "source-reference": "0a2c7b88a12053f629f88dc2139633a35f43208f39a187d21c3483b5fb3db857",
+}
+
+
+class Pr4CompatibilityTests(unittest.TestCase):
+    def test_pr4_schema_bodies_unchanged(self):
+        for name, digest in PR4_SCHEMA_BODY_DIGESTS.items():
+            with self.subTest(schema=name):
+                body = build_schema(name, EXPORTED_MODELS[name])
+                body.pop("$id")
+                body.pop("x-contract-version")
+                canonical = json.dumps(body, sort_keys=True, separators=(",", ":"))
+                self.assertEqual(hashlib.sha256(canonical.encode()).hexdigest(), digest)
+
+    def test_pr4_fixture_and_capabilities_still_valid(self):
+        import support
+        from rap_contracts.invariants import check_record_set
+        from rap_contracts.source_checks import check_record_set_versions
+
+        check_record_set(support.records())
+        check_record_set_versions(support.records(), support.capabilities())  # PR #4 declaration, new fields defaulted
+        caps = support.capabilities()
+        self.assertTrue(all(c.verification_entity_types == frozenset() for c in caps.values()))
 
 
 if __name__ == "__main__":

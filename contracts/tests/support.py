@@ -92,3 +92,95 @@ class FixtureSourceAuthority:
             version_status=version,
             access_status=access,
         )
+
+
+# ---------------------------------------------------------------------------
+# Eligibility / evidence fixture (extends the foundations fixture)
+# ---------------------------------------------------------------------------
+
+EXT_FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "eligibility-evidence-v0.2.0-dev.json"
+
+
+def ext_raw() -> dict[str, Any]:
+    with EXT_FIXTURE_PATH.open(encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def ext_capabilities() -> dict[SourceSystem, SourceSystemCapabilities]:
+    caps = [SourceSystemCapabilities.model_validate(c) for c in ext_raw()["capabilities"]]
+    return {c.source_system: c for c in caps}
+
+
+def ext_records() -> ContractRecordSet:
+    """Foundations records plus the additional candidates/profiles/applications."""
+    base, extra = records(), ext_raw()["additional_records"]
+    return ContractRecordSet(
+        candidates=base.candidates + tuple(Candidate.model_validate(r) for r in extra["candidates"]),
+        profiles=base.profiles + tuple(CandidateProfile.model_validate(r) for r in extra["profiles"]),
+        programs=base.programs,
+        opportunities=base.opportunities,
+        applications=base.applications + tuple(Application.model_validate(r) for r in extra["applications"]),
+    )
+
+
+def ext_context(doc: dict[str, Any] | None = None):
+    """EligibilityContext built from the extended fixture (or a mutated copy of it)."""
+    from rap_contracts.claims import CandidateClaim, ClaimVocabulary, ProgramParticipation
+    from rap_contracts.eligibility import EligibilityContext, OpportunityRequirement, PolicySet
+    from rap_contracts.evidence import EvidenceRecord, index_evidence
+
+    doc = doc if doc is not None else ext_raw()
+    return EligibilityContext(
+        records=ext_records(),
+        policies=tuple(PolicySet.model_validate(r) for r in doc["policies"]),
+        requirements=tuple(OpportunityRequirement.model_validate(r) for r in doc["requirements"]),
+        claims=tuple(CandidateClaim.model_validate(r) for r in doc["claims"]),
+        participations=tuple(ProgramParticipation.model_validate(r) for r in doc["participations"]),
+        evidence=index_evidence(EvidenceRecord.model_validate(r) for r in doc["evidence"]),
+        vocabularies=tuple(ClaimVocabulary.model_validate(r) for r in doc["vocabularies"]),
+    )
+
+
+def ext_results(doc: dict[str, Any] | None = None):
+    from rap_contracts.eligibility import EligibilityResult
+
+    doc = doc if doc is not None else ext_raw()
+    return tuple(EligibilityResult.model_validate(r) for r in doc["eligibility_results"])
+
+
+def ext_chunk_index():
+    from rap_contracts.evidence import RetrievalChunk
+
+    return {c["id"]: RetrievalChunk.model_validate(c) for c in ext_raw()["chunks"]}
+
+
+class FixtureChunkStore:
+    """MOCK controlled derived store. Records every load so tests can prove no early reads."""
+
+    def __init__(self, contents: dict[str, str] | None = None) -> None:
+        self.contents = dict(contents if contents is not None else ext_raw()["chunk_store"])
+        self.loads: list[str] = []
+
+    def load(self, text_pointer: str) -> str:
+        self.loads.append(text_pointer)
+        return self.contents[text_pointer]
+
+
+def scenario_authority(principal: str = COORDINATOR) -> FixtureSourceAuthority:
+    """MOCK authority: every fixture source version current+allowed for ``principal``,
+    except the fixture's declared overrides (superseded / withdrawn)."""
+    doc = ext_raw()
+    authority = FixtureSourceAuthority()
+    refs: set[SourceReference] = set()
+    ctx = ext_context()
+    for rec in ctx.records.profiles + ctx.records.applications + ctx.records.opportunities + ctx.records.programs:
+        refs.add(rec.source_ref)
+    refs |= {e.source_ref for e in ctx.evidence.values()}
+    refs |= {r.source_ref for r in ctx.requirements} | {p.source_ref for p in ctx.policies}
+    refs |= {c.source_ref for c in ext_chunk_index().values()}
+    for ref in refs:
+        authority.set(principal, ref, VersionStatus.CURRENT, AccessStatus.ALLOWED)
+    for override in doc["mock_authority_overrides"]:
+        authority.set(principal, SourceReference.model_validate(override["source_ref"]),
+                      VersionStatus(override["version_status"]), AccessStatus(override["access_status"]))
+    return authority

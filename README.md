@@ -14,11 +14,11 @@ Drupal account registration → reusable candidate profile → distinct applicat
 The system may recommend **follow-up**, but cannot independently hire, reject, admit, or finalize placement decisions.
 
 ## Status
-Planning and discovery. No recruitment application or integrated agent workflow has been implemented in this repository. Product decisions D-001 through D-004 are accepted. Contract v0.1 is still a draft. Partial **Contract v0.2 foundations** reference contracts (`contracts/`, version `0.2.0-dev.foundations`) cover D-004.01, D-004.02 and the representation requirements of D-004.07; they are proposed and **not frozen**. The remaining v0.2 contracts, Drupal implementation details, orchestration, and measured evaluation thresholds remain under review.
+Planning and discovery. No recruitment application or integrated agent workflow has been implemented in this repository. Product decisions D-001 through D-004 are accepted. Contract v0.1 is still a draft. Partial **Contract v0.2** reference contracts (`contracts/`, version `0.2.0-dev.foundations.2`) cover D-004.01, .02, .05, .06, .10, .11 and the representation requirements of .07; they are proposed and **not frozen**. Eligibility results in fixtures are expected labels; no eligibility engine exists yet. The remaining v0.2 contracts, Drupal implementation details, orchestration, and measured evaluation thresholds remain under review.
 
 Start with [Current Status](docs/CURRENT-STATUS.md) and the [Decision Index](docs/decisions/README.md).
 
 ## Working agreement
 Changes arrive through pull requests; the repository owner reviews and merges. No real candidate records, employer materials, private prompts, client configuration or credentials should be committed. All pilot data must be synthetic or explicitly licensed.
 
-AI-assisted contributors work only on owner-authorized, explicitly scoped PRs. **Contract implementation** (portable reference contracts, generated schemas, synthetic fixtures and local tests) proceeds only under such a scope, as with PR #4. **Full application development** — Drupal runtime, AI agents, retrieval, paid inference, hosted infrastructure or production integrations — is **not authorized** until the contract review and execution plan are approved.
+AI-assisted contributors work only on owner-authorized, explicitly scoped PRs. **Contract implementation** (portable reference contracts, generated schemas, synthetic fixtures and local tests) proceeds only under such a scope, as with PRs #4 and #5. **Full application development** — Drupal runtime, AI agents, retrieval, paid inference, hosted infrastructure or production integrations — is **not authorized** until the contract review and execution plan are approved.

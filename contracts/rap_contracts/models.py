@@ -18,7 +18,8 @@ from typing import Annotated, Literal, Union
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
-CONTRACT_VERSION = "0.2.0-dev.foundations"
+# Semver pre-release precedence: 0.2.0-dev.foundations < 0.2.0-dev.foundations.2
+CONTRACT_VERSION = "0.2.0-dev.foundations.2"
 
 # ---------------------------------------------------------------------------
 # Identifiers
@@ -375,6 +376,11 @@ class SourceSystemCapabilities(ContractModel):
     native_revision_entity_types: frozenset[EntityTypeLabel]
     logical_snapshot_entity_types: frozenset[EntityTypeLabel]
     snapshot_methods: frozenset[str]
+    # Added in 0.2.0-dev.foundations.2 (optional; defaults keep PR #4 declarations valid).
+    participation_authority_entity_types: frozenset[EntityTypeLabel] = frozenset()
+    """Entity types authoritative for program participation (staff/system records)."""
+    verification_entity_types: frozenset[EntityTypeLabel] = frozenset()
+    """Explicitly authorized independent verification sources. Empty = none authorized (fail closed)."""
 
     @model_validator(mode="after")
     def _coherent(self) -> "SourceSystemCapabilities":
@@ -386,4 +392,10 @@ class SourceSystemCapabilities(ContractModel):
             raise ValueError("identity entity types must declare a version kind")
         if self.logical_snapshot_entity_types and not self.snapshot_methods:
             raise ValueError("logical snapshot entity types require at least one snapshot method")
+        for name in ("participation_authority_entity_types", "verification_entity_types"):
+            role_types = getattr(self, name)
+            if not role_types <= declared:
+                raise ValueError(f"{name} must declare a version kind")
+            if role_types & self.identity_entity_types:
+                raise ValueError(f"{name} cannot include identity entity types")
         return self

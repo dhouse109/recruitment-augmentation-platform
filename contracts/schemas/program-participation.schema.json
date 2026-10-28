@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "ProgramParticipationStatus": {
+      "enum": [
+        "confirmed",
+        "not_participating"
+      ],
+      "title": "ProgramParticipationStatus",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/program-participation.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Authoritative participation record. Absence of a record means 'unknown'.\n\nNot a CandidateClaim: it has no inferred/declared state and must be backed\nby authority-record evidence from a declared participation authority.",
+  "properties": {
+    "candidate_id": {
+      "description": "Opaque portable organization-scoped candidate identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^candidate_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "evidence_ids": {
+      "items": {
+        "maxLength": 64,
+        "pattern": "^evidence_[a-z0-9]+(?:_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Ids",
+      "type": "array"
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^participation_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "program_id": {
+      "description": "Opaque portable program identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^program_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Program Id",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/ProgramParticipationStatus"
+    }
+  },
+  "required": [
+    "id",
+    "organization_id",
+    "candidate_id",
+    "program_id",
+    "status",
+    "evidence_ids"
+  ],
+  "title": "ProgramParticipation",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.2"
+}

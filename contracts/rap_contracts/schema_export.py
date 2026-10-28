@@ -25,6 +25,9 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+from .claims import CandidateClaim, ClaimVocabulary, ProgramParticipation
+from .eligibility import EligibilityResult, OpportunityRequirement, PolicySet
+from .evidence import EvidenceRecord, RetrievalChunk, RetrievalRequest, RetrievalResponse
 from .models import (
     CONTRACT_VERSION,
     Application,
@@ -48,6 +51,17 @@ EXPORTED_MODELS: dict[str, type[BaseModel]] = {
     "program": Program,
     "source-check-result": SourceCheckResult,
     "source-reference": SourceReference,
+    # Added in 0.2.0-dev.foundations.2 (D-004.05/.06/.10/.11)
+    "candidate-claim": CandidateClaim,
+    "claim-vocabulary": ClaimVocabulary,
+    "eligibility-result": EligibilityResult,
+    "evidence-record": EvidenceRecord,
+    "opportunity-requirement": OpportunityRequirement,
+    "policy-set": PolicySet,
+    "program-participation": ProgramParticipation,
+    "retrieval-chunk": RetrievalChunk,
+    "retrieval-request": RetrievalRequest,
+    "retrieval-response": RetrievalResponse,
 }
 
 DEFAULT_SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schemas"
