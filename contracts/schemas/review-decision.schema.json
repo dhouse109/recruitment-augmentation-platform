@@ -1,0 +1,384 @@
+{
+  "$defs": {
+    "LogicalSnapshot": {
+      "additionalProperties": false,
+      "description": "A version token computed by an adapter when no native revision exists.\n\nProvenance: ``captured_by`` computed ``token`` with ``method`` over the\nauthoritative record as read at ``captured_at``. A well-formed token proves\nneither currentness nor authorization; only the authority can confirm that\na token still corresponds to the record and that the caller may read it.",
+      "properties": {
+        "captured_at": {
+          "format": "date-time",
+          "title": "Captured At",
+          "type": "string"
+        },
+        "captured_by": {
+          "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+          "title": "Captured By",
+          "type": "string"
+        },
+        "kind": {
+          "const": "logical_snapshot",
+          "title": "Kind",
+          "type": "string"
+        },
+        "method": {
+          "description": "Snapshot method identifier, e.g. 'sha256-canonical-json/v1'. Open set; consumers accept only registered methods.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*/v[1-9][0-9]*$",
+          "title": "Method",
+          "type": "string"
+        },
+        "token": {
+          "description": "'<scheme>:<value>' token. Method-specific format is checked against a snapshot-method registry.",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*:[A-Za-z0-9._~-]{8,256}$",
+          "title": "Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "method",
+        "token",
+        "captured_at",
+        "captured_by"
+      ],
+      "title": "LogicalSnapshot",
+      "type": "object"
+    },
+    "NativeRevision": {
+      "additionalProperties": false,
+      "description": "A revision identifier issued natively by the source system.\n\n``:`` is excluded from the pattern so a prefixed logical snapshot token\n(``sha256:...``) cannot be relabeled as a native revision.",
+      "properties": {
+        "kind": {
+          "const": "native_revision",
+          "title": "Kind",
+          "type": "string"
+        },
+        "revision_id": {
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Revision Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "revision_id"
+      ],
+      "title": "NativeRevision",
+      "type": "object"
+    },
+    "ReasonPin": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "vocabulary_id": {
+          "maxLength": 64,
+          "pattern": "^review_reasons_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Vocabulary Id",
+          "type": "string"
+        },
+        "vocabulary_version": {
+          "minimum": 1,
+          "title": "Vocabulary Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vocabulary_id",
+        "vocabulary_version",
+        "code"
+      ],
+      "title": "ReasonPin",
+      "type": "object"
+    },
+    "RecommendationStatus": {
+      "enum": [
+        "pending_verification",
+        "ready_for_review",
+        "escalated",
+        "needs_information",
+        "approved_for_follow_up",
+        "dismissed",
+        "obsolete"
+      ],
+      "title": "RecommendationStatus",
+      "type": "string"
+    },
+    "ReviewAction": {
+      "description": "ADR-0004 vocabulary. The legacy ``reject_suggestion`` is intentionally absent.",
+      "enum": [
+        "approve_for_follow_up",
+        "request_information",
+        "dismiss_suggestion"
+      ],
+      "title": "ReviewAction",
+      "type": "string"
+    },
+    "SourceEntityKey": {
+      "additionalProperties": false,
+      "description": "Unversioned locator of one authoritative source record.",
+      "properties": {
+        "entity_id": {
+          "description": "Identifier of the record in the source system. Source metadata only; never a portable ID.",
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "entity_type": {
+          "description": "Source-side logical entity type label declared by the adapter. Not a Drupal schema commitment.",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Entity Type",
+          "type": "string"
+        },
+        "source_system": {
+          "$ref": "#/$defs/SourceSystem"
+        }
+      },
+      "required": [
+        "source_system",
+        "entity_type",
+        "entity_id"
+      ],
+      "title": "SourceEntityKey",
+      "type": "object"
+    },
+    "SourceReference": {
+      "additionalProperties": false,
+      "description": "An authoritative record at one honestly labeled version.\n\nVersion currentness and access are deliberately NOT fields here: they are\nseparate, live checks reported by ``SourceCheckResult``.",
+      "properties": {
+        "entity": {
+          "$ref": "#/$defs/SourceEntityKey"
+        },
+        "organization_id": {
+          "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+          "maxLength": 64,
+          "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "version": {
+          "discriminator": {
+            "mapping": {
+              "logical_snapshot": "#/$defs/LogicalSnapshot",
+              "native_revision": "#/$defs/NativeRevision"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NativeRevision"
+            },
+            {
+              "$ref": "#/$defs/LogicalSnapshot"
+            }
+          ],
+          "title": "Version"
+        }
+      },
+      "required": [
+        "organization_id",
+        "entity",
+        "version"
+      ],
+      "title": "SourceReference",
+      "type": "object"
+    },
+    "SourceSystem": {
+      "description": "Authoritative source. ``fixture`` is the offline test substitute only.",
+      "enum": [
+        "drupal",
+        "fixture"
+      ],
+      "title": "SourceSystem",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/review-decision.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "corrects_decision_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "corrects_decision_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "correction_note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "correction_note"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "correction_note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "correction_note"
+        ]
+      },
+      "then": {
+        "properties": {
+          "corrects_decision_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "corrects_decision_id"
+        ]
+      }
+    }
+  ],
+  "description": "Authoritative-to-be review record. Reviewer fields are written from trusted context only.",
+  "properties": {
+    "action": {
+      "$ref": "#/$defs/ReviewAction"
+    },
+    "comment": {
+      "anyOf": [
+        {
+          "description": "Reviewer-authored text. Stored only on ReviewDecision; never in audit events, evidence, chunks, claims or prompts.",
+          "maxLength": 2000,
+          "minLength": 1,
+          "pattern": "^[^\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Comment"
+    },
+    "correction_note": {
+      "anyOf": [
+        {
+          "description": "Reviewer-authored text. Stored only on ReviewDecision; never in audit events, evidence, chunks, claims or prompts.",
+          "maxLength": 2000,
+          "minLength": 1,
+          "pattern": "^[^\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Correction Note"
+    },
+    "corrects_decision_id": {
+      "anyOf": [
+        {
+          "maxLength": 80,
+          "pattern": "^review_decision_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Corrects Decision Id"
+    },
+    "decided_at": {
+      "format": "date-time",
+      "title": "Decided At",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 80,
+      "pattern": "^review_decision_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "description": "Client-generated opaque request identity.",
+      "pattern": "^[A-Za-z0-9_-]{16,128}$",
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "payload_fingerprint": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Payload Fingerprint",
+      "type": "string"
+    },
+    "reason": {
+      "$ref": "#/$defs/ReasonPin"
+    },
+    "rechecked_source_refs": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/SourceReference"
+      },
+      "title": "Rechecked Source Refs",
+      "type": "array"
+    },
+    "recommendation_id": {
+      "maxLength": 64,
+      "pattern": "^recommendation_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Recommendation Id",
+      "type": "string"
+    },
+    "recommendation_status_after": {
+      "$ref": "#/$defs/RecommendationStatus"
+    },
+    "reviewer_principal_id": {
+      "maxLength": 64,
+      "pattern": "^principal_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Reviewer Principal Id",
+      "type": "string"
+    },
+    "reviewer_role": {
+      "pattern": "^[a-z][a-z0-9_]{1,63}$",
+      "title": "Reviewer Role",
+      "type": "string"
+    },
+    "verification_id": {
+      "maxLength": 64,
+      "pattern": "^verification_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Verification Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "organization_id",
+    "recommendation_id",
+    "verification_id",
+    "action",
+    "reason",
+    "reviewer_principal_id",
+    "reviewer_role",
+    "decided_at",
+    "idempotency_key",
+    "payload_fingerprint",
+    "recommendation_status_after"
+  ],
+  "title": "ReviewDecision",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.3"
+}

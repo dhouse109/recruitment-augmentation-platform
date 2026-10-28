@@ -216,5 +216,124 @@ class EligibilityEvidenceConformanceTests(unittest.TestCase):
             _model("candidate-claim").model_validate(corroborating)
 
 
+# ---------------------------------------------------------------------------
+# 0.2.0-dev.foundations.3: recommendation, verification and review schemas
+# ---------------------------------------------------------------------------
+
+_PYDANTIC_MODELS.update({
+    "recommendation": "rap_contracts.recommendation:Recommendation",
+    "verification-result": "rap_contracts.recommendation:VerificationResult",
+    "human-review-command": "rap_contracts.review:HumanReviewCommand",
+    "review-correction-command": "rap_contracts.review:ReviewCorrectionCommand",
+    "review-decision": "rap_contracts.review:ReviewDecision",
+    "audit-event": "rap_contracts.review:AuditEvent",
+    "review-outcome": "rap_contracts.review:ReviewOutcome",
+    "review-reason-vocabulary": "rap_contracts.review:ReviewReasonVocabulary",
+})
+
+
+@unittest.skipIf(Draft202012Validator is None, "jsonschema not installed; install contracts/requirements-dev.txt")
+class ReviewConformanceTests(unittest.TestCase):
+    def _service_records(self):
+        svc = support.review_service()
+        outcomes = [
+            svc.submit_review("credential-demo-coordinator", support.review_command()),
+            svc.submit_review("credential-demo-coordinator", support.review_command()),  # replay
+            svc.submit_review(None, support.review_command(key="key-demo-0000000002")),  # rejected
+        ]
+        from rap_contracts.review import ReviewCorrectionCommand
+        correction = ReviewCorrectionCommand.model_validate({
+            "idempotency_key": "key-demo-correction-01", "corrects_decision_id": outcomes[0].decision.id,
+            "reason": {"vocabulary_id": "review_reasons_demo", "vocabulary_version": 1, "code": "meets_published_criteria"},
+            "correction_note": "Reason confirmed after reviewing the checklist."})
+        outcomes.append(svc.submit_correction("credential-demo-coordinator", correction))
+        return svc, outcomes, correction
+
+    def test_fixture_and_service_generated_records_accepted(self):
+        doc = support.review_raw()
+        svc, outcomes, correction = self._service_records()
+        sections = {
+            "recommendation": doc["recommendations"] + [r.model_dump(mode="json") for r in svc.recommendations.values()],
+            "verification-result": doc["verifications"],
+            "review-reason-vocabulary": doc["reason_vocabularies"],
+            "human-review-command": [support.review_command().model_dump(mode="json")],
+            "review-correction-command": [correction.model_dump(mode="json")],
+            "review-decision": [d.model_dump(mode="json") for d in svc.decisions.values()],
+            "audit-event": [e.model_dump(mode="json") for e in svc.events],
+            "review-outcome": [o.model_dump(mode="json") for o in outcomes],
+        }
+        self.assertEqual([o.status.value for o in outcomes], ["recorded", "replayed", "rejected", "recorded"])
+        for name, items in sections.items():
+            validator = _validator(name)
+            for i, item in enumerate(items):
+                with self.subTest(schema=name, item=i):
+                    self.assertEqual(list(validator.iter_errors(item)), [])
+
+    def _both_reject(self, name, cases):
+        validator, model = _validator(name), _model(name)
+        for label, payload in cases.items():
+            with self.subTest(schema=name, case=label):
+                self.assertTrue(list(validator.iter_errors(payload)), f"JSON Schema accepted: {label}")
+                with self.assertRaises(ValidationError, msg=f"Pydantic accepted: {label}"):
+                    model.model_validate(payload)
+
+    def test_malformed_review_records_rejected_by_both(self):
+        svc, outcomes, _ = self._service_records()
+        command = support.review_command().model_dump(mode="json")
+        decision = outcomes[0].decision.model_dump(mode="json")
+        event = svc.events[0].model_dump(mode="json")
+        recorded, rejected = outcomes[0].model_dump(mode="json"), outcomes[2].model_dump(mode="json")
+        rec = copy.deepcopy(support.review_raw()["recommendations"][0])
+        ver = copy.deepcopy(support.review_raw()["verifications"][0])
+        vocab = copy.deepcopy(support.review_raw()["reason_vocabularies"][0])
+        self._both_reject("human-review-command", {
+            "client reviewer id": {**command, "reviewer_id": "principal_demo_coordinator"},
+            "client actor type": {**command, "actor_type": "human"},
+            "legacy action": {**command, "action": "reject_suggestion"},
+            "short idempotency key": {**command, "idempotency_key": "abc"},
+            "oversized comment": {**command, "comment": "x" * 2001},
+        })
+        self._both_reject("recommendation", {
+            "discovery context": {**rec, "context": {**rec["context"], "kind": "discovery"}},
+            "placement status": {**rec, "status": "placed"},
+            "free-text rationale": {**rec, "rationale": "Strong fit."},
+        })
+        self._both_reject("verification-result", {
+            "confidence score": {**ver, "confidence": 0.97},
+            "unknown outcome": {**ver, "outcome": "probably_fine"},
+        })
+        self._both_reject("review-decision", {
+            "correction without note": {**decision, "corrects_decision_id": "review_decision_0009"},
+            "note without correction": {**decision, "correction_note": "x"},
+        })
+        self._both_reject("audit-event", {
+            "free text": {**event, "comment": "x"},
+            "corrected without lineage": {**event, "event_type": "review_decision_corrected"},
+            "machine actor": {**event, "actor_kind": "service"},
+        })
+        self._both_reject("review-outcome", {
+            "rejected with decision": {**rejected, "decision": decision},
+            "rejected with events": {**rejected, "audit_event_ids": ["audit_event_0001"]},
+            "recorded without decision": {**recorded, "decision": None},
+            "recorded with error": {**recorded, "error": "not_permitted"},
+        })
+        legacy_vocab = copy.deepcopy(vocab)
+        legacy_vocab["reasons"][0]["actions"] = ["reject_suggestion"]
+        self._both_reject("review-reason-vocabulary", {"legacy action": legacy_vocab})
+
+    def test_documented_gaps_python_only(self):
+        """Vocabulary-dependent comment rules, outcome derivation from checks and authority are Python-only."""
+        ver = copy.deepcopy(support.review_raw()["verifications"][0])
+        ver["checks"][0]["status"] = "fail"  # still labelled passed
+        self.assertEqual(list(_validator("verification-result").iter_errors(ver)), [])
+        with self.assertRaises(ValidationError):
+            _model("verification-result").model_validate(ver)
+        vocab = copy.deepcopy(support.review_raw()["reason_vocabularies"][0])
+        vocab["reasons"].append({"code": "quick_dismissal", "actions": ["dismiss_suggestion"], "comment": "optional"})
+        self.assertEqual(list(_validator("review-reason-vocabulary").iter_errors(vocab)), [])
+        with self.assertRaises(ValidationError):
+            _model("review-reason-vocabulary").model_validate(vocab)
+
+
 if __name__ == "__main__":
     unittest.main()

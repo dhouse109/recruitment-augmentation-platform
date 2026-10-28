@@ -163,7 +163,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.2/source-check-result.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/source-check-result.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Outcome of one live check of one SourceReference by the authority.\n\nVersion status and access status are independent axes (D-004.07). In this\nPR the only producer is a mock fixture authority; a real result must come\nfrom live Drupal authority at the time of use.",
@@ -199,5 +199,5 @@
   "title": "SourceCheckResult",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.2"
+  "x-contract-version": "0.2.0-dev.foundations.3"
 }

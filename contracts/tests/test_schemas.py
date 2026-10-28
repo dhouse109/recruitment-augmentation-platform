@@ -112,5 +112,37 @@ class Pr4CompatibilityTests(unittest.TestCase):
         self.assertTrue(all(c.verification_entity_types == frozenset() for c in caps.values()))
 
 
+#: PR #5 schema bodies as merged on main @ d780ac19 (same digest rule as above).
+PR5_SCHEMA_BODY_DIGESTS = {
+    "candidate-claim": "0d3c40e1d9fc02f2b21b5eaade8868865cd76d85322ab144faa3abd8f6e40b24",
+    "claim-vocabulary": "3aec753ca670a503b4eb1a462c7f66c9a6ce738167cb2ada4fca4a4673cc5b74",
+    "eligibility-result": "17bf4437e4a6f0fd70e18d6fb12437c7aa3df8d3f21750611c4ad6739965c4b6",
+    "evidence-record": "e4031b2e33c993ec189e6552dab2d3e640fd62b0c6264eb146ec74be60f1aba2",
+    "opportunity-requirement": "656a620fff6009f62aee59dd3429cd16b2c67b0f53f27def6027d99d1a9ab668",
+    "policy-set": "7254a45c2b797fe44bf698dc4c2fb309977ecd62c688452fa7349fe1e365d67c",
+    "program-participation": "cc38776e063a54c427e28a8a296e39b2800116d9e8f17d6c7712ff9f46803143",
+    "retrieval-chunk": "627757d43e313bcf807b3ae6d9648badedbdcd3bb6b30b01ccbbe68c722eaf64",
+    "retrieval-request": "bde2e441cec60a43696d700fcc1b2c6ae61cf81c9e7e9aac3ae7a200a7d79da4",
+    "retrieval-response": "1e09ee2b1b901e4b658f8def02e8d0fd465b85a3edd397fd17e3e3a3bc12634a",
+}
+
+
+class Pr5CompatibilityTests(unittest.TestCase):
+    def test_pr5_schema_bodies_unchanged(self):
+        for name, digest in PR5_SCHEMA_BODY_DIGESTS.items():
+            with self.subTest(schema=name):
+                body = build_schema(name, EXPORTED_MODELS[name])
+                body.pop("$id")
+                body.pop("x-contract-version")
+                canonical = json.dumps(body, sort_keys=True, separators=(",", ":"))
+                self.assertEqual(hashlib.sha256(canonical.encode()).hexdigest(), digest)
+
+    def test_pr5_fixture_still_valid(self):
+        import support
+        from rap_contracts.eligibility import check_eligibility_results
+
+        check_eligibility_results(support.ext_results(), support.ext_context())
+
+
 if __name__ == "__main__":
     unittest.main()

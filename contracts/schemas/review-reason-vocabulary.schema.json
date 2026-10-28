@@ -1,0 +1,95 @@
+{
+  "$defs": {
+    "CommentRule": {
+      "enum": [
+        "forbidden",
+        "optional",
+        "required"
+      ],
+      "title": "CommentRule",
+      "type": "string"
+    },
+    "ReasonDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "actions": {
+          "items": {
+            "$ref": "#/$defs/ReviewAction"
+          },
+          "minItems": 1,
+          "title": "Actions",
+          "type": "array",
+          "uniqueItems": true
+        },
+        "code": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "comment": {
+          "$ref": "#/$defs/CommentRule"
+        }
+      },
+      "required": [
+        "code",
+        "actions",
+        "comment"
+      ],
+      "title": "ReasonDefinition",
+      "type": "object"
+    },
+    "ReviewAction": {
+      "description": "ADR-0004 vocabulary. The legacy ``reject_suggestion`` is intentionally absent.",
+      "enum": [
+        "approve_for_follow_up",
+        "request_information",
+        "dismiss_suggestion"
+      ],
+      "title": "ReviewAction",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/review-reason-vocabulary.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Versioned, organization-scoped allowlist of review reason codes.",
+  "properties": {
+    "id": {
+      "maxLength": 64,
+      "pattern": "^review_reasons_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "description": "Opaque portable organization identifier. Independent of Drupal IDs and never derived from personal information.",
+      "maxLength": 64,
+      "pattern": "^org_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "reasons": {
+      "items": {
+        "$ref": "#/$defs/ReasonDefinition"
+      },
+      "minItems": 1,
+      "title": "Reasons",
+      "type": "array"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "organization_id",
+    "version",
+    "reasons"
+  ],
+  "title": "ReviewReasonVocabulary",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.3"
+}

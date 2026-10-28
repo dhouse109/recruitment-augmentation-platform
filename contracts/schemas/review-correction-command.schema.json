@@ -1,0 +1,88 @@
+{
+  "$defs": {
+    "ReasonPin": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "vocabulary_id": {
+          "maxLength": 64,
+          "pattern": "^review_reasons_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Vocabulary Id",
+          "type": "string"
+        },
+        "vocabulary_version": {
+          "minimum": 1,
+          "title": "Vocabulary Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vocabulary_id",
+        "vocabulary_version",
+        "code"
+      ],
+      "title": "ReasonPin",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.3/review-correction-command.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Amends the reason/comment of a prior decision. Cannot change or reverse the action.",
+  "properties": {
+    "comment": {
+      "anyOf": [
+        {
+          "description": "Reviewer-authored text. Stored only on ReviewDecision; never in audit events, evidence, chunks, claims or prompts.",
+          "maxLength": 2000,
+          "minLength": 1,
+          "pattern": "^[^\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Comment"
+    },
+    "correction_note": {
+      "description": "Reviewer-authored text. Stored only on ReviewDecision; never in audit events, evidence, chunks, claims or prompts.",
+      "maxLength": 2000,
+      "minLength": 1,
+      "pattern": "^[^\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]+$",
+      "title": "Correction Note",
+      "type": "string"
+    },
+    "corrects_decision_id": {
+      "maxLength": 80,
+      "pattern": "^review_decision_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Corrects Decision Id",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "description": "Client-generated opaque request identity.",
+      "pattern": "^[A-Za-z0-9_-]{16,128}$",
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "reason": {
+      "$ref": "#/$defs/ReasonPin"
+    }
+  },
+  "required": [
+    "idempotency_key",
+    "corrects_decision_id",
+    "reason",
+    "correction_note"
+  ],
+  "title": "ReviewCorrectionCommand",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.3"
+}
