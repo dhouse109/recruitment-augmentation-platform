@@ -55,14 +55,14 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 | 5 | At least one real producer (engine/adapter) round-trips its outputs through the contracts | **Not met** — no eligibility engine, recommendation engine, verifier or adapter exists |
 | 6 | Open decisions O3, O4, O5-remainder dispositioned or explicitly deferred to a later version | **Not met** (owner decision) |
 | 7 | Draft evaluation definitions (metrics, gate policy, rubric) approved | **Not met** (owner decision) |
-| 8 | Source hygiene: no transcript-derived or private material in the repository | **Not met** — follow-up F2 (high priority) |
+| 8 | Source hygiene: no transcript-derived or private material in the repository | **Partly met** — current tree redacted (F2 forward redaction, 2026-10-29); earlier copies remain in Git history and GitHub PR refs; history rewriting not authorized |
 | 9 | Documentation status consistent with merged state | **Partly met** (follow-up F1) |
 | 10 | Reproducible evidence from a clean checkout, recorded in the PR | **Met** (see below); no CI checks are configured |
 | 11 | Explicit owner decision to freeze | **Not given** |
 
 ## Assessment
 
-Contract v0.2 is **review-complete at the reference-contract level** (criteria 1–3 and 10) but **not ready for a freeze**. The material gaps are criterion 5 (no producer has yet emitted an `EligibilityResult`, `Recommendation`, `VerificationResult` or `EvaluationRun`, so the shapes are unproven by use), criteria 6–7 (open owner decisions) and criterion 8 (source sanitization).
+Contract v0.2 is **review-complete at the reference-contract level** (criteria 1–3 and 10) but **not ready for a freeze**. The material gaps are criterion 5 (no producer has yet emitted an `EligibilityResult`, `Recommendation`, `VerificationResult` or `EvaluationRun`, so the shapes are unproven by use), criteria 6–7 (open owner decisions) and criterion 8 (source sanitization: the current tree is redacted, but historical copies remain in Git history and PR refs).
 
 Options for the owner, none of which this PR takes:
 
@@ -79,7 +79,7 @@ Options for the owner, none of which this PR takes:
 | Nominal held-out treated as blinded | Low | High | `nominal_exposed`, exposure log, gate insufficiency | None in-repo; needs external custody |
 | Manifest pin churn on fixture edits | High | Low | Intended; failing test names the drift | Friction |
 | Contract shapes change once Slice 0 produces real outputs | Medium | Medium | Not frozen; dev version label | Expected revision |
-| Transcript-derived content in repository history | Present | High | Recorded as F2 | Owner action required |
+| Transcript-derived content in repository history | Present in history and PR refs; removed from the current tree | High if the repository is published; moderate while private | F2 forward redaction; repository kept private | History rewrite or fresh redacted repository before any publication — owner decision |
 | Single maintainer cannot provide independent dual adjudication | High | Medium | Rubric requires two reviewers; single-reviewer flag | Owner decision on reviewers |
 | No CI: evidence depends on manually reported runs | High | Medium | Clean-clone commands in PRs | CI enablement is an owner/spend decision |
 | Configuration pins or comparison metric values asserted without real run provenance | Medium | High | Recomputed fingerprints, lineage checks, `run_provenance_basis`, comparison validation against observations | Requires the future trusted run registry |

@@ -8,7 +8,9 @@
 
 ## Context
 
-The project originated in a candidate-placement architecture discussed during an Acquia Staff AI Engineer interview. That scenario provides a defined first use case, but making the shared domain internship-specific would hinder other recruitment workflows.
+The project originated in a candidate-placement architecture from a prior private discussion. That scenario provides a defined first use case, but making the shared domain internship-specific would hinder other recruitment workflows.
+
+> **Editorial erratum (2026-10-29, follow-up F2):** identifying historical context was removed from the first sentence of this section. D-001's decision, rationale, decision date and requirements are unchanged. The earlier wording remains in Git history.
 
 The project owner selected a **general-purpose recruitment augmentation architecture with nonprofit internship placement as the first pilot**.
 

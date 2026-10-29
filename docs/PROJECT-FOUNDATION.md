@@ -1,7 +1,7 @@
 # Recruitment Augmentation Platform — Project Foundation
 
 **Document ID:** RAP-FOUNDATION-001  
-**Version:** 0.3.0  
+**Version:** 0.3.1 (editorial redaction 2026-10-29; requirements unchanged)  
 **Date:** 2026-10-12  
 **Status:** DISCOVERY — D-001, D-002 and D-003 accepted; detailed requirements, models and technical implementations remain proposals until reviewed  
 **Proposed repository:** `recruitment-augmentation-platform` (name to confirm)  
@@ -10,7 +10,7 @@
 **Intended use:** GitHub repository bootstrap; requirements discovery; model development; architecture and implementation planning  
 **Development framework:** Undecided (existing spec-driven framework, bespoke R&D method, or hybrid)
 
-> **Reading rule.** Every item is either **[SOURCE]** (drawn from prior interview/project notes), **[PROPOSAL]** (design recommendation for a new independent implementation), **[OPEN]** (unresolved), or **[DECISION]** (approved by project owner). Nothing in this draft should be read as proof that the new platform has already been built. **D-001, D-002 and D-003 are approved architecture/scope directions; implementation details, models, additional proposed features and deployment choices remain subject to review.**
+> **Reading rule.** Every item is either **[SOURCE]** (generalized from private prior design notes; see §2), **[PROPOSAL]** (design recommendation for a new independent implementation), **[OPEN]** (unresolved), or **[DECISION]** (approved by project owner). Nothing in this draft should be read as proof that the new platform has already been built. **D-001, D-002 and D-003 are approved architecture/scope directions; implementation details, models, additional proposed features and deployment choices remain subject to review.**
 
 ## 1. Project thesis
 
@@ -62,40 +62,37 @@ The platform **assists** recommendation and review; it does not independently hi
 
 ## 2. Provenance and evidence boundaries
 
-### 2.1 Material already available [SOURCE]
+### 2.1 Source material [SOURCE — generalized]
 
-- `Acquia_Interview_Transcript.md` — actual conversation with the hiring manager, including business problem and conceptual execution flow.
-- `mobilizegreen-technical-defense-packet.md` — retrospective interview-preparation architecture and the proposed/remembered contracts and controls. Located in the user's prior file Library; it is useful design input, **not a substitute for production code or deployment artifacts**.
-- `acquia-staff-ai-interview-prep-plan-spec(1).md` — preparation plan and technical question inventory.
-- `resume.dhouse.v14.06.2026-acquia-staff-ai-engineer.md` and the Acquia job description — career context and relevant engineering competencies; **not product requirements**.
-- `project-categories-for-job-market-alignment.md` — portfolio positioning and publication guardrails.
+*Editorial redaction 2026-10-29 (follow-up F2): references to private source files, former-client material and engagement details were removed from the current document. Earlier versions remain in Git history; this redaction does not remove historical copies.*
+
+- Private prior design notes and discussions about a human-supervised candidate-placement workflow informed the problem framing. They are **not held in this repository**, are **not product requirements**, and are **not evidence of any implementation**.
+- Owner career and portfolio-positioning notes informed project goals and publication guardrails only; they are not product requirements.
 - `dhouse109/agentic-harness-lab` — separate R&D project that may yield reusable test/evidence patterns, subject to independent review of its current code.
-- `recruitment-augmentation-platform-drupal-rag-evaluation-proposal-v0.1.md` — architecture proposal explicitly accepted **in direction** via D-002 and D-003; proposal remains historical, and the accepted ADRs govern decisions.
+- `docs/architecture/drupal-rag-evaluation-proposal-v0.1.md` — architecture proposal accepted **in direction** via D-002 and D-003; the proposal remains historical, and the accepted ADRs govern decisions.
 
-### 2.2 Interview-described architecture [SOURCE — description, not independently audited]
+### 2.2 Proposed reference workflow [PROPOSAL]
 
-The interview described:
+This project proposes the following independent reference workflow. It is a design proposal for this platform, not a description of any prior system, and remains subject to the accepted ADRs:
 
-1. A **Profile** AI role to normalize candidate/application information.
-2. A **deterministic eligibility** stage to filter out opportunities that fail hard program requirements.
-3. A **Placement** AI role to reason over the eligible subset and propose matches.
-4. A **Verification** AI role to check evidence and quality.
-5. A **maximum of one correction attempt** before escalation to a human.
-6. **Human review** before consequential placement decisions.
-7. **Pydantic** for structured boundaries; **LangGraph** for reasoning flow; **Temporal** for durable workflow lifecycle; **LangFuse** for observability; **Drupal on Acquia** as an existing application/data context.
-8. Document retrieval/RAG was discussed but implementation details and exact infrastructure were not established from the interview alone.
-9. At interview time, evaluation was described as **ad hoc**, not a mature formal benchmark suite.
-
-**Historical caveat:** The interview transcript gives a different engagement date range from later confirmed project notes. This new project uses neither timeline as a build requirement. If a published case study compares this project with past client work, reconcile historical dates against original records.
+1. A **Profile** AI role normalizes candidate/application information.
+2. A **deterministic eligibility** stage filters out opportunities that fail hard program requirements.
+3. A **Placement** AI role reasons over the eligible subset and proposes matches.
+4. A **Verification** AI role checks evidence and quality.
+5. At most **one correction attempt** precedes escalation to a human.
+6. **Human review** precedes any consequential decision.
+7. **Pydantic** for structured boundaries; **LangGraph** for reasoning flow; **Temporal** for durable workflow lifecycle; **LangFuse** for observability; **Drupal** as the authoritative application/data context (**D-002**). These remain intended demonstration technologies, not locked choices.
+8. Retrieval over unstructured documents is in scope (**D-002**); implementation details and infrastructure remain open.
+9. Evaluation is designed in from the start rather than added ad hoc (**D-003**).
 
 ### 2.3 Approved new directions (not historical implementation claims) [DECISION — D-002, D-003]
 
 - **D-002:** Drupal is the pilot's authoritative application, with candidate account/profile/application distinction, controlled adapters, derived authorization-filtered RAG, version/freshness checks, and an in-Drupal AI review surface. Core contracts remain portable.
-- **D-003:** Evaluation is foundational, with curated labeled synthetic cases, per-case regressions, human adjudication, safety-blocking promotion gates and intended LangFuse observability correlation. This is a future implementation plan, not a statement that formal evaluation existed in the interview project.
+- **D-003:** Evaluation is foundational, with curated labeled synthetic cases, per-case regressions, human adjudication, safety-blocking promotion gates and intended LangFuse observability correlation. This is a future implementation plan, not a statement about any prior system.
 
 ### 2.4 Clean-room rule [PROPOSAL]
 
-Build a new independent reference implementation. Reuse general engineering principles and publicly usable code only where rights are clear. Do not transfer actual candidate records, client configurations, private prompts, credentials, HR policies, or other proprietary MobilizeGreen materials into a public repository. Initial data must be synthetic or explicitly licensed.
+Build a new independent reference implementation. Reuse general engineering principles and publicly usable code only where rights are clear. Do not transfer actual candidate records, client configurations, private prompts, credentials, HR policies, or any other proprietary third-party materials into this repository. Initial data must be synthetic or explicitly licensed.
 
 ## 3. Personas and user journeys [PROPOSAL]
 
@@ -145,7 +142,7 @@ As a **future contract test**, swap the internship fixture and program policy fo
 
 ### 4.3 Deferred [PROPOSAL]
 
-- Any integration with **real clients or existing private HR systems** (including MobilizeGreen, BambooHR, Zapier, Airtable), external ATS, production messaging or actual Acquia hosting. **Drupal itself is no longer deferred:** a local/synthetic Drupal reference integration is required by D-002.
+- Any integration with **real clients or existing private HR systems**, external ATS, HR or workflow-automation tools, production messaging or managed production hosting. **Drupal itself is no longer deferred:** a local/synthetic Drupal reference integration is required by D-002.
 - Real applicant or employee records, resumes, demographic data, contact details, and production credentials.
 - Multi-tenant SaaS operation, cross-organization candidate sharing, external candidate portal, full ATS/recruiter CRM functionality, large-scale catalog synchronization, production notifications, or employer onboarding.
 - Autonomous hiring, admissions, rejection, placement, or automatic candidate disposition.
@@ -592,12 +589,12 @@ Do **not** start live applicant data processing or public-client data ingestion.
 Most useful optional inputs from previous chats, local files, or repositories:
 
 - Original conceptual system diagrams, sample candidate/opportunity records, or run traces that are **safe to reuse**.
-- Actual technical defense packet (already located) and any corrections made after the Vlad interview.
+- Generalized, owner-reviewed design notes that contain no private or third-party material.
 - Existing specifications for a personal R&D or spec-driven software framework.
 - A minimal description of the intended first user and end-to-end scenario.
 - Any relevant reusable public harness-test code, ADR templates, or evaluation fixtures from `agentic-harness-lab`.
 
-**Not needed now:** employer correspondence, private candidate records, proprietary MobilizeGreen datasets, exact production credentials/configuration, or a final technology stack.
+**Not needed now:** employer correspondence, private candidate records, proprietary third-party datasets, exact production credentials/configuration, or a final technology stack.
 
 ## Appendix B — Document change log
 
@@ -605,4 +602,5 @@ Most useful optional inputs from previous chats, local files, or repositories:
 |---|---|---|
 | 0.1.0 | 2026-10-12 | Initial proposed requirements, models, control boundaries, ADR register, and framework-neutral repo blueprint |
 | **0.2.0** | **2026-10-12** | **Accepted D-001: general-purpose architecture with nonprofit internship pilot; revised scope, organization-scoped domain contracts, portability/eligibility requirements, ADR register, and first-slice criteria** |
+| 0.3.1 | 2026-10-29 | Editorial redaction (F2): generalized source provenance (§2.1); recast §2.2 as an independent proposed reference workflow; removed former-client names, private tool references, private source-file names, third-party attributions and engagement details. No requirement or decision changed. Earlier versions remain in Git history |
 | **0.3.0** | **2026-10-12** | **Accepted D-002 Drupal authoritative reference plus secure derived RAG and D-003 versioned evaluation/prompt promotion; expanded FR-022–031, NFR-013–016, domain and execution boundaries, staged integrated-pilot gates and repo scaffold** |
