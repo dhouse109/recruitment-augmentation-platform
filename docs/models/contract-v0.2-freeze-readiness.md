@@ -51,12 +51,12 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 | 1 | Every D-004 decision has a reference contract, schema and positive/negative tests | **Met** |
 | 2 | Schema generation reproducible; drift none; prior schema bodies unchanged | **Met** (pinned Pydantic 2.13.5) |
 | 3 | Independent JSON Schema conformance for every exported schema | **Met** (dev requirements) |
-| 4 | Accepted ADR vocabulary used throughout code and fixtures | **Met** in code; **not met** in some proposed docs (follow-up F1) |
+| 4 | Accepted ADR vocabulary used throughout code and fixtures | **Met** in code and fixtures; proposed docs synchronized in F1 (2026-10-29) |
 | 5 | At least one real producer (engine/adapter) round-trips its outputs through the contracts | **Not met** — no eligibility engine, recommendation engine, verifier or adapter exists |
 | 6 | Open decisions O3, O4, O5-remainder dispositioned or explicitly deferred to a later version | **Not met** (owner decision) |
 | 7 | Draft evaluation definitions (metrics, gate policy, rubric) approved | **Not met** (owner decision) |
 | 8 | Source hygiene: no transcript-derived or private material in the repository | **Partly met** — current tree redacted (F2 forward redaction, 2026-10-29); earlier copies remain in Git history and GitHub PR refs; history rewriting not authorized |
-| 9 | Documentation status consistent with merged state | **Partly met** (follow-up F1) |
+| 9 | Documentation status consistent with merged state | **Met** as of the F1 documentation sync (2026-10-29); keep current with each PR |
 | 10 | Reproducible evidence from a clean checkout, recorded in the PR | **Met** (see below); no CI checks are configured |
 | 11 | Explicit owner decision to freeze | **Not given** |
 

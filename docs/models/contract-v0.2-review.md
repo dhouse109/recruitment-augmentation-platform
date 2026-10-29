@@ -12,11 +12,13 @@ This PR contains **no** Drupal review-write service, authentication infrastructu
 
 ## Vocabulary precedence
 
-`domain.md` and the pilot spec (both *proposed*) list `reject_suggestion`. Accepted **ADR-0004 D-004.04** uses `dismiss_suggestion`, and the ADR governs:
+At the time of PR #6, `domain.md` and the pilot spec (both *proposed*) listed `reject_suggestion`. Accepted **ADR-0004 D-004.04** uses `dismiss_suggestion`, and the ADR governs:
 
 - `ReviewAction` contains only `approve_for_follow_up`, `request_information` and `dismiss_suggestion`.
 - `reject_suggestion` is rejected by both validators.
-- The older documents are not edited in this PR.
+- The older documents were not edited in this PR.
+
+*Editorial note (2026-10-29, F1):* `domain.md`, the pilot spec and PROJECT-FOUNDATION were later brought into line with ADR-0004 in the F1 documentation sync. The discrepancy report above is kept as historical record. The reference contracts are unchanged and still reject `reject_suggestion` (see the test evidence below).
 
 ## Owner decisions applied (2026-10-28)
 

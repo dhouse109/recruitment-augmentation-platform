@@ -83,7 +83,7 @@ The diagram is conceptual. An exact Drupal schema and the physical/foreign-key d
 - Opportunity: `active | paused | closed`.
 - Application: `draft | submitted | withdrawn | closed`.
 - Recommendation: `pending_verification | ready_for_review | needs_information | escalated | obsolete`.
-- Review decision: `approve_for_follow_up | reject_suggestion | request_information`. *Reject suggestion* is not rejection of the candidate.
+- Review decision: `approve_for_follow_up | dismiss_suggestion | request_information` (accepted ADR-0004 D-004.04). *Dismiss suggestion* is not rejection of the candidate. *(Editorial vocabulary sync 2026-10-29, F1: this disposition was formerly written `reject_suggestion`.)*
 
 ## Example portability
 

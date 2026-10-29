@@ -1,7 +1,7 @@
 # Nonprofit Internship Placement — Pilot Specification
 
 **Document ID:** RAP-PILOT-001  
-**Version:** 0.2.0  
+**Version:** 0.2.1 (editorial vocabulary sync 2026-10-29)  
 **Date:** 2026-10-12  
 **Status:** Proposed pilot requirements; not yet accepted as build specification  
 **Parent decisions:** ADR-0001 / D-001; ADR-0002 / D-002; ADR-0003 / D-003  
@@ -33,7 +33,7 @@ The pilot cannot create a binding internship offer, deny a candidate entry to a 
 - Missing information is recorded explicitly; it is not inferred into eligibility.
 - Any AI recommendation must cite permissible evidence; invalid citations fail verification.
 - A model cannot override policy rules or human review authority.
-- A human records `approve_for_follow_up`, `reject_suggestion`, or `request_information`.
+- A human records `approve_for_follow_up`, `dismiss_suggestion`, or `request_information` (accepted ADR-0004 D-004.04). Dismissing a suggestion is not rejection of the candidate.
 - Every decision links to recommendation, run, policy version, reviewer, and time.
 - In the integrated pilot, candidate, application, opportunity, policy and human-review source data are authoritative in Drupal with entity/revision references; external projections never become facts automatically.
 - Retrieved unstructured text is filtered by authorization and checked for source freshness before use; revoked or stale material is not valid evidence.
@@ -114,7 +114,7 @@ flowchart TD
     F --> I[Validate suggestion and source references]
     I --> J[Coordinator review]
     J --> K[Approve for follow-up]
-    J --> L[Reject suggestion]
+    J --> L[Dismiss suggestion]
     J --> M[Request information]
     K --> N[Append audit event]
     L --> N
@@ -195,3 +195,4 @@ No LLM or Drupal runtime is necessary to prove **Slice 0 only**. The **integrate
 
 - **0.1.0 — 2026-10-12:** Initial fictional nonprofit internship pilot, core-vs-configuration boundary, versioned rule proposals, first-slice flow, and acceptance tests.
 - **0.2.0 — 2026-10-12:** D-002 and D-003 adopted; source-of-truth Drupal mapping, derived secure RAG, in-Drupal AI review, synthetic evaluation and promotion gates, extended tests and integrated-pilot completion criteria.
+- **0.2.1 — 2026-10-29:** Editorial vocabulary sync (F1): the review disposition formerly written `reject_suggestion` / "Reject suggestion" is now `dismiss_suggestion` / "Dismiss suggestion", per accepted ADR-0004 D-004.04. Meanings of `approve_for_follow_up`, `request_information` and `dismiss_suggestion` are unchanged.
