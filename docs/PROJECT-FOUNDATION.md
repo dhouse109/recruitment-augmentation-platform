@@ -1,7 +1,7 @@
 # Recruitment Augmentation Platform — Project Foundation
 
 **Document ID:** RAP-FOUNDATION-001  
-**Version:** 0.3.1 (editorial redaction 2026-10-29; requirements unchanged)  
+**Version:** 0.3.2 (editorial updates 2026-10-29; requirements unchanged)  
 **Date:** 2026-10-12  
 **Status:** DISCOVERY — D-001, D-002 and D-003 accepted; detailed requirements, models and technical implementations remain proposals until reviewed  
 **Proposed repository:** `recruitment-augmentation-platform` (name to confirm)  
@@ -110,7 +110,7 @@ A reviewer may approve a **suggestion for human follow-up**, not a hiring or pla
 
 ### 3.2 First pilot user journey
 
-**Program coordinator** selects one synthetic internship applicant → the platform validates the permitted profile and associated evidence → applies the nonprofit program's deterministic internship criteria → creates reviewable recommendations only for eligible internships → independently verifies claims and citations → presents recommendations and unknowns → coordinator approves for follow-up, rejects the *suggestion*, or requests information → the system records an auditable outcome.
+**Program coordinator** selects one synthetic internship applicant → the platform validates the permitted profile and associated evidence → applies the nonprofit program's deterministic internship criteria → creates reviewable recommendations only for eligible internships → independently verifies claims and citations → presents recommendations and unknowns → coordinator approves for follow-up, dismisses the *suggestion*, or requests information → the system records an auditable outcome.
 
 ### 3.3 Architecture portability scenario
 
@@ -136,7 +136,7 @@ As a **future contract test**, swap the internship fixture and program policy fo
 
 - Synthetic applicants, nonprofit programs, internship opportunities, and evidence references.
 - Internship-specific policy examples (e.g., eligibility for a given program, schedule availability, required skills when applicable) expressed as a **versioned policy fixture**, not baked into domain classes.
-- Coordinator review with **approve-for-follow-up / reject-suggestion / request-information** dispositions.
+- Coordinator review with **approve-for-follow-up / dismiss-suggestion / request-information** dispositions (accepted ADR-0004 D-004.04).
 - Positive, negative, ambiguous, and permission-denied evaluation cases.
 - An architectural portability test using non-internship opportunities once core models stabilize.
 
@@ -167,7 +167,7 @@ Each requirement has a stable identifier to support issue/spec/test traceability
 | FR-006 | Must | Explain every recommendation using authorized, attributable evidence and identify uncertainty | Coordinator can inspect underlying evidence and missing information |
 | FR-007 | Must | Independently verify schema, hard constraints, provenance, unsupported inferences, and explanation quality | Injected hallucination or policy conflict is flagged |
 | FR-008 | Must | Bound revision and route unresolved cases to human review | A repeat verification failure never causes an infinite retry loop |
-| FR-009 | Must | Allow an authorized human to approve a suggestion **for follow-up**, reject the suggestion, or request more information | Decision records reviewer, time, rationale, and recommendation version |
+| FR-009 | Must | Allow an authorized human to approve a suggestion **for follow-up**, dismiss the suggestion, or request more information | Decision records reviewer, time, rationale, and recommendation version |
 | FR-010 | Must | Preserve run, result, policy, prompt/model, review, and audit identities | Reviewer can reproduce the chain of evidence and decisions |
 | FR-011 | Must | Support a deterministic no-LLM baseline for comparison | Same fixture produces a reproducible baseline output |
 | FR-012 | Must | Provide an offline evaluation harness with labeled synthetic cases | Evaluation reports quality, violations, failure classes, latency, and estimated model cost when available |
@@ -336,7 +336,7 @@ flowchart TD
     I -- No, repeated --> J
     J --> L{Coordinator decision}
     L --> M[Approve for follow-up]
-    L --> N[Reject suggestion with reason]
+    L --> N[Dismiss suggestion with reason]
     L --> H
     M --> O[Record audit and complete]
     N --> O
@@ -430,7 +430,7 @@ An initial no-LLM/offline contract slice is still permitted. Passing it alone **
 |---|---|
 | Constraint correctness | Rate of ineligible opportunities emitted; unauthorized action attempts |
 | Evidence/grounding | Unsupported claim rate; evidence pointer completeness; missing-information disclosure |
-| Recommendation utility | Coordinator accept/reject/request-more-info distribution and qualitative reasons; no claim that approvals equal ground truth |
+| Recommendation utility | Coordinator approve/dismiss/request-information distribution and qualitative reasons; no claim that approvals equal ground truth |
 | Review safety | Percent of consequential outcomes with authorized human decision; escalation behavior |
 | Reliability | Contract validation failures, retries, duplicate side-effect rate, recovery completion |
 | Performance/cost | Per-run latency, tokens, model cost, number of inference calls, budget overruns |
@@ -604,3 +604,4 @@ Most useful optional inputs from previous chats, local files, or repositories:
 | **0.2.0** | **2026-10-12** | **Accepted D-001: general-purpose architecture with nonprofit internship pilot; revised scope, organization-scoped domain contracts, portability/eligibility requirements, ADR register, and first-slice criteria** |
 | **0.3.0** | **2026-10-12** | **Accepted D-002 Drupal authoritative reference plus secure derived RAG and D-003 versioned evaluation/prompt promotion; expanded FR-022–031, NFR-013–016, domain and execution boundaries, staged integrated-pilot gates and repo scaffold** |
 | 0.3.1 | 2026-10-29 | Editorial redaction (F2): generalized source provenance (§2.1); recast §2.2 as an independent proposed reference workflow; removed former-client names, private tool references, private source-file names, third-party attributions and engagement details. No requirement or decision changed. Earlier versions remain in Git history |
+| 0.3.2 | 2026-10-29 | Editorial vocabulary sync (F1): review dispositions use `dismiss_suggestion` / "Dismiss suggestion" per accepted ADR-0004 D-004.04, replacing reject-suggestion wording in §3.2, §4.2, FR-009, the first-slice diagram and the evaluation table. Meanings unchanged; dismissing a suggestion is not rejection of the candidate |
