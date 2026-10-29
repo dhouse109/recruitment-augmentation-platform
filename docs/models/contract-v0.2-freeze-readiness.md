@@ -176,3 +176,35 @@ Against `main`: 50 paths change (3 contract modules, all 36 regenerated schemas,
 The first mutation initially survived because the third-primary case was also rejected by result recomputation; commit `32b26676` adds a case whose declared result matches the derivation, isolating the designation rule.
 
 These are synthetic, contract-level checks. Reviewer identity, role, conflict and attestation values in the tests are structural claims, not authentication; nothing is genuinely reportable, and no adjudication has occurred.
+
+### F4 PR-B review repairs (F1–F3)
+
+Independent review of branch head `84303ad0` raised three findings, each reproduced on that head before repair (details and regression tests in [`contract-v0.2-adjudication-integrity.md`](contract-v0.2-adjudication-integrity.md#review-repairs-f1f3)):
+
+- **F1:** disputed and unresolved records with trusted-looking claims were `structurally_eligible`. They now carry `adjudication_not_final`.
+- **F2:** an observed usefulness value could include disputed and unresolved counts in a measured dimension. Those fields were removed from the measurement and remain diagnostic only.
+- **F3:** derivation accepted items with an unpinned case hash or an out-of-range replicate. It now requires a manifest pinned by the run and applies `check_review_items`.
+
+Fresh clone of code commit `3124d9ab66145727d5389232808ff64f77cc6cc6` (repairs `ade068c0`, test isolation `3124d9ab`; later commits change documentation only), same environments as above:
+
+| Command (from `contracts/`) | Result |
+|---|---|
+| `python -m rap_contracts.schema_export --check` | `schema drift: NONE` |
+| `python -m unittest discover -s tests` (dev requirements) | **464 tests, OK, 0 skipped, 0 failures** |
+| `python -m unittest discover -s tests` (runtime requirements only) | **464 tests, OK, 17 skipped** |
+| `-p test_adjudication.py` / `'test_evaluation*.py'` / `test_json_schema_conformance.py` / `test_schemas.py` | 34 / 63 / 17 / 17, OK |
+| The four F1–F3 regression tests | 4 tests, OK |
+
+The repair commits change 6 files, all inside the PR-B manifest. Against `main` the branch still changes 50 paths, and still exactly the `adjudication-record`, `reviewer-rubric` and `run-comparison` schema bodies. Against `84303ad0` only the `run-comparison` body changes (digest `9e90f184…` to `b774e704…`), because the F2 repair removes two fields from the measurement block. No fixture, case, manifest, ADR or other contract module changed.
+
+**Mutation evidence** (disposable copies of `3124d9ab`): 20 mutants were run, the 15 above plus 5 for the repairs, and 19 were detected.
+
+| Repair mutant | Detected by |
+|---|---|
+| Disputed or unresolved records can be structurally eligible | `test_disputed_or_unresolved_adjudication_is_not_structurally_eligible`, `test_only_finalized_records_count_as_structurally_eligible` |
+| Measured dimensions carry disputed and unresolved fields (not counted) | `test_measurement_excludes_disputed_and_unresolved`, schema drift tests |
+| Restore the pre-repair measurement (fields counted in totals) | `test_measurement_excludes_disputed_and_unresolved`, schema drift tests |
+| Derivation skips the run's manifest pin | `test_derivation_reuses_pinned_item_checks` |
+| Derivation skips the pinned item checks | `test_derivation_reuses_pinned_item_checks`, `test_orphan_duplicate_and_misattached_records_raise` |
+
+The only survivor is the equivalent mutant documented above. The first F2 test passed under the "fields not counted" mutant because its payloads were also rejected by the total check. Commit `3124d9ab` adds balanced-total cases so that only the field rule can reject them.
