@@ -102,3 +102,33 @@ Fresh clone of branch `contracts/v0.2-evaluation` at code commit `6574a020179562
 The 31 evaluation cases and their manifest hashes are byte-identical to the original head `36557e41`; all 31 still pass. No exported schema changed in the R5–R7 repairs.
 
 These are local, manually reported executions; no GitHub CI checks are configured. The PR #7 description repeats them against the final head.
+
+### F4 PR-A evidence (draft definitions v2)
+
+Fresh clone of branch `contracts/f4-definitions-v2` at code commit `52a0c2685cccb65243a0be137bb628ef341afcee` (base `main` @ `f45a9368b24dd10d7f8c7afe51f67da713ebf623`; later commits change documentation only), Python 3.13.18, `pydantic==2.13.5`, `jsonschema==4.26.0`. PR-A adds 15 test methods to the 417 above:
+
+| Command (from `contracts/`) | Result |
+|---|---|
+| `python -m rap_contracts.schema_export --check` | `schema drift: NONE` |
+| `python -m unittest discover -s tests` (dev requirements) | **432 tests, OK, 0 skipped** |
+| `python -m unittest discover -s tests` (runtime requirements only) | **432 tests, OK, 16 skipped** (JSON Schema conformance, as designed) |
+| `python -m unittest discover -s tests -p 'test_evaluation*.py'` | 61 tests, OK |
+| `python -m unittest discover -s tests -p 'test_promotion_gates.py'` | 49 tests, OK |
+| `python -m unittest discover -s tests -p 'test_json_schema_conformance.py'` | 16 tests, OK |
+| `python -m unittest discover -s tests -p 'test_dataset_partition.py'` | 18 tests, OK |
+| `PYTHONPATH=tests python -m unittest test_evaluation_cases test_dataset_partition test_promotion_gates` | 86 tests, OK |
+
+Unchanged against `main`: `rap_contracts/`, all 36 generated schemas (identical tree), every case, layer and v1 definitions fixture (v1 SHA-256 `9445231558c45e4338e7a42d7e31b63e73ef8c122055da8a052a62401d386957`), both requirements files, the ADRs and `CONTRACT_VERSION` (`0.2.0-dev.foundations.4`). No fixture contains `"status": "approved"`.
+
+**Mutation evidence** (disposable copies; never committed):
+
+| Mutation | Tests at `main` (417) | Tests at PR-A (432) |
+|---|---|---|
+| Gate counts only violations observed at an accepted basis | **OK — not detected** | Fails `BasisIndependentBlockingTests`: both blocking matrices and the report-only recording test |
+| Mandatory coverage accepted at any basis | Fails 3 existing tests | Fails the same 3 plus `test_v2_coverage_gaps_and_lower_tier_coverage_never_pass` (reinforcement, not new detection) |
+| Held-out case title planted in the v2 file | — | Fails the free-text leakage check (and the v2 inventory check) |
+| v2 policy given an extra (T3) accepted basis | — | Fails `test_v2_policy_equals_v1_except_identity` |
+| v2 metrics marked `approved` | — | Fails `test_v2_definitions_validate_and_are_drafts` |
+| One byte appended to the v1 definitions file | — | Fails `test_v1_definitions_remain_default_and_unchanged` |
+
+These are synthetic, contract-level checks. They are not integrated safety evidence, and the held-out checks are not custody or confidentiality proof.
