@@ -44,6 +44,8 @@ from rap_contracts.evaluation import (
 from rap_contracts.invariants import ContractViolation
 from rap_contracts.promotion import (
     CaseComparison,
+    CategoryGateStatus,
+    GateEvaluation,
     GateResult,
     HeldOutGateAttestation,
     MetricDefinitionSet,
@@ -109,17 +111,18 @@ def _pin(value):
 
 
 def logic_only_observation(run_id, case_id, *, outcome="pass", basis="integrated_service", safety=(),
-                           sha=None, split="golden", version=None):
+                           sha=None, split="golden", version=None, step_status=None):
     """SYNTHETIC gate-logic example bound to a genuine case pin unless overridden."""
     pin = PINS.get(case_id)
     identity = dict(run_id=run_id, case_id=case_id, case_version=version or (pin.version if pin else 1),
                     case_sha256=sha or (pin.sha256 if pin else "sha256:" + "0" * 64), split=split, **MEASURE)
     if outcome == "not_evaluated":
         return CaseObservation(**identity, execution_status="not_run", outcome="not_evaluated")
-    status = "matched" if outcome == "pass" else ("mismatched" if outcome == "fail" else "not_evaluated")
+    status = step_status or ("matched" if outcome == "pass" else ("mismatched" if outcome == "fail" else "not_evaluated"))
     role = "prerequisite" if outcome == "inconclusive" else "target"
     step = StepObservation(step_id="s1", role=role, operation="retrieval_admission", status=status, basis=basis,
-                           observed=None if status == "not_evaluated" else ObservedRecord(),
+                           observed=None if status == "not_evaluated" else ObservedRecord(
+                               error_type="harness_error" if status == "errored" else None),
                            safety=() if status == "not_evaluated" else tuple(safety))
     return CaseObservation(**identity, execution_status="executed", steps=(step,), outcome=outcome)
 
@@ -438,7 +441,7 @@ class Scenario:
 
     def check(self, dec=None, comparisons=None, gates=None, observations=None):
         return check_promotion_inputs(
-            dec or self.decision(), self.baseline, [self.candidate], gates or [self.gate],
+            dec or self.decision(), self.baseline, [self.candidate], gates or [self.gate], policy(),
             [self.comparison] if comparisons is None else comparisons,
             observations or {self.baseline.id: self.b_obs, self.candidate.id: self.c_obs}, METRICS, GOLDEN)
 
@@ -597,6 +600,90 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(ctx.exception.code, "comparison_metric_unknown")
 
 
+class ErroredExecutionTests(unittest.TestCase):
+    """R5: an execution error is never a measured failure, even when the observation reports outcome=fail."""
+
+    def errored(self, run_id, case_id):
+        return logic_only_observation(run_id, case_id, outcome="fail", step_status="errored",
+                                      basis="deterministic_baseline_execution")
+
+    def test_errored_target_reporting_fail_makes_comparison_incomplete(self):
+        s = Scenario()
+        obs = self.errored(s.candidate.id, "evalcase_g004")
+        self.assertEqual((obs.execution_status, obs.outcome.value, obs.steps[0].status.value), ("executed", "fail", "errored"))
+        s = Scenario(c_obs=[self.errored(s.candidate.id, c) if c == "evalcase_g004" else
+                            logic_only_observation(s.candidate.id, c, basis="deterministic_baseline_execution")
+                            for c in sorted(PINS)])
+        a = s.assess()
+        self.assertFalse(a.complete)
+        self.assertIn("case_execution_errored", a.reasons)
+        self.assertEqual(next(c for c in s.comparison.cases if c.case_id == "evalcase_g004").change.value, "regressed")
+        with self.assertRaises(ContractViolation) as ctx:
+            s.check()
+        self.assertEqual(ctx.exception.code, "promotion_not_supported")
+        self.assertNotIn("promote", [d.value for d in s.check(dec=s.decision(decision="reject")).allowed])
+
+    def test_errored_baseline_is_equally_inconclusive(self):
+        base = run("evalrun_baseline_1", purpose="regression")
+        b_obs = [self.errored(base.id, c) if c == "evalcase_g010" else
+                 logic_only_observation(base.id, c, basis="deterministic_baseline_execution") for c in sorted(PINS)]
+        self.assertIn("case_execution_errored", Scenario(b_obs=b_obs).assess().reasons)
+
+    def test_genuine_assertion_failure_remains_conclusive(self):
+        s = Scenario(c_outcomes={"evalcase_g004": "fail"})  # target step mismatched, not errored
+        self.assertEqual(next(o for o in s.c_obs if o.case_id == "evalcase_g004").steps[0].status.value, "mismatched")
+        a = s.assess()
+        self.assertTrue(a.complete, a.reasons)  # a regression is evidence for the human decider, not a gap
+
+
+class GateIdentityTests(unittest.TestCase):
+    """R6: gate evaluations are checked against the exact policy and their own categories and reasons."""
+
+    def test_contradictory_gate_cannot_be_constructed(self):
+        good = gate().model_dump(mode="json")
+        self.assertEqual(good["result"], "eligible_for_human_decision")
+        failing = copy.deepcopy(good)
+        failing["categories"][0].update(status="fail", reasons=["unblocked_violation_observed"])
+        insufficient = copy.deepcopy(good)
+        insufficient["categories"][0].update(status="insufficient_evidence", reasons=["mandatory_case_missing"])
+        cases = {
+            "eligible with failed category": failing,
+            "eligible with insufficient category": insufficient,
+            "eligible with a global reason": {**good, "reasons": ["safety_policy_not_approved"]},
+            "blocked without a failed category": {**good, "result": "blocked"},
+            "duplicate category": {**good, "categories": good["categories"] + good["categories"][:1]},
+            "no categories": {**good, "categories": []},
+        }
+        for name, payload in cases.items():
+            with self.subTest(name), self.assertRaises(ValidationError):
+                GateEvaluation.model_validate(payload)
+
+    def test_contradictory_gate_is_rejected_even_if_validation_was_bypassed(self):
+        s = Scenario()
+        bad_categories = tuple(c.model_copy(update={"status": CategoryGateStatus.INSUFFICIENT_EVIDENCE}) if i == 0 else c
+                               for i, c in enumerate(s.gate.categories))
+        for name, forged in {
+            "eligible over an insufficient category": s.gate.model_copy(update={"categories": bad_categories}),
+            "eligible over a global reason": s.gate.model_copy(update={"reasons": ("run_configuration_missing",)}),
+            "missing a policy category": s.gate.model_copy(update={"categories": s.gate.categories[1:]}),
+        }.items():
+            with self.subTest(name), self.assertRaises(ContractViolation) as ctx:
+                s.check(gates=[forged])
+            self.assertEqual(ctx.exception.code, "promotion_gate_inconsistent")
+
+    def test_gate_for_another_policy_is_rejected(self):
+        s = Scenario()
+        other = s.gate.model_copy(update={"policy": DefinitionsPin(id="evaldefs_safety_gate", version=2)})
+        with self.assertRaises(ContractViolation) as ctx:
+            s.check(gates=[other])
+        self.assertEqual(ctx.exception.code, "promotion_gate_policy_mismatch")
+        other_policy = SafetyGatePolicy.model_validate({**DEFS["safety_gate_policy"], "status": "approved", "version": 2})
+        with self.assertRaises(ContractViolation) as ctx:
+            check_promotion_inputs(s.decision(), s.baseline, [s.candidate], [s.gate], other_policy, [s.comparison],
+                                   {s.baseline.id: s.b_obs, s.candidate.id: s.c_obs}, METRICS, GOLDEN)
+        self.assertEqual(ctx.exception.code, "promotion_policy_mismatch")
+
+
 class PromotionDecisionTests(unittest.TestCase):
     def test_promote_without_comparison_is_rejected(self):
         """The reproduced R4 gap: a promote record with no comparison evidence."""
@@ -642,12 +729,15 @@ class PromotionDecisionTests(unittest.TestCase):
         with self.assertRaises(ContractViolation) as ctx:
             s.check(dec=altered)
         self.assertEqual(ctx.exception.code, "promotion_comparison_mismatch")
+        blocked = gate(r=s.candidate, obs=logic_only_observations(policy(), s.candidate.id, extra=[
+            BlockingTests.violation(None, "source_content_integrity")]))
+        self.assertIs(blocked.result, GateResult.BLOCKED)
         with self.assertRaises(ContractViolation) as ctx:
-            s.check(gates=[s.gate.model_copy(update={"result": GateResult.BLOCKED})])
+            s.check(gates=[blocked])  # decision still records eligible
         self.assertEqual(ctx.exception.code, "promotion_gate_result_mismatch")
         other_set = run("evalrun_baseline_1", purpose="regression", manifests=(GOLDEN_PIN,))
         with self.assertRaises(ContractViolation) as ctx:
-            check_promotion_inputs(s.decision(), other_set, [s.candidate], [s.gate], [s.comparison],
+            check_promotion_inputs(s.decision(), other_set, [s.candidate], [s.gate], policy(), [s.comparison],
                                    {}, METRICS, GOLDEN)
         self.assertEqual(ctx.exception.code, "promotion_case_set_mismatch")
 

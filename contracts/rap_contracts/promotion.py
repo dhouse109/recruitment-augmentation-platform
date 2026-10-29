@@ -17,6 +17,8 @@ Owner-approved semantics (2026-10-28):
 
 Review repairs (PR #7 R1-R4, owner-authorized 2026-10-28):
 
+* Gate evaluations must name the exact safety policy, cover its categories
+  and carry a result consistent with their categories and global reasons (R6).
 * Golden observations count only when their case id, version, content hash
   and split match the authoritative golden manifest the policy pins (R2).
 * A held-out attestation counts only for the exact manifest, policy and
@@ -26,7 +28,8 @@ Review repairs (PR #7 R1-R4, owner-authorized 2026-10-28):
 * Runs carry a versioned strategy and a recomputed configuration fingerprint;
   promotion inputs must match it exactly (R3).
 * ``promote`` requires a validated ``RunComparison`` per candidate run:
-  every pinned case conclusively executed on both sides, required metrics
+  every pinned case conclusively executed on both sides without execution
+  errors, required metrics
   genuinely observed (or justified not-applicable where permitted), and at
   least one required outcome metric observed. No thresholds are applied (R4).
 
@@ -71,6 +74,7 @@ from .evaluation import (
     Sha256,
     ShortText,
     Split,
+    StepStatus,
     check_manifest_cases,
     content_sha256,
     pin_manifest,
@@ -507,12 +511,44 @@ class CategoryEvaluation(ContractModel):
     reasons: tuple[Code, ...] = ()
 
 
+def derive_gate_result(categories: Iterable[CategoryEvaluation], reasons: Iterable[str]) -> GateResult:
+    """Any failed category blocks; any global reason or insufficient category is insufficient evidence."""
+    categories, reasons = list(categories), list(reasons)
+    if any(c.status is CategoryGateStatus.FAIL for c in categories):
+        return GateResult.BLOCKED
+    if reasons or any(c.status is CategoryGateStatus.INSUFFICIENT_EVIDENCE for c in categories):
+        return GateResult.INSUFFICIENT_EVIDENCE
+    return GateResult.ELIGIBLE_FOR_HUMAN_DECISION
+
+
 class GateEvaluation(ContractModel):
+    """Result of ``evaluate_safety_gate``. ``result`` must agree with its categories and global reasons."""
+
     policy: DefinitionsPin
     run_id: EvaluationRunId
     result: GateResult
     reasons: tuple[Code, ...] = ()
-    categories: tuple[CategoryEvaluation, ...]
+    categories: Annotated[tuple[CategoryEvaluation, ...], Field(min_length=1)]
+
+    @model_validator(mode="after")
+    def _consistent(self) -> "GateEvaluation":
+        if len({c.category for c in self.categories}) != len(self.categories):
+            raise ValueError("each category is evaluated once")
+        derived = derive_gate_result(self.categories, self.reasons)
+        if self.result is not derived:
+            raise ValueError(f"result must be {derived.value} given its categories and global reasons")
+        return self
+
+
+def check_gate_evaluation(gate: GateEvaluation, policy: SafetyGatePolicy) -> None:
+    """Re-check a gate evaluation (even one that bypassed validation) against the exact policy."""
+    if gate.policy != policy.pin:
+        raise ContractViolation("promotion_gate_policy_mismatch", f"gate for {gate.run_id} used another safety policy")
+    categories = [c.category for c in gate.categories]
+    if len(set(categories)) != len(categories) or set(categories) != {r.category for r in policy.categories}:
+        raise ContractViolation("promotion_gate_inconsistent", f"gate for {gate.run_id} does not cover the policy's categories")
+    if gate.result is not derive_gate_result(gate.categories, gate.reasons):
+        raise ContractViolation("promotion_gate_inconsistent", f"gate for {gate.run_id} contradicts its own categories or reasons")
 
 
 def _golden_reasons(rule: SafetyCategoryRule, observations: dict[str, CaseObservation], pins: dict) -> list[str]:
@@ -632,12 +668,7 @@ def evaluate_safety_gate(
         status = CategoryGateStatus.INSUFFICIENT_EVIDENCE if [r for r in reasons if r != "violation_reported"] else CategoryGateStatus.PASS
         evaluations.append(CategoryEvaluation(category=rule.category, status=status, reasons=tuple(reasons)))
 
-    if any(e.status is CategoryGateStatus.FAIL for e in evaluations):
-        result = GateResult.BLOCKED
-    elif global_reasons or any(e.status is CategoryGateStatus.INSUFFICIENT_EVIDENCE for e in evaluations):
-        result = GateResult.INSUFFICIENT_EVIDENCE
-    else:
-        result = GateResult.ELIGIBLE_FOR_HUMAN_DECISION
+    result = derive_gate_result(evaluations, global_reasons)
     return GateEvaluation(policy=policy.pin, run_id=run.id, result=result, reasons=tuple(global_reasons),
                           categories=tuple(evaluations))
 
@@ -786,8 +817,9 @@ def assess_comparison(
     """Validate a comparison against the actual runs, observations, definitions and case pins.
 
     Records that contradict the evidence raise ``ContractViolation``. Gaps
-    (missing or inconclusive cases, missing or unmeasured required metrics, no
-    observed required outcome metric) make the comparison incomplete.
+    (missing or inconclusive cases, cases whose execution errored -- even when
+    the observation reports ``fail`` -- missing or unmeasured required metrics,
+    no observed required outcome metric) make the comparison incomplete.
     """
     if (comparison.baseline_run_id, comparison.candidate_run_id) != (baseline.id, candidate.id):
         raise ContractViolation("comparison_run_mismatch", f"{comparison.id} compares other runs")
@@ -823,6 +855,8 @@ def assess_comparison(
                 raise ContractViolation("observation_case_identity_mismatch", f"{side} {case_id} is not the pinned case")
             if obs.outcome is not recorded:
                 raise ContractViolation("comparison_outcome_mismatch", f"{side} {case_id} was {obs.outcome.value}")
+            if obs.execution_status != "executed" or any(step.status is StepStatus.ERRORED for step in obs.steps):
+                reasons.append("case_execution_errored")  # an errored 'fail' is not a measured failure
         if entry.baseline_outcome not in CONCLUSIVE_OUTCOMES or entry.candidate_outcome not in CONCLUSIVE_OUTCOMES:
             reasons.append("case_not_conclusive")
 
@@ -925,6 +959,7 @@ def check_promotion_inputs(
     baseline: EvaluationRun,
     candidates: Iterable[EvaluationRun],
     gate_evaluations: Iterable[GateEvaluation],
+    policy: SafetyGatePolicy,
     comparisons: Iterable[RunComparison],
     observations: Mapping[str, Iterable[CaseObservation]],
     definitions: MetricDefinitionSet,
@@ -957,8 +992,12 @@ def check_promotion_inputs(
             raise ContractViolation("promotion_definitions_mismatch", f"{run.id} used other metric definitions")
     for run in candidates:
         check_comparable_runs(baseline, run)
+    if decision.safety_policy != policy.pin:
+        raise ContractViolation("promotion_policy_mismatch", "the decision pins another safety policy")
     if {g.run_id for g in gates} != {c.id for c in candidates} or len(gates) != len(candidates):
         raise ContractViolation("promotion_gate_mismatch", "one gate evaluation per candidate run is required")
+    for g in gates:
+        check_gate_evaluation(g, policy)
     order = [GateResult.BLOCKED, GateResult.INSUFFICIENT_EVIDENCE, GateResult.ELIGIBLE_FOR_HUMAN_DECISION]
     worst = min((g.result for g in gates), key=order.index)
     if decision.gate_result is not worst:
