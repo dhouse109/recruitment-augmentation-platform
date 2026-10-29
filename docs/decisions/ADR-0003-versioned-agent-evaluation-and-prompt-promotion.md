@@ -9,7 +9,9 @@
 
 ## Context
 
-The interview described ad-hoc spreadsheet evaluation of agent results. The new system needs a repeatable, testable process for learning whether changes to prompts, retrieval, models, or agent flows improve quality **without introducing safety or business-policy regressions**. Observability traces alone do not supply ground-truth labels.
+Changes to prompts, retrieval, models, or agent flows must be judged against fixed, versioned evidence. Informal or unversioned review cannot reliably show whether a change improves quality, and it cannot detect regressions case by case. The system therefore needs a repeatable, testable process for learning whether such changes improve quality **without introducing safety or business-policy regressions**. Observability traces alone do not supply ground-truth labels.
+
+> **Editorial erratum (2026-10-29, follow-up F2):** a historical characterization of a prior engagement's evaluation practice was replaced in this section with a neutral statement of need. D-003's decision, rationale, requirements and decision date are unchanged. The earlier wording remains in Git history and GitHub PR refs.
 
 ## Decision
 

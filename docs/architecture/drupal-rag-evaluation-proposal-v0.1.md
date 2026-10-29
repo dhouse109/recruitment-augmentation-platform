@@ -1,41 +1,34 @@
 # Recruitment Augmentation Platform — Drupal RAG & Evaluation Architecture Proposal
 
 **Document ID:** RAP-ARCH-PROPOSAL-001  
-**Version:** 0.1.0  
+**Version:** 0.1.1 (editorial redaction 2026-10-29; architecture content unchanged)  
 **Date:** 2026-10-12  
-**Status:** PROPOSAL — not an accepted ADR or approved change to Foundation v0.2  
+**Status:** PROPOSAL — not an accepted ADR. P-002 and P-003 were later accepted **in direction** as D-002 ([ADR-0002](../decisions/ADR-0002-drupal-authoritative-reference-and-rag-boundaries.md)) and D-003 ([ADR-0003](../decisions/ADR-0003-versioned-agent-evaluation-and-prompt-promotion.md)); those ADRs govern. Everything else here remains a proposal.  
 **Parent:** `recruitment-augmentation-platform-project-foundation-v0.2.md`  
 **Pilot:** Fictional nonprofit internship placement, synthetic records only
 
-> **Source/evidence discipline.** `[SOURCE]` means the September interview transcript describes the idea; `[PROPOSED]` means a new system design; `[OPEN]` means a decision not yet made. The interview does not prove a specific retrieval stack, embedding provider, exact Drupal modules, or formal evaluation implementation. This new GitHub project is an independent reference implementation, not a claim about reproducing private client code.
+> **Source/evidence discipline.** `[PROPOSED]` means a new system design for this project; `[OPEN]` means a decision not yet made. Earlier private discussions informed the problem framing only (see §2) and do not establish a specific retrieval stack, embedding provider, Drupal modules or evaluation implementation. This GitHub project is an independent reference implementation and makes no claim about reproducing any private or client system.
 
 ## 1. Why this proposal exists
 
-The project owner wants to showcase applied AI **inside and outside Drupal** while preserving the original discussion of a Drupal source of truth, retrieval-grounded candidate evaluation, specialized agent responsibilities, LangGraph/LangChain, Temporal, Pydantic, and LangFuse. The project should also establish a systematic quality-improvement process, rather than stop at ad-hoc observation.
+The project owner wants to showcase applied AI **inside and outside Drupal** around a Drupal source of truth, retrieval-grounded candidate evaluation, specialized agent responsibilities, and the LangGraph/LangChain, Temporal, Pydantic and LangFuse technologies under consideration. The project should also establish a systematic quality-improvement process, rather than stop at ad-hoc observation.
 
 This proposal makes two specific architecture changes relative to Foundation v0.2:
 
 - **P-002 — Drupal-first reference implementation [PROPOSED]:** Drupal is the authoritative application/data layer for the first pilot, with a controlled retrieval projection available to external AI services. The *core domain contracts* remain portable to other authoritative systems in later adapters.
 - **P-003 — Evaluation as a first-class product capability [PROPOSED]:** A versioned regression dataset and reproducible offline evaluation harness exist before model-driven suggestions are promoted. LangFuse can correlate evaluations and traces, but observability tooling alone does not create ground truth.
 
-Neither proposal changes the approved **D-001 general-purpose core plus nonprofit internship pilot** strategy. Both require project-owner review before being marked accepted.
+Neither proposal changes the approved **D-001 general-purpose core plus nonprofit internship pilot** strategy. At the time of writing both required project-owner review. *Editorial note (2026-10-29): P-002 and P-003 were subsequently accepted in direction as D-002 ([ADR-0002](../decisions/ADR-0002-drupal-authoritative-reference-and-rag-boundaries.md)) and D-003 ([ADR-0003](../decisions/ADR-0003-versioned-agent-evaluation-and-prompt-promotion.md)); those ADRs govern this proposal.*
 
-## 2. Transcript anchor [SOURCE]
+## 2. Provenance
 
-### Drupal retrieval / RAG
+*Editorial redaction 2026-10-29 (follow-up F2): this section previously summarized private prior design discussions. That material, including identifying attributions and dialogue, was removed from the current document under the project's source-hygiene rule. It remains in earlier Git history; this redaction does not remove historical copies.*
 
-- Vlad explicitly asked whether candidate-submitted resumes/cover letters were processed through a RAG pipeline or loaded just-in-time in context.
-- Damien answered: "It's a rag based. We set up rag in their Drupal environment for the content so that it could be used by the AI system."
-- The subsequent exchange acknowledged that another person handled much of the Drupal-side retrieval and that the exact technology was not recalled.
-- **Do not infer:** the exact vector store, embeddings, Drupal Search API configuration, retrieval chunker, ACL implementation, or pipeline location.
+The proposal is an independent design. The only points carried forward from earlier private discussions are generalized engineering principles:
 
-### Observability and formal evaluation
-
-- Vlad asked for a practical approach to AI observability **beyond tracing**, especially performance, reliability, and cost.
-- Damien described ad-hoc evaluation and spreadsheet-based review, and did not claim a formal benchmark suite.
-- Vlad replied that his organization was in a similar position.
-- Later, he identified building an evaluation system for existing agents as one likely early responsibility for the Staff role.
-- **Interpretation [INFERENCE]:** A measurable evaluation loop is particularly valuable portfolio evidence, but there is no claim that this project solves Acquia's actual internal requirements.
+- Retrieval over candidate-submitted documents is a design consideration. Nothing here establishes a vector store, embedding model, Drupal Search API configuration, chunking approach, access-control implementation or pipeline placement, and none should be inferred.
+- Observability should address performance, reliability and cost, not only tracing.
+- Labeled, repeatable evaluation should exist before model-driven suggestions are promoted; ad-hoc review is not sufficient. This motivates P-003.
 
 ## 3. Separation of responsibilities [PROPOSED]
 
@@ -54,7 +47,7 @@ Neither proposal changes the approved **D-001 general-purpose core plus nonprofi
 | Traces and AI experimental metadata | LangFuse, with PII redaction and correlation IDs | Source of truth for a candidate record |
 | Dataset labels and review feedback | Versioned synthetic evaluation fixtures; authorized human feedback with access controls | Automatic objective truth from raw reviewer clicks |
 
-**Important distinction:** **LangChain and LangGraph are not synonyms.** LangChain can provide loaders, retrievers, model/tool integrations; LangGraph can coordinate explicit agent state and transitions. Their inclusion should be justified independently. The interview discussion specifically described LangGraph as the agent orchestrator.
+**Important distinction:** **LangChain and LangGraph are not synonyms.** LangChain can provide loaders, retrievers, model/tool integrations; LangGraph can coordinate explicit agent state and transitions. Their inclusion should be justified independently. This proposal uses LangGraph as the candidate agent orchestrator; it remains an intended demonstration technology, not a locked choice (ADR-0004, open items).
 
 ## 4. Reference architecture — conceptual, not yet chosen implementation
 
@@ -221,6 +214,8 @@ Proposed nonfunctional amendments: strict freshness checks, indexed-data deletio
 
 ## 9. What remains open
 
+*Editorial note (2026-10-29): items 1 and 2 were answered when D-002 and D-003 were accepted in direction; they are kept as historical record. Items 3–5 remain open as recorded in the ADRs.*
+
 1. Confirm **P-002:** Is Drupal a required first-pilot source of truth (my recommendation), while other ATS/CMS systems remain future adapters?
 2. Confirm **P-003:** Is measurable evaluation/prompt-regression testing an explicit first-release showcase (my recommendation), with a quality gate before model changes?
 3. Do you want the **in-Drupal** AI experience delivered using the Drupal AI module ecosystem, or is a native Drupal UI invoking the external service enough? A hybrid is also possible.
@@ -239,3 +234,4 @@ Proposed nonfunctional amendments: strict freshness checks, indexed-data deletio
 ## Change log
 
 - **v0.1.0 — 2026-10-12:** Proposed source-of-truth, inside/outside Drupal, RAG boundaries and continuous evaluation architecture for review before updating the approved project baseline.
+- **v0.1.1 — 2026-10-29:** Editorial redaction (F2). Replaced the private-discussion summary in §2 with a neutral provenance statement and generalized principles; removed identifying attributions, dialogue and dated source references; clarified that D-002 and D-003 govern. No architectural content changed. Also annotated §1 and §9 to record that P-002 and P-003 were later accepted in direction as D-002 and D-003. Earlier versions remain in Git history.
