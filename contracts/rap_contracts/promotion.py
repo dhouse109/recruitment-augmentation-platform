@@ -367,13 +367,13 @@ class UsefulnessCoverage(ContractModel):
 
 
 class DimensionUsefulness(ContractModel):
-    """MEASUREMENT for one rubric dimension, from genuinely reportable records only."""
+    """MEASUREMENT for one rubric dimension: final scores and justified N/A from genuinely reportable,
+    finalized adjudications only. Disputed and unresolved results are diagnostic (``UsefulnessCoverage``)
+    and cannot appear here (F4 PR-B review finding F2)."""
 
     dimension: Code
     anchors: tuple[AnchorCount, ...] = ()
     not_applicable: _Count = 0
-    disputed: _Count = 0
-    unresolved: _Count = 0
 
     @model_validator(mode="after")
     def _unique(self) -> "DimensionUsefulness":
@@ -384,7 +384,7 @@ class DimensionUsefulness(ContractModel):
 
     @property
     def total(self) -> int:
-        return sum(a.count for a in self.anchors) + self.not_applicable + self.disputed + self.unresolved
+        return sum(a.count for a in self.anchors) + self.not_applicable
 
 
 class DistributionValue(_MetricValueBase):

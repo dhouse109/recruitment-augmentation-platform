@@ -28,6 +28,7 @@ from rap_contracts.adjudication import (
     derive_usefulness_distribution,
     reportable,
 )
+from rap_contracts.evaluation import Split
 from rap_contracts.invariants import ContractViolation
 from rap_contracts.promotion import MetricDefinitionSet
 
@@ -501,6 +502,22 @@ class ReportabilityTests(unittest.TestCase):
             assess_reportability(rec, rub, [item()], run(rid="evalrun_candidate_2"), reg)
         self.assertEqual(ctx.exception.code, "record_run_mismatch")
 
+    def test_disputed_or_unresolved_adjudication_is_not_structurally_eligible(self):
+        """Review finding F1: only a finalized (adjudicated) record can be structurally eligible, even when
+        every reviewer, recorder, rubric and register claim is set to its trusted-looking value."""
+        _, rub, items, r, reg = forged()
+        trusted_disagreement = [lab(P1, ES, 2, basis=TRUSTED), lab(P2, ES, 0, rationale="x", basis=TRUSTED)]
+        for name, doc in {
+            "disputed": record_with(ES, trusted_disagreement, result(ES, resolution="disputed"), status="disputed",
+                                    basis=TRUSTED),
+            "unresolved": record_with(ES, [lab(P1, ES, 2, basis=TRUSTED)], result(ES, resolution="unresolved"),
+                                      status="unresolved", basis=TRUSTED),
+        }.items():
+            with self.subTest(name):
+                assessment = self.assess(AdjudicationRecord.model_validate(doc), rub, items, r, reg)
+                self.assertFalse(assessment.structurally_eligible)
+                self.assertEqual(assessment.structural_reasons, ("adjudication_not_final",))
+
 
 class DistributionTests(unittest.TestCase):
     """E9: diagnostic coverage reconciles every item; usefulness stays not_measured; nothing is imputed."""
@@ -526,10 +543,53 @@ class DistributionTests(unittest.TestCase):
             results=[result(UH), result(EC), result(ES, resolution="disputed"), result(FU, resolution="unresolved")]))
         return [eligible, disputed]
 
-    def derive(self, records=None, items=None, **kw):
+    def derive(self, records=None, items=None, run_=None, manifest=None, **kw):
         return derive_usefulness_distribution(USEFULNESS, self.items() if items is None else items,
                                               self.records() if records is None else records, rubric("approved"),
-                                              run(), registers=[register()], **kw)
+                                              run_ or run(), G.GOLDEN if manifest is None else manifest,
+                                              registers=[register()], **kw)
+
+    def test_only_finalized_records_count_as_structurally_eligible(self):
+        """Review finding F1: with every claim trusted-looking, the adjudicated record is eligible-only and the
+        disputed and unresolved records are ineligible; their dimension states stay diagnostic."""
+        adjudicated = AdjudicationRecord.model_validate(record(basis=TRUSTED))
+        disputed = AdjudicationRecord.model_validate(record_with(
+            ES, [lab(P1, ES, 2, basis=TRUSTED), lab(P2, ES, 0, rationale="x", basis=TRUSTED)],
+            result(ES, resolution="disputed"), status="disputed", basis=TRUSTED, slot="recommendation_2",
+            output="recommendation_example_2", rid="adjudication_example_2"))
+        unresolved = AdjudicationRecord.model_validate(record_with(
+            ES, [lab(P1, ES, 2, basis=TRUSTED)], result(ES, resolution="unresolved"), status="unresolved",
+            basis=TRUSTED, slot="recommendation_3", output="recommendation_example_3", rid="adjudication_example_3"))
+        value = self.derive(records=[adjudicated, disputed, unresolved])
+        cov = value.coverage
+        self.assertEqual((cov.reviewed, cov.unreviewed, cov.genuinely_reportable, cov.structurally_eligible_only,
+                          cov.structurally_ineligible), (3, 0, 0, 1, 2))
+        es = next(s for s in cov.dimension_states if s.dimension == ES)
+        self.assertEqual((es.scored, es.not_applicable, es.disputed, es.unresolved), (1, 0, 1, 1))
+        self.assertEqual((value.status.value, value.dimensions), ("not_measured", ()))
+
+    def test_derivation_reuses_pinned_item_checks(self):
+        """Review finding F3: derivation applies the full structural item checks against a manifest the run
+        pins. This is structural consistency only: it does not establish that the caller's item set is
+        complete, that expectations were derived from the case, or that the run executed the outputs."""
+        wrong_hash = ReviewItem.model_validate({**item().model_dump(mode="json"),
+                                                "key": {**key(), "case_sha256": "sha256:" + "0" * 64}})
+        wrong_version = ReviewItem.model_validate({**item().model_dump(mode="json"),
+                                                   "key": {**key(), "case_version": 9}})
+        held_out_only = run(manifests=(G.HELD_PIN,))
+        cases = {
+            "review_item_case_mismatch": {"items": [wrong_hash], "records": []},
+            "review_item_case_mismatch (version)": {"items": [wrong_version], "records": []},
+            "review_item_replicate_out_of_range": {"items": [item(replicate=2)], "records": []},
+            "review_item_case_mismatch (case not in the supplied manifest)": {
+                "manifest": H.manifest_of(H.split_doc(Split.HELD_OUT))},
+            "review_manifest_not_pinned_by_run": {"run_": held_out_only},
+        }
+        for name, kw in cases.items():
+            with self.subTest(name), self.assertRaises(ContractViolation) as ctx:
+                self.derive(**kw)
+            self.assertEqual(ctx.exception.code, name.split(" ")[0])
+        self.assertEqual(self.derive(items=[item(replicate=2)], records=[], run_=run(replicates=2)).coverage.items_total, 1)
 
     def test_all_presence_categories_reconcile(self):
         cov = self.derive().coverage
@@ -579,7 +639,7 @@ class DistributionTests(unittest.TestCase):
             self.assertEqual(ctx.exception.code, code)
         latency = MetricDefinitionSet.model_validate(H.load(H.DEFINITIONS_V2_FILE)["metric_definitions"]).get("latency_p50", 1)
         with self.assertRaises(ContractViolation) as ctx:
-            derive_usefulness_distribution(latency, self.items(), [], rubric(), run())
+            derive_usefulness_distribution(latency, self.items(), [], rubric(), run(), G.GOLDEN)
         self.assertEqual(ctx.exception.code, "metric_kind_mismatch")
 
 

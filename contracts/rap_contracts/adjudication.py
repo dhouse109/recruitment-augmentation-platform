@@ -51,6 +51,7 @@ from .evaluation import (
     RecordId,
     Sha256,
     ShortText,
+    pin_manifest,
 )
 from .invariants import ContractViolation
 from .models import _ID_BODY, ContractModel
@@ -532,6 +533,8 @@ def assess_reportability(record: AdjudicationRecord, rubric: ReviewerRubric, ite
     if record.subject.item.run_id != run.id:
         raise ContractViolation("record_run_mismatch", f"{record.id} judges an output of another run")
     reasons: list[str] = []
+    if record.status is not AdjudicationStatus.ADJUDICATED:
+        reasons.append("adjudication_not_final")  # disputed or unresolved results are never eligible (finding F1)
     if rubric.status != "approved":
         reasons.append("rubric_not_approved")
     if any(label.reviewer.attestation_basis is not _TRUSTED for label in record.raw_labels):
@@ -569,20 +572,27 @@ def reportable(record: AdjudicationRecord, rubric: ReviewerRubric, items: Iterab
 
 def derive_usefulness_distribution(definition: MetricDefinition, items: Iterable[ReviewItem],
                                    records: Iterable[AdjudicationRecord], rubric: ReviewerRubric, run: EvaluationRun,
+                                   manifest: EvaluationDatasetManifest,
                                    registers: Iterable[ReviewerConflictRegister] = ()) -> DistributionValue:
     """Count every review item and every reviewed output; never impute a score.
 
     Returns ``not_measured`` with fully populated diagnostic coverage: no record
     is genuinely reportable until a trusted evaluation-record service exists, so
     no usefulness measurement can be derived here (F4 E9 qualification).
-    The item list is caller-declared; its completeness is not established.
+
+    ``manifest`` must be one the run pins; every item then passes
+    ``check_review_items`` (uniqueness, run, case version and hash, replicate
+    range). These are structural consistency checks only: they do not show that
+    the caller-declared item set is complete, that slots and expectations were
+    derived from the case, or that the run produced the outputs.
     """
     if definition.unit != "ordinal_distribution":
         raise ContractViolation("metric_kind_mismatch", f"{definition.id} is not an ordinal-distribution metric")
+    if pin_manifest(manifest) not in run.manifests:
+        raise ContractViolation("review_manifest_not_pinned_by_run", f"{run.id} does not pin {manifest.id}")
     items = list(items)
+    check_review_items(items, run, manifest)
     by_key = _index_items(items)
-    if any(item.key.run_id != run.id for item in items):
-        raise ContractViolation("review_item_run_mismatch", "review items belong to another run")
     registers = list(registers)
     by_subject: dict[ReviewItemKey, AdjudicationRecord] = {}
     for record in records:

@@ -253,7 +253,7 @@ class TypedMetricValueTests(unittest.TestCase):
                 {"dimension": "evidence_support", "anchors": [{"value": 2, "count": 1}]}]),
             "observed distribution with zero-count anchors only": mv("distribution", "observed", coverage=coverage(
                 reportable=1), dimensions=[{"dimension": "evidence_support", "anchors": [{"value": 2, "count": 0}],
-                                            "unresolved": 1}]),
+                                            "not_applicable": 1}]),
         })
 
     def test_usefulness_distribution_populations_and_coverage(self):
@@ -266,8 +266,6 @@ class TypedMetricValueTests(unittest.TestCase):
                                                           dimensions=[{"dimension": es, "anchors": [{"value": 0, "count": 3}]}]),
             "one dimension all N/A beside a scored one": dist("observed", coverage=coverage(reportable=2), dimensions=[
                 {"dimension": es, "anchors": [{"value": 1, "count": 2}]}, {"dimension": fu, "not_applicable": 2}]),
-            "disputed and unresolved counted, not scored": dist("observed", coverage=coverage(reportable=3), dimensions=[
-                {"dimension": es, "anchors": [{"value": 2, "count": 1}], "disputed": 1, "unresolved": 1}]),
             "every dimension N/A is not a measurement": dist("not_applicable", not_applicable_reason="zero_denominator",
                                                              coverage=coverage(reportable=2)),
             "missing, failed and unreviewed stay diagnostic": dist("not_measured", coverage=coverage(
@@ -295,6 +293,22 @@ class TypedMetricValueTests(unittest.TestCase):
             "presence counts do not reconcile": dist("not_measured", coverage=broken_presence),
             "produced items neither reviewed nor unreviewed": dist("not_measured", coverage=broken_review),
             "dimension states do not cover reviewed items": dist("not_measured", coverage=broken_states),
+        })
+
+    def test_measurement_excludes_disputed_and_unresolved(self):
+        """Review finding F2: measured usefulness holds only scores and justified N/A from genuinely reportable,
+        finalized adjudications. Disputed and unresolved counts belong to diagnostic coverage only."""
+        es = "evidence_support"
+        self._accepts(mv("distribution", "observed", coverage=coverage(reportable=3), dimensions=[
+            {"dimension": es, "anchors": [{"value": 2, "count": 2}], "not_applicable": 1}]))
+        self._rejects({
+            "disputed in a measured dimension": mv("distribution", "observed", coverage=coverage(reportable=3), dimensions=[
+                {"dimension": es, "anchors": [{"value": 2, "count": 2}], "disputed": 1}]),
+            "unresolved in a measured dimension": mv("distribution", "observed", coverage=coverage(reportable=3), dimensions=[
+                {"dimension": es, "anchors": [{"value": 2, "count": 2}], "unresolved": 1}]),
+            "disputed and unresolved in a measured dimension": mv("distribution", "observed", coverage=coverage(reportable=3),
+                                                                   dimensions=[{"dimension": es, "anchors": [{"value": 2, "count": 1}],
+                                                                                "disputed": 1, "unresolved": 1}]),
         })
 
     def test_not_applicable_reason_rules(self):

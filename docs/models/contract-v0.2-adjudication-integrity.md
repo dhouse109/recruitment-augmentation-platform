@@ -51,20 +51,20 @@ Approved 2026-10-29 together with the authorization to implement PR-B. B2 and N1
 
 Status: `adjudicated` if every dimension is resolved, otherwise `disputed` if any dimension is disputed, otherwise `unresolved`; a note is required unless adjudicated. `check_adjudication` adds rubric-pin, full dimension coverage, scale, allowed-reason and rationale rules. `check_record_attachment` requires the record to judge a produced output of a known item, and every N/A to cite an expectation the item carries.
 
-**Reportability.** `assess_reportability(record, rubric, items, run, register)` returns `structurally_eligible` and `structural_reasons` (`rubric_not_approved`, `role_not_authenticated`, `recorder_not_authenticated`, `conflict_register_missing`, `conflict_register_scope_mismatch`, `conflict_register_incomplete`, `conflict_register_untrusted`, `conflicted_reviewer`), and always `genuinely_reportable: false` with `authority_reasons: ["no_trusted_evaluation_record_service"]`. The model cannot be constructed with `genuinely_reportable: true`.
+**Reportability.** `assess_reportability(record, rubric, items, run, register)` returns `structurally_eligible` and `structural_reasons` (`adjudication_not_final` for any `disputed` or `unresolved` record, `rubric_not_approved`, `role_not_authenticated`, `recorder_not_authenticated`, `conflict_register_missing`, `conflict_register_scope_mismatch`, `conflict_register_incomplete`, `conflict_register_untrusted`, `conflicted_reviewer`), and always `genuinely_reportable: false` with `authority_reasons: ["no_trusted_evaluation_record_service"]`. The model cannot be constructed with `genuinely_reportable: true`.
 
-**Usefulness value.** `DistributionValue` now holds `coverage` (diagnostic: item presence counts; reviewed and unreviewed produced items; genuinely reportable, structurally-eligible-only and structurally ineligible reviews; per-dimension resolution-state counts) and, only when `observed`, per-dimension `dimensions` built from genuinely reportable records. Every count reconciles; nothing is imputed:
+**Usefulness value.** `DistributionValue` now holds `coverage` (diagnostic: item presence counts; reviewed and unreviewed produced items; genuinely reportable, structurally-eligible-only and structurally ineligible reviews; per-dimension resolution-state counts) and, only when `observed`, per-dimension `dimensions` built from genuinely reportable, finalized records: each holds only score anchors and justified N/A, never disputed or unresolved counts. Every count reconciles; nothing is imputed:
 
 | Population | Representation |
 |---|---|
 | All scored 0 | Anchor `{value: 0, count: n}` (genuine zeros) |
 | A dimension all N/A | No anchors, `not_applicable: n` |
 | Every dimension N/A | `not_applicable` with `zero_denominator`, never 0 or 100 % |
-| Disputed / unresolved | Counted, never an anchor |
+| Disputed / unresolved | Counted in diagnostic coverage only; a record with either is never structurally eligible and never enters a measured dimension |
 | Missing, failed, correctly absent | Coverage counts only |
 | Produced but unreviewed or not genuinely reportable | Coverage counts only |
 
-`derive_usefulness_distribution` always returns `not_measured` with fully populated coverage.
+`derive_usefulness_distribution(definition, items, records, rubric, run, manifest, registers)` requires a manifest the run pins and applies `check_review_items` to every item (uniqueness, run, case version and hash, replicate range). It always returns `not_measured` with fully populated coverage. These checks establish structural consistency only, not item-set completeness, case-derived expectations or execution provenance.
 
 ## What is caller-declared or structural (not established)
 
@@ -97,6 +97,18 @@ Synthetic probes run on the unchanged baseline, each now covered by a regression
 | P6 rubric with `recorded_discussion` | accepted | `test_cardinality_and_disagreement_policy_are_fixed` |
 | P7 usefulness value with missing/failed counts | rejected (not representable) | `test_usefulness_distribution_populations_and_coverage`, `test_all_presence_categories_reconcile` |
 | P8 records for different outputs of one case | indistinguishable apart from record id | `ReviewItemTests`, `test_records_attach_only_to_produced_outputs` |
+
+## Review repairs (F1–F3)
+
+Independent review of branch head `84303ad0` found three integrity gaps, each reproduced before repair and now covered by a named regression test:
+
+| Finding | Before repair (`84303ad0`) | Repair | Regression test |
+|---|---|---|---|
+| F1 disputed or unresolved adjudications counted as structurally eligible | A disputed or unresolved record with every claim trusted-looking was `structurally_eligible: true`; diagnostic coverage counted it as eligible-only | `adjudication_not_final` structural reason | `test_disputed_or_unresolved_adjudication_is_not_structurally_eligible`, `test_only_finalized_records_count_as_structurally_eligible` |
+| F2 measured usefulness accepted disputed and unresolved counts | `DimensionUsefulness` carried `disputed` and `unresolved`, and an observed value including them was accepted | Fields removed from the measurement; they remain in `UsefulnessCoverage.dimension_states` | `test_measurement_excludes_disputed_and_unresolved` |
+| F3 derivation bypassed pinned item checks | An item with an unpinned case hash, or a replicate beyond the run's count, was accepted | `manifest` argument; must be pinned by the run; `check_review_items` applied | `test_derivation_reuses_pinned_item_checks` |
+
+The F2 repair changes the `run-comparison` schema body again relative to `84303ad0`; relative to `main` the changed bodies remain exactly `adjudication-record`, `reviewer-rubric` and `run-comparison`.
 
 ## Test and mutation evidence
 

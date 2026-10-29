@@ -339,7 +339,7 @@
     },
     "DimensionUsefulness": {
       "additionalProperties": false,
-      "description": "MEASUREMENT for one rubric dimension, from genuinely reportable records only.",
+      "description": "MEASUREMENT for one rubric dimension: final scores and justified N/A from genuinely reportable,\nfinalized adjudications only. Disputed and unresolved results are diagnostic (``UsefulnessCoverage``)\nand cannot appear here (F4 PR-B review finding F2).",
       "properties": {
         "anchors": {
           "default": [],
@@ -354,22 +354,10 @@
           "title": "Dimension",
           "type": "string"
         },
-        "disputed": {
-          "default": 0,
-          "minimum": 0,
-          "title": "Disputed",
-          "type": "integer"
-        },
         "not_applicable": {
           "default": 0,
           "minimum": 0,
           "title": "Not Applicable",
-          "type": "integer"
-        },
-        "unresolved": {
-          "default": 0,
-          "minimum": 0,
-          "title": "Unresolved",
           "type": "integer"
         }
       },
