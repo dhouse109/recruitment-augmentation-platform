@@ -133,3 +133,46 @@ Unchanged against `main`: `rap_contracts/`, all 36 generated schemas (identical 
 | One byte appended to the v1 definitions file | — | Fails `test_v1_definitions_remain_default_and_unchanged` |
 
 These are synthetic, contract-level checks. They are not integrated safety evidence, and the held-out checks are not custody or confidentiality proof.
+
+### F4 PR-B evidence (adjudication integrity)
+
+Fresh clone of branch `contracts/f4-adjudication-integrity` at code commit `32b26676ac7d578682f1978be0597eb443f0da1b` (base `main` @ `089f52bd524545e38a85c0adec26b298a4800504`; later commits change documentation only), Python 3.13.18, `pydantic==2.13.5`, `jsonschema==4.26.0` (dev) and `pydantic==2.13.5` without `jsonschema` (runtime). `CONTRACT_VERSION` is `0.2.0-dev.foundations.5`. The suite grows from 432 to 460 test methods: `test_adjudication.py` is rewritten (11 to 31 methods), and `test_evaluation_contracts.py`, `test_json_schema_conformance.py` and `test_schemas.py` gain 1, 1 and 3 methods.
+
+| Command (from `contracts/`) | Result |
+|---|---|
+| `python -m rap_contracts.schema_export --check` | `schema drift: NONE` |
+| `python -m unittest discover -s tests` (dev requirements) | **460 tests, OK, 0 skipped, 0 failures** |
+| `python -m unittest discover -s tests` (runtime requirements only) | **460 tests, OK, 17 skipped** (JSON Schema conformance, as designed) |
+| `python -m unittest discover -s tests -p 'test_adjudication.py'` | 31 tests, OK |
+| `python -m unittest discover -s tests -p 'test_evaluation*.py'` | 62 tests, OK |
+| `python -m unittest discover -s tests -p 'test_json_schema_conformance.py'` | 17 tests, OK |
+| `python -m unittest discover -s tests -p 'test_schemas.py'` | 17 tests, OK |
+| `python -m unittest discover -s tests -p 'test_promotion_gates.py'` / `'test_dataset_partition.py'` | 49 / 18 tests, OK |
+
+Against `main`: 50 paths change (3 contract modules, all 36 regenerated schemas, 1 new draft fixture, 5 test files, 5 documentation files). Schema bodies change only for `adjudication-record`, `reviewer-rubric` and `run-comparison`; the other 33 are byte-for-byte equal in body and carry the new `$id` and `x-contract-version`. Unchanged: `evaluation.py`, `review.py`, `schema_export.py`, `test_promotion_gates.py`, `test_dataset_partition.py`, both definitions files (v1 SHA-256 `94452315…6957`), every case, layer and manifest, both requirements files, `docs/decisions/` and `docs/evaluation/`. No fixture contains `"status": "approved"`. The PR #7 and PR #10 evidence above is unchanged.
+
+**Failure-first baseline** (synthetic probes on `089f52bd`; details in [`contract-v0.2-adjudication-integrity.md`](contract-v0.2-adjudication-integrity.md#failure-first-evidence-baseline-089f52bd)): records with one reviewer per dimension, partial dimension coverage, arbitrary final labels and an un-adjudicated disagreement were accepted and `reportable()` returned True for typed-in trusted values; a third reviewer counted as independent; per-dimension resolution, justified N/A and missing-output counts were unrepresentable; `recorded_discussion` was accepted; records for different outputs of one case were indistinguishable.
+
+**Mutation evidence** (disposable copies of the code commit; never committed). Each mutation was applied alone and the full dev suite run:
+
+| Mutation | Detected by |
+|---|---|
+| Accept primary labels from undesignated reviewers | `test_exactly_two_designated_primaries` |
+| Trust declared results without recomputation | `test_declared_results_must_follow_from_labels`, `test_adjudication_integrity_conformance` |
+| Skip full rubric-dimension coverage | `test_every_rubric_dimension_needs_a_result` |
+| Allow an adjudicator label when the primaries agree | `test_unauthorized_resolutions_rejected` |
+| Accept N/A without the matching item expectation | `test_na_requires_the_matching_pinned_expectation` |
+| Ignore the conflict register's conflicts | `test_each_conflict_reason_disqualifies_a_reviewer` |
+| Let structural eligibility become genuine reportability | `test_forged_trusted_metadata_is_never_genuinely_reportable`, `test_genuine_reportability_cannot_be_declared`, `test_each_conflict_reason_disqualifies_a_reviewer` |
+| Drop missing outputs from coverage | `test_all_presence_categories_reconcile`, `test_no_score_is_imputed_from_missing_or_unresolved_items`, `test_usefulness_is_never_measured_without_a_trusted_service` (the coverage validator itself rejects the result) |
+| Dimension blocks need not account for every genuinely reportable record | `test_usefulness_distribution_populations_and_coverage` |
+| Allow `recorded_discussion` | `test_cardinality_and_disagreement_policy_are_fixed`, `test_adjudication_integrity_conformance`, schema drift tests |
+| Unanimous N/A ignores the reason (E4) | `test_na_disagreements_need_adjudication` |
+| Count one produced output through two slots | `test_duplicate_items_and_double_counted_outputs_rejected`, `test_orphan_duplicate_and_misattached_records_raise` |
+| Attach records to absent or failed outputs | `test_records_attach_only_to_produced_outputs`, `test_orphan_duplicate_and_misattached_records_raise` |
+| Coverage need not reconcile presence counts | `test_usefulness_distribution_populations_and_coverage`, `test_adjudication_integrity_conformance` |
+| Remove the explicit "observed needs a genuinely reportable record" clause | **Not detected — equivalent mutant.** The clause is implied by the dimension-total and scored-anchor checks together (detected separately above); it is kept as a defensive check. |
+
+The first mutation initially survived because the third-primary case was also rejected by result recomputation; commit `32b26676` adds a case whose declared result matches the derivation, isolating the designation rule.
+
+These are synthetic, contract-level checks. Reviewer identity, role, conflict and attestation values in the tests are structural claims, not authentication; nothing is genuinely reportable, and no adjudication has occurred.
