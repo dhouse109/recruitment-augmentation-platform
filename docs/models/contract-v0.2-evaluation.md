@@ -202,6 +202,8 @@ A `HeldOutGateAttestation` counts only when its manifest, policy **and `Configur
 
 ## Adjudication
 
+> **Superseded in `0.2.0-dev.foundations.5` (F4 PR-B).** The adjudication record, rubric rules, reportability and usefulness value changed; see [`contract-v0.2-adjudication-integrity.md`](contract-v0.2-adjudication-integrity.md). The paragraph below records the PR #7 state.
+
 `rubric_reviewer_usefulness` v1 (draft): four dimensions (evidence support, unknown handling, explanation clarity, follow-up actionability), ordinal anchors, rationale rules, two independent reviewers, third-reviewer disagreement policy. `AdjudicationRecord` keeps raw labels, rejects non-human reviewers and recorders, distinguishes `adjudicated` / `disputed` / `unresolved`, and supersedes rather than overwrites. `reportable()` requires an approved rubric, enough reviewers and **trusted** attestation of every reviewer and the recorder, which nothing here can produce. **No adjudication record is committed, and none has occurred.**
 
 ## Traceability matrix
@@ -250,7 +252,7 @@ A `HeldOutGateAttestation` counts only when its manifest, policy **and `Configur
 
 ## F4 draft definitions v2 (PR-A)
 
-**Added after PR #7 (F4, PR-A, 2026-10-29). Proposed, `status: draft` throughout; nothing is approved.** The owner's F4 Stage A decisions (B1–B5, N1–N3) and the PR-A specification decisions (D1–D5) are recorded in [`F4-definitions-decision-record.md`](../evaluation/F4-definitions-decision-record.md); approving those decisions did not approve any definition.
+**Added after PR #7 by F4 PR-A (PR #10, merged 2026-10-29). Definitions remain `status: draft` throughout; nothing is approved.** The owner's F4 Stage A decisions (B1–B5, N1–N3) and the PR-A specification decisions (D1–D5) are recorded in [`F4-definitions-decision-record.md`](../evaluation/F4-definitions-decision-record.md); approving those decisions did not approve any definition.
 
 PR-A adds `contracts/fixtures/evaluation-definitions-v2-v0.2.0-dev.json` and tests. It changes **no** model, validator, generated schema or contract version (`0.2.0-dev.foundations.4`), no case fixture or dataset manifest, and not the v1 definitions file, which stays byte-identical and remains the harness default (`eval_harness.DEFINITIONS_FILE`; v2 is `DEFINITIONS_V2_FILE`).
 
@@ -285,7 +287,7 @@ PR-A adds `contracts/fixtures/evaluation-definitions-v2-v0.2.0-dev.json` and tes
   - **Unresolved historical exposure:** earlier copies remain in Git history (introduced in `f59a3b5`, `03e861e`, `cf7ab98`, `ab2a7d1` and `ca75270` and present in every later commit), in every branch containing those commits and in GitHub PR refs. Forward redaction does not remove them. The repository remains private; history rewriting is **not authorized** and would be required (or a fresh repository published from redacted `main`) before any public release — an owner decision.
   - Adding the RAG proposal to the shared project packet's SOURCE_MANIFEST is deferred to the packet synchronization step.
 - **F3 (low):** isolate g002/g008 into separate scenarios. Must precede owner review of those two labels (B3); needs its own versioned case, manifest and draft-policy revisions.
-- **F4:** Stage A owner decisions B1–B5 and N1–N3 and PR-A decisions D1–D5 approved 2026-10-29 ([decision record](../evaluation/F4-definitions-decision-record.md)); draft definitions v2 proposed in PR-A ([above](#f4-draft-definitions-v2-pr-a)). Every definition (v1 and v2) remains `status: draft`; approval is a separate later owner act. Adjudication contracts (PR-B), execution and comparison semantics (PR-C to PR-E) and the research-selection record (PR-F) are proposed and not authorized.
+- **F4:** Stage A owner decisions B1–B5 and N1–N3 and PR-A decisions D1–D5 approved 2026-10-29 ([decision record](../evaluation/F4-definitions-decision-record.md)); draft definitions v2 added by PR-A (PR #10, merged 2026-10-29; [above](#f4-draft-definitions-v2-pr-a)); adjudication integrity and draft rubric v2 added by F4 PR-B ([`contract-v0.2-adjudication-integrity.md`](contract-v0.2-adjudication-integrity.md)). Every definition (v1 and v2) remains `status: draft`; approval is a separate later owner act. Execution and comparison semantics (PR-C to PR-E) and the research-selection record (PR-F) are proposed and not authorized.
 
 ## Review repair evidence
 

@@ -309,21 +309,115 @@ class AnchorCount(ContractModel):
     count: Annotated[int, Field(ge=0)]
 
 
+_Count = Annotated[int, Field(ge=0)]
+
+
+class DimensionReviewState(ContractModel):
+    """DIAGNOSTIC count of per-dimension resolution states over reviewed items. Holds no score."""
+
+    dimension: Code
+    scored: _Count
+    not_applicable: _Count
+    disputed: _Count
+    unresolved: _Count
+
+    @property
+    def total(self) -> int:
+        return self.scored + self.not_applicable + self.disputed + self.unresolved
+
+
+class UsefulnessCoverage(ContractModel):
+    """DIAGNOSTIC coverage of a usefulness review. Never a usefulness measurement (F4 E9).
+
+    Every review item is counted exactly once by output presence; every produced
+    item is counted once by review state; every reviewed item has one state per
+    dimension. Missing, failed, unreviewed, disputed and unresolved items stay
+    visible here and are never converted into scores.
+    """
+
+    items_total: _Count
+    produced_expected: _Count
+    produced_unexpected: _Count
+    missing: _Count
+    correctly_absent: _Count
+    generation_failed: _Count
+    reviewed: _Count
+    unreviewed: _Count
+    genuinely_reportable: _Count
+    structurally_eligible_only: _Count
+    structurally_ineligible: _Count
+    dimension_states: tuple[DimensionReviewState, ...] = ()
+
+    @model_validator(mode="after")
+    def _reconciles(self) -> "UsefulnessCoverage":
+        presence = (self.produced_expected + self.produced_unexpected + self.missing + self.correctly_absent
+                    + self.generation_failed)
+        if self.items_total != presence:
+            raise ValueError("items_total equals the sum of the output-presence counts")
+        if self.produced_expected + self.produced_unexpected != self.reviewed + self.unreviewed:
+            raise ValueError("every produced item is either reviewed or unreviewed")
+        if self.reviewed != self.genuinely_reportable + self.structurally_eligible_only + self.structurally_ineligible:
+            raise ValueError("every reviewed item has exactly one reportability state")
+        dims = [d.dimension for d in self.dimension_states]
+        if len(dims) != len(set(dims)):
+            raise ValueError("one state count per dimension")
+        if any(d.total != self.reviewed for d in self.dimension_states):
+            raise ValueError("each dimension's state counts add up to the reviewed items")
+        return self
+
+
+class DimensionUsefulness(ContractModel):
+    """MEASUREMENT for one rubric dimension: final scores and justified N/A from genuinely reportable,
+    finalized adjudications only. Disputed and unresolved results are diagnostic (``UsefulnessCoverage``)
+    and cannot appear here (F4 PR-B review finding F2)."""
+
+    dimension: Code
+    anchors: tuple[AnchorCount, ...] = ()
+    not_applicable: _Count = 0
+
+    @model_validator(mode="after")
+    def _unique(self) -> "DimensionUsefulness":
+        values = [a.value for a in self.anchors]
+        if len(values) != len(set(values)):
+            raise ValueError("anchor values are unique")
+        return self
+
+    @property
+    def total(self) -> int:
+        return sum(a.count for a in self.anchors) + self.not_applicable
+
+
 class DistributionValue(_MetricValueBase):
-    """Ordinal rubric distribution. Only trusted, adjudicated labels may populate it."""
+    """Ordinal rubric usefulness value (F4 E9).
+
+    ``coverage`` is diagnostic and may accompany any status. ``dimensions`` are
+    the measurement: present only when observed, built only from genuinely
+    reportable records, and each must account for every genuinely reportable
+    record. Nothing is imputed: missing, failed, unreviewed, disputed and
+    unresolved items never become anchors. No contract function can produce an
+    observed value until a trusted evaluation-record service exists; this model
+    validates shape and arithmetic only.
+    """
 
     kind: Literal["distribution"] = "distribution"
-    counts: tuple[AnchorCount, ...] = ()
+    coverage: UsefulnessCoverage | None = None
+    dimensions: tuple[DimensionUsefulness, ...] = ()
 
     @model_validator(mode="after")
     def _consistency(self) -> "DistributionValue":
         self._check_reason()
+        dims = [d.dimension for d in self.dimensions]
+        if len(dims) != len(set(dims)):
+            raise ValueError("one measurement block per dimension")
         if self.status is MeasurementStatus.OBSERVED:
-            values = [c.value for c in self.counts]
-            if not self.counts or sum(c.count for c in self.counts) < 1 or len(values) != len(set(values)):
-                raise ValueError("an observed distribution has unique anchors and at least one label")
-        elif self.counts:
-            raise ValueError("unmeasured or inapplicable distributions carry no counts")
+            if self.coverage is None or self.coverage.genuinely_reportable < 1 or not self.dimensions:
+                raise ValueError("an observed distribution carries coverage, genuinely reportable records and dimensions")
+            if any(d.total != self.coverage.genuinely_reportable for d in self.dimensions):
+                raise ValueError("each dimension accounts for every genuinely reportable record")
+            if not any(a.count >= 1 for d in self.dimensions for a in d.anchors):
+                raise ValueError("an observed distribution has at least one scored anchor")
+        elif self.dimensions:
+            raise ValueError("only observed distributions carry measurement blocks; coverage stays diagnostic")
         return self
 
 

@@ -297,16 +297,97 @@
       "title": "DefinitionsPin",
       "type": "object"
     },
-    "DistributionValue": {
+    "DimensionReviewState": {
       "additionalProperties": false,
-      "description": "Ordinal rubric distribution. Only trusted, adjudicated labels may populate it.",
+      "description": "DIAGNOSTIC count of per-dimension resolution states over reviewed items. Holds no score.",
       "properties": {
-        "counts": {
+        "dimension": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Dimension",
+          "type": "string"
+        },
+        "disputed": {
+          "minimum": 0,
+          "title": "Disputed",
+          "type": "integer"
+        },
+        "not_applicable": {
+          "minimum": 0,
+          "title": "Not Applicable",
+          "type": "integer"
+        },
+        "scored": {
+          "minimum": 0,
+          "title": "Scored",
+          "type": "integer"
+        },
+        "unresolved": {
+          "minimum": 0,
+          "title": "Unresolved",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dimension",
+        "scored",
+        "not_applicable",
+        "disputed",
+        "unresolved"
+      ],
+      "title": "DimensionReviewState",
+      "type": "object"
+    },
+    "DimensionUsefulness": {
+      "additionalProperties": false,
+      "description": "MEASUREMENT for one rubric dimension: final scores and justified N/A from genuinely reportable,\nfinalized adjudications only. Disputed and unresolved results are diagnostic (``UsefulnessCoverage``)\nand cannot appear here (F4 PR-B review finding F2).",
+      "properties": {
+        "anchors": {
           "default": [],
           "items": {
             "$ref": "#/$defs/AnchorCount"
           },
-          "title": "Counts",
+          "title": "Anchors",
+          "type": "array"
+        },
+        "dimension": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Dimension",
+          "type": "string"
+        },
+        "not_applicable": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Not Applicable",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dimension"
+      ],
+      "title": "DimensionUsefulness",
+      "type": "object"
+    },
+    "DistributionValue": {
+      "additionalProperties": false,
+      "description": "Ordinal rubric usefulness value (F4 E9).\n\n``coverage`` is diagnostic and may accompany any status. ``dimensions`` are\nthe measurement: present only when observed, built only from genuinely\nreportable records, and each must account for every genuinely reportable\nrecord. Nothing is imputed: missing, failed, unreviewed, disputed and\nunresolved items never become anchors. No contract function can produce an\nobserved value until a trusted evaluation-record service exists; this model\nvalidates shape and arithmetic only.",
+      "properties": {
+        "coverage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UsefulnessCoverage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "dimensions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DimensionUsefulness"
+          },
+          "title": "Dimensions",
           "type": "array"
         },
         "kind": {
@@ -695,9 +776,93 @@
       ],
       "title": "Split",
       "type": "string"
+    },
+    "UsefulnessCoverage": {
+      "additionalProperties": false,
+      "description": "DIAGNOSTIC coverage of a usefulness review. Never a usefulness measurement (F4 E9).\n\nEvery review item is counted exactly once by output presence; every produced\nitem is counted once by review state; every reviewed item has one state per\ndimension. Missing, failed, unreviewed, disputed and unresolved items stay\nvisible here and are never converted into scores.",
+      "properties": {
+        "correctly_absent": {
+          "minimum": 0,
+          "title": "Correctly Absent",
+          "type": "integer"
+        },
+        "dimension_states": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DimensionReviewState"
+          },
+          "title": "Dimension States",
+          "type": "array"
+        },
+        "generation_failed": {
+          "minimum": 0,
+          "title": "Generation Failed",
+          "type": "integer"
+        },
+        "genuinely_reportable": {
+          "minimum": 0,
+          "title": "Genuinely Reportable",
+          "type": "integer"
+        },
+        "items_total": {
+          "minimum": 0,
+          "title": "Items Total",
+          "type": "integer"
+        },
+        "missing": {
+          "minimum": 0,
+          "title": "Missing",
+          "type": "integer"
+        },
+        "produced_expected": {
+          "minimum": 0,
+          "title": "Produced Expected",
+          "type": "integer"
+        },
+        "produced_unexpected": {
+          "minimum": 0,
+          "title": "Produced Unexpected",
+          "type": "integer"
+        },
+        "reviewed": {
+          "minimum": 0,
+          "title": "Reviewed",
+          "type": "integer"
+        },
+        "structurally_eligible_only": {
+          "minimum": 0,
+          "title": "Structurally Eligible Only",
+          "type": "integer"
+        },
+        "structurally_ineligible": {
+          "minimum": 0,
+          "title": "Structurally Ineligible",
+          "type": "integer"
+        },
+        "unreviewed": {
+          "minimum": 0,
+          "title": "Unreviewed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items_total",
+        "produced_expected",
+        "produced_unexpected",
+        "missing",
+        "correctly_absent",
+        "generation_failed",
+        "reviewed",
+        "unreviewed",
+        "genuinely_reportable",
+        "structurally_eligible_only",
+        "structurally_ineligible"
+      ],
+      "title": "UsefulnessCoverage",
+      "type": "object"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/run-comparison.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/run-comparison.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Documented baseline-vs-candidate comparison. Completeness is recomputed, never declared.",
@@ -779,5 +944,5 @@
   "title": "RunComparison",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.4"
+  "x-contract-version": "0.2.0-dev.foundations.5"
 }

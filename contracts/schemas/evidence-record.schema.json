@@ -182,7 +182,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/evidence-record.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/evidence-record.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Attributable pointer to one field of one exact authoritative source version.\n\nCarries no copied text. Content is resolved, when permitted, from the\nauthority; a valid EvidenceRecord is not proof that it may be read.",
@@ -228,5 +228,5 @@
   "title": "EvidenceRecord",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.4"
+  "x-contract-version": "0.2.0-dev.foundations.5"
 }

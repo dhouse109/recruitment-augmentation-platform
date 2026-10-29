@@ -101,6 +101,8 @@ SPLIT_FILES = {Split.GOLDEN: "evaluation-golden-v0.2.0-dev.json", Split.HELD_OUT
 DEFINITIONS_FILE = "evaluation-definitions-v0.2.0-dev.json"
 #: Proposed draft definitions v2 (F4, PR-A). Not the default: DEFINITIONS_FILE (v1) remains the harness default.
 DEFINITIONS_V2_FILE = "evaluation-definitions-v2-v0.2.0-dev.json"
+#: Proposed draft reviewer rubric v2 (F4, PR-B). Rubric v1 in both definitions files is unchanged.
+RUBRIC_V2_FILE = "evaluation-rubric-v2-v0.2.0-dev.json"
 
 #: Candidate-scoped record kinds. Everything else in a context is shared base.
 SCOPED_KINDS = ("candidates", "profiles", "applications", "evidence", "claims", "participations",
