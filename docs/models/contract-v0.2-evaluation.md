@@ -248,6 +248,34 @@ A `HeldOutGateAttestation` counts only when its manifest, policy **and `Configur
 - New records live only in the two evaluation case files and are loaded only by cases that include them.
 - Manifest pins make any later edit to the PR #4–#6 fixture files fail `ManifestPinTests` until the dataset is versioned. This is intended.
 
+## F4 draft definitions v2 (PR-A)
+
+**Added after PR #7 (F4, PR-A, 2026-10-29). Proposed, `status: draft` throughout; nothing is approved.** The owner's F4 Stage A decisions (B1–B5, N1–N3) and the PR-A specification decisions (D1–D5) are recorded in [`F4-definitions-decision-record.md`](../evaluation/F4-definitions-decision-record.md); approving those decisions did not approve any definition.
+
+PR-A adds `contracts/fixtures/evaluation-definitions-v2-v0.2.0-dev.json` and tests. It changes **no** model, validator, generated schema or contract version (`0.2.0-dev.foundations.4`), no case fixture or dataset manifest, and not the v1 definitions file, which stays byte-identical and remains the harness default (`eval_harness.DEFINITIONS_FILE`; v2 is `DEFINITIONS_V2_FILE`).
+
+| Object | v2 content |
+|---|---|
+| `evaldefs_metrics` **v2** (draft, 25 metrics) | 4 unchanged (v1): `case_conformance_rate`, `citation_precision`, `latency_p95`, `cost_per_reviewed_suggestion`. 13 revised text only, now version 2 (D1): `eligibility_label_correctness` and `unknown_state_preservation` (B3 label floor; missing or errored predictions count as incorrect and are counted separately; `proposed` labels are exclusions), `verification_detection_recall` and `verification_false_alarm_rate` (attributable detection on a declared acceptable check code; `detected_other_check` not credited, N2), `reviewer_usefulness` (independent review per B2; N/A, no-output, generation-failure and unresolved counts kept visible), and the eight `unblocked_*` counts (detection at any evidence basis). 8 new (version 1): `eligibility_rule_agreement` (M2b; `threshold_uncalibrated`, `reported`) and the seven B5 metrics `reviewer_correction_rate`, `retry_rate`, `escalation_rate`, `noncritical_unsupported_claim_rate`, `citation_coverage`, `latency_p50`, `review_elapsed_time_p50` (all `report_only`, `not_compared`). Comparison flags, gates, units, run kinds and components of carried-over metrics are unchanged. |
+| `evaldefs_safety_gate` **v2** (draft) | Identical to v1 except `version: 2` and its definitions pin (`evaldefs_metrics` v2): same eight zero-tolerance categories, accepted bases, mandatory golden cases, held-out minimums and golden/held-out manifest pins. |
+| `rubric_reviewer_usefulness` v1 (draft) | Unchanged copy of v1. Rubric changes (N/A applicability, per-dimension reviewers, derived final labels, N1) belong to a separately authorized adjudication PR (proposed PR-B). |
+
+**Definition text is specification, not implemented measurement.** No eligibility engine, recommendation engine, verifier, reviewer workflow or metric producer exists, and no value of any v2 metric has been or can yet be computed. Only the zero-tolerance detection rule describes implemented code: `evaluate_safety_gate` already counts an `unblocked_violation` at any observation basis, and passing still requires mandatory coverage at an accepted basis. Even so, no producer computes the `unblocked_*` counts. The replicate, applicability, comparison-membership and provenance semantics behind several texts are deferred (proposed PR-C to PR-E and Slice 0).
+
+**Retained comparison semantics.** Both core metrics remain `required_observed`, and each must be observed on both sides. The `no_observed_outcome_metric` check is retained as a defensive floor: with the two `required_observed` metrics defined it fires only together with `required_metric_missing` or `required_metric_not_observed`, and it acts on its own only for a definition set that defines none.
+
+**Representation gaps (documented, deferred, not fixed by PR-A):**
+
+- A duration definition cannot pin its statistic: `check_metric_value` accepts a `p95` value for `latency_p50` (and the reverse). Values must declare the statistic named by the metric id (D4).
+- `RunKind` has no integrated kind. `reviewer_correction_rate` and `review_elapsed_time_p50` therefore declare generating run kinds, which **do not establish integrated review or measurement**; without genuine review evidence the only honest value is `not_measured` (a run-kind `not_applicable` is rejected). Neither metric is executable or reportable today (D5).
+- `DistributionValue` cannot yet carry the separate N/A, no-output, generation-failure and unresolved counts that `reviewer_usefulness` v2 requires (proposed PR-B).
+
+**Zero-tolerance blocking tests.** `BasisIndependentBlockingTests` (`tests/test_promotion_gates.py`) checks every zero-tolerance category at the four T1/T2 bases and representative T3/T4 bases, under the in-memory approved v1 copy and under the committed **draft** v2 policy, against a violation-free control and the exact global reasons; report-only prompt-injection signals stay non-blocking; coverage gaps and T1/T2 coverage leave categories `insufficient_evidence`. Before PR-A no test guarded basis independence: a scratch mutation that counted only accepted-basis violations passed all 417 earlier tests. These are synthetic gate-logic tests, not integrated safety evidence.
+
+**Held-out leakage checks.** Identifier and held-out case free-text checks now cover the v1 and v2 definitions files and the golden file. They are contract-level text checks only, not custody or confidentiality proof; the nominal held-out set is repository-visible and exposed. **Observation (pre-existing, unchanged):** golden g024 and held-out h005 are documented parallel cases (see [Precision cases](#precision-cases)) and share an identical title; the free-text check records that one shared title explicitly and fails on any other. This structural twinning limits h005's value as a novel held-out case; changing either case is outside PR-A.
+
+**F3.** The v2 policy pins the existing golden manifest, which still contains the g002/g008 overlap. Neither case is a mandatory safety case, and both labels remain `proposed` (excluded under B3). Resolving F3 will change the golden manifest and will need new versioned case, manifest and draft-policy revisions; PR-A does not repin.
+
 ## Corrections and follow-ups
 
 - **RAP-EVAL-001 corrected in this PR:** `docs/evaluation/metric-definitions-and-synthetic-gold-set.md` claimed that `contracts/examples/synthetic-evaluation-cases.json`, a `metrics.py` returning `NOT_DETERMINED_CONTRACT_ONLY`, seed schemas and arithmetic tests existed. None did. A dated correction now points to the checked-in artifacts.
@@ -256,8 +284,8 @@ A `HeldOutGateAttestation` counts only when its manifest, policy **and `Configur
   - **Forward redaction (2026-10-29, docs-only F2 PR):** the current tree no longer contains it. Architecture content and accepted decisions are unchanged; ADR-0001 and ADR-0003 carry labelled editorial errata.
   - **Unresolved historical exposure:** earlier copies remain in Git history (introduced in `f59a3b5`, `03e861e`, `cf7ab98`, `ab2a7d1` and `ca75270` and present in every later commit), in every branch containing those commits and in GitHub PR refs. Forward redaction does not remove them. The repository remains private; history rewriting is **not authorized** and would be required (or a fresh repository published from redacted `main`) before any public release — an owner decision.
   - Adding the RAG proposal to the shared project packet's SOURCE_MANIFEST is deferred to the packet synchronization step.
-- **F3 (low):** isolate g002/g008 into separate scenarios.
-- **F4:** owner review of the draft rubric, metric definitions and safety-gate policy (`status: draft`).
+- **F3 (low):** isolate g002/g008 into separate scenarios. Must precede owner review of those two labels (B3); needs its own versioned case, manifest and draft-policy revisions.
+- **F4:** Stage A owner decisions B1–B5 and N1–N3 and PR-A decisions D1–D5 approved 2026-10-29 ([decision record](../evaluation/F4-definitions-decision-record.md)); draft definitions v2 proposed in PR-A ([above](#f4-draft-definitions-v2-pr-a)). Every definition (v1 and v2) remains `status: draft`; approval is a separate later owner act. Adjudication contracts (PR-B), execution and comparison semantics (PR-C to PR-E) and the research-selection record (PR-F) are proposed and not authorized.
 
 ## Review repair evidence
 

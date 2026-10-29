@@ -34,7 +34,7 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 | O3 | Must `ClaimVocabulary` (like `PolicySet`) carry its own authoritative source reference? | Open |
 | O4 | Additional requirement kinds for the pilot (schedule windows, location mode)? | Open; needs fairness/accommodation review |
 | O5 (remainder) | How rule outcomes cite opportunity-subject evidence directly | Partly resolved in PR #6 (recommendations may cite it) |
-| PR #7 drafts | Approve or revise the draft metric definitions, safety-gate policy and reviewer rubric | Owner review (follow-up F4) |
+| PR #7 drafts | Approve or revise the draft metric definitions, safety-gate policy and reviewer rubric | F4 policy decisions (B1–B5, N1–N3) and PR-A decisions (D1–D5) approved 2026-10-29 ([record](../evaluation/F4-definitions-decision-record.md)); draft definitions v2 proposed in PR-A. **No definition is approved** (v1 and v2 remain `draft`); adjudication, execution-semantics and research-selection contracts (proposed PR-B to PR-F) are not authorized |
 | Custody | Where genuine held-out labels live and who authors them | Owner decision before any held-out run |
 
 ## Compatibility summary
@@ -54,7 +54,7 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 | 4 | Accepted ADR vocabulary used throughout code and fixtures | **Met** in code and fixtures; proposed docs synchronized in F1 (2026-10-29) |
 | 5 | At least one real producer (engine/adapter) round-trips its outputs through the contracts | **Not met** — no eligibility engine, recommendation engine, verifier or adapter exists |
 | 6 | Open decisions O3, O4, O5-remainder dispositioned or explicitly deferred to a later version | **Not met** (owner decision) |
-| 7 | Draft evaluation definitions (metrics, gate policy, rubric) approved | **Not met** (owner decision) |
+| 7 | Draft evaluation definitions (metrics, gate policy, rubric) approved | **Not met** — F4 policy decisions recorded (2026-10-29) and draft definitions v2 proposed (PR-A); v1 and v2 definitions remain `draft` (owner decision) |
 | 8 | Source hygiene: no transcript-derived or private material in the repository | **Partly met** — current tree redacted (F2 forward redaction, 2026-10-29); earlier copies remain in Git history and GitHub PR refs; history rewriting not authorized |
 | 9 | Documentation status consistent with merged state | **Met** as of the F1 documentation sync (2026-10-29); keep current with each PR |
 | 10 | Reproducible evidence from a clean checkout, recorded in the PR | **Met** (see below); no CI checks are configured |
@@ -83,7 +83,7 @@ Options for the owner, none of which this PR takes:
 | Single maintainer cannot provide independent dual adjudication | High | Medium | Rubric requires two reviewers; single-reviewer flag | Owner decision on reviewers |
 | No CI: evidence depends on manually reported runs | High | Medium | Clean-clone commands in PRs | CI enablement is an owner/spend decision |
 | Configuration pins or comparison metric values asserted without real run provenance | Medium | High | Recomputed fingerprints, lineage checks, `run_provenance_basis`, comparison validation against observations | Requires the future trusted run registry |
-| Draft comparison flags or gate policy adopted without review | Medium | Medium | All definitions `status: draft`; gate requires an approved policy | Owner review (F4) |
+| Draft comparison flags or gate policy adopted without review | Medium | Medium | All definitions `status: draft`; gate requires an approved policy; F4 decisions recorded and v2 drafts proposed (PR-A) | Owner approval of definitions pending |
 
 ## Test evidence
 
