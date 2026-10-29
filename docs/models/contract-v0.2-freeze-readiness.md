@@ -34,7 +34,7 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 | O3 | Must `ClaimVocabulary` (like `PolicySet`) carry its own authoritative source reference? | Open |
 | O4 | Additional requirement kinds for the pilot (schedule windows, location mode)? | Open; needs fairness/accommodation review |
 | O5 (remainder) | How rule outcomes cite opportunity-subject evidence directly | Partly resolved in PR #6 (recommendations may cite it) |
-| PR #7 drafts | Approve or revise the draft metric definitions, safety-gate policy and reviewer rubric | Owner review (follow-up F4) |
+| PR #7 drafts | Approve or revise the draft metric definitions, safety-gate policy and reviewer rubric | F4 policy decisions (B1–B5, N1–N3) and PR-A decisions (D1–D5) approved 2026-10-29 ([record](../evaluation/F4-definitions-decision-record.md)); draft definitions v2 proposed in PR-A. **No definition is approved** (v1 and v2 remain `draft`); adjudication, execution-semantics and research-selection contracts (proposed PR-B to PR-F) are not authorized |
 | Custody | Where genuine held-out labels live and who authors them | Owner decision before any held-out run |
 
 ## Compatibility summary
@@ -54,7 +54,7 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 | 4 | Accepted ADR vocabulary used throughout code and fixtures | **Met** in code and fixtures; proposed docs synchronized in F1 (2026-10-29) |
 | 5 | At least one real producer (engine/adapter) round-trips its outputs through the contracts | **Not met** — no eligibility engine, recommendation engine, verifier or adapter exists |
 | 6 | Open decisions O3, O4, O5-remainder dispositioned or explicitly deferred to a later version | **Not met** (owner decision) |
-| 7 | Draft evaluation definitions (metrics, gate policy, rubric) approved | **Not met** (owner decision) |
+| 7 | Draft evaluation definitions (metrics, gate policy, rubric) approved | **Not met** — F4 policy decisions recorded (2026-10-29) and draft definitions v2 proposed (PR-A); v1 and v2 definitions remain `draft` (owner decision) |
 | 8 | Source hygiene: no transcript-derived or private material in the repository | **Partly met** — current tree redacted (F2 forward redaction, 2026-10-29); earlier copies remain in Git history and GitHub PR refs; history rewriting not authorized |
 | 9 | Documentation status consistent with merged state | **Met** as of the F1 documentation sync (2026-10-29); keep current with each PR |
 | 10 | Reproducible evidence from a clean checkout, recorded in the PR | **Met** (see below); no CI checks are configured |
@@ -83,7 +83,7 @@ Options for the owner, none of which this PR takes:
 | Single maintainer cannot provide independent dual adjudication | High | Medium | Rubric requires two reviewers; single-reviewer flag | Owner decision on reviewers |
 | No CI: evidence depends on manually reported runs | High | Medium | Clean-clone commands in PRs | CI enablement is an owner/spend decision |
 | Configuration pins or comparison metric values asserted without real run provenance | Medium | High | Recomputed fingerprints, lineage checks, `run_provenance_basis`, comparison validation against observations | Requires the future trusted run registry |
-| Draft comparison flags or gate policy adopted without review | Medium | Medium | All definitions `status: draft`; gate requires an approved policy | Owner review (F4) |
+| Draft comparison flags or gate policy adopted without review | Medium | Medium | All definitions `status: draft`; gate requires an approved policy; F4 decisions recorded and v2 drafts proposed (PR-A) | Owner approval of definitions pending |
 
 ## Test evidence
 
@@ -102,3 +102,33 @@ Fresh clone of branch `contracts/v0.2-evaluation` at code commit `6574a020179562
 The 31 evaluation cases and their manifest hashes are byte-identical to the original head `36557e41`; all 31 still pass. No exported schema changed in the R5–R7 repairs.
 
 These are local, manually reported executions; no GitHub CI checks are configured. The PR #7 description repeats them against the final head.
+
+### F4 PR-A evidence (draft definitions v2)
+
+Fresh clone of branch `contracts/f4-definitions-v2` at code commit `52a0c2685cccb65243a0be137bb628ef341afcee` (base `main` @ `f45a9368b24dd10d7f8c7afe51f67da713ebf623`; later commits change documentation only), Python 3.13.18, `pydantic==2.13.5`, `jsonschema==4.26.0`. PR-A adds 15 test methods to the 417 above:
+
+| Command (from `contracts/`) | Result |
+|---|---|
+| `python -m rap_contracts.schema_export --check` | `schema drift: NONE` |
+| `python -m unittest discover -s tests` (dev requirements) | **432 tests, OK, 0 skipped** |
+| `python -m unittest discover -s tests` (runtime requirements only) | **432 tests, OK, 16 skipped** (JSON Schema conformance, as designed) |
+| `python -m unittest discover -s tests -p 'test_evaluation*.py'` | 61 tests, OK |
+| `python -m unittest discover -s tests -p 'test_promotion_gates.py'` | 49 tests, OK |
+| `python -m unittest discover -s tests -p 'test_json_schema_conformance.py'` | 16 tests, OK |
+| `python -m unittest discover -s tests -p 'test_dataset_partition.py'` | 18 tests, OK |
+| `PYTHONPATH=tests python -m unittest test_evaluation_cases test_dataset_partition test_promotion_gates` | 86 tests, OK |
+
+Unchanged against `main`: `rap_contracts/`, all 36 generated schemas (identical tree), every case, layer and v1 definitions fixture (v1 SHA-256 `9445231558c45e4338e7a42d7e31b63e73ef8c122055da8a052a62401d386957`), both requirements files, the ADRs and `CONTRACT_VERSION` (`0.2.0-dev.foundations.4`). No fixture contains `"status": "approved"`.
+
+**Mutation evidence** (disposable copies; never committed):
+
+| Mutation | Tests at `main` (417) | Tests at PR-A (432) |
+|---|---|---|
+| Gate counts only violations observed at an accepted basis | **OK — not detected** | Fails `BasisIndependentBlockingTests`: both blocking matrices and the report-only recording test |
+| Mandatory coverage accepted at any basis | Fails 3 existing tests | Fails the same 3 plus `test_v2_coverage_gaps_and_lower_tier_coverage_never_pass` (reinforcement, not new detection) |
+| Held-out case title planted in the v2 file | — | Fails the free-text leakage check (and the v2 inventory check) |
+| v2 policy given an extra (T3) accepted basis | — | Fails `test_v2_policy_equals_v1_except_identity` |
+| v2 metrics marked `approved` | — | Fails `test_v2_definitions_validate_and_are_drafts` |
+| One byte appended to the v1 definitions file | — | Fails `test_v1_definitions_remain_default_and_unchanged` |
+
+These are synthetic, contract-level checks. They are not integrated safety evidence, and the held-out checks are not custody or confidentiality proof.

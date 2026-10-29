@@ -432,5 +432,157 @@ class DefinitionsTests(unittest.TestCase):
             RecordAttribution(principal_id="principal_demo_owner", asserted_kind="human", attestation_basis="self_attested")
 
 
+# ---------------------------------------------------------------------------
+# F4 PR-A: proposed draft definitions v2 (contract-level checks of committed data only)
+# ---------------------------------------------------------------------------
+
+#: SHA-256 of the v1 definitions file as merged on main @ f45a9368 (PR #7). v1 is immutable.
+V1_DEFINITIONS_SHA256 = "9445231558c45e4338e7a42d7e31b63e73ef8c122055da8a052a62401d386957"
+
+#: Owner decision D1: metrics whose text changed are version 2; unchanged metrics keep version 1.
+V2_UNCHANGED = frozenset({"case_conformance_rate", "citation_precision", "latency_p95", "cost_per_reviewed_suggestion"})
+V2_REVISED = frozenset({"eligibility_label_correctness", "unknown_state_preservation", "verification_detection_recall",
+                        "verification_false_alarm_rate", "reviewer_usefulness"}
+                       | {f"unblocked_{c.value}" for c in REQUIRED_ZERO_TOLERANCE})
+_GEN = ("deterministic_baseline", "single_model", "multi_agent")
+#: Metrics new in v2 (version 1): (unit, gate, comparison, requires_component, applicable run kinds).
+V2_NEW = {
+    "eligibility_rule_agreement": ("ratio", "threshold_uncalibrated", "reported", None, _GEN),  # M2b
+    "reviewer_correction_rate": ("ratio", "report_only", "not_compared", "recommendation", _GEN),  # B5 / D3, D5
+    "retry_rate": ("ratio", "report_only", "not_compared", "model", ("single_model", "multi_agent")),  # B5 / D2
+    "escalation_rate": ("ratio", "report_only", "not_compared", "verifier", _GEN),
+    "noncritical_unsupported_claim_rate": ("ratio", "report_only", "not_compared", "recommendation", _GEN),
+    "citation_coverage": ("ratio", "report_only", "not_compared", "recommendation", _GEN),
+    "latency_p50": ("milliseconds", "report_only", "not_compared", None, _GEN),
+    "review_elapsed_time_p50": ("milliseconds", "report_only", "not_compared", "recommendation", _GEN),  # D4, D5
+}
+_TEXT_FIELDS = ("version", "description", "numerator", "denominator")
+
+
+class DefinitionsV2Tests(unittest.TestCase):
+    """Proposed DRAFT definitions v2 (F4, PR-A).
+
+    These tests check committed definition data and its compatibility with the
+    unchanged contract models. They do not show that any metric is produced,
+    measured or reportable: no producer exists, and nothing here is approved.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.v1 = H.load(H.DEFINITIONS_FILE)
+        cls.v2 = H.load(H.DEFINITIONS_V2_FILE)
+        cls.v2_text = (H.FIXTURE_DIR / H.DEFINITIONS_V2_FILE).read_text(encoding="utf-8")
+        cls.metrics = MetricDefinitionSet.model_validate(cls.v2["metric_definitions"])
+
+    def test_v2_definitions_validate_and_are_drafts(self):
+        policy = SafetyGatePolicy.model_validate(self.v2["safety_gate_policy"])
+        rubric = ReviewerRubric.model_validate(self.v2["reviewer_rubric"])
+        self.assertEqual((self.metrics.status, policy.status, rubric.status), ("draft", "draft", "draft"))
+        self.assertNotIn('"status": "approved"', self.v2_text)
+        self.assertEqual((self.metrics.id, self.metrics.version, policy.id, policy.version),
+                         ("evaldefs_metrics", 2, "evaldefs_safety_gate", 2))
+        self.assertEqual(self.v2["contract_version"], "0.2.0-dev.foundations.4")
+        self.assertEqual(len(self.metrics.metrics), 25)
+        self.assertEqual({r.category for r in policy.categories if r.zero_tolerance}, REQUIRED_ZERO_TOLERANCE)
+        self.assertEqual({m.safety_category for m in self.metrics.metrics if m.gate.value == "zero_tolerance"},
+                         REQUIRED_ZERO_TOLERANCE)
+
+    def test_v2_inventory_and_carried_over_fields(self):
+        expected = ({m: 1 for m in V2_UNCHANGED} | {m: 2 for m in V2_REVISED} | {m: 1 for m in V2_NEW})
+        self.assertEqual({m.id: m.version for m in self.metrics.metrics}, expected)
+        old = {m["id"]: m for m in self.v1["metric_definitions"]["metrics"]}
+        new = {m["id"]: m for m in self.v2["metric_definitions"]["metrics"]}
+        for mid in V2_UNCHANGED:
+            with self.subTest(unchanged=mid):
+                self.assertEqual(new[mid], old[mid])
+        for mid in V2_REVISED:
+            with self.subTest(revised=mid):
+                # Only the text changed: unit, gate, comparison, run kinds, component and category are v1's.
+                strip = lambda d: {k: v for k, v in d.items() if k not in _TEXT_FIELDS}  # noqa: E731
+                self.assertEqual(strip(new[mid]), strip(old[mid]))
+                self.assertNotEqual(new[mid]["description"], old[mid]["description"])
+
+    def test_new_metrics_carry_exact_flags_and_no_threshold(self):
+        defs = {m.id: m for m in self.metrics.metrics}
+        for mid, (unit, gate, comparison, component, kinds) in V2_NEW.items():
+            m = defs[mid]
+            with self.subTest(metric=mid):
+                self.assertEqual((m.family.value, m.unit, m.gate.value, m.comparison.value,
+                                  m.requires_component.value if m.requires_component else None,
+                                  tuple(k.value for k in m.applicable_run_kinds)),
+                                 ("outcome", unit, gate, comparison, component, kinds))
+        self.assertNotIn("threshold", {k for m in self.v2["metric_definitions"]["metrics"] for k in m})
+        required = {(m.id, m.version, m.comparison.value) for m in self.metrics.metrics
+                    if m.comparison.value.startswith("required")}
+        self.assertEqual(required, {("eligibility_label_correctness", 2, "required_observed"),
+                                    ("unknown_state_preservation", 2, "required_observed"),
+                                    ("verification_detection_recall", 2, "required_if_applicable"),
+                                    ("verification_false_alarm_rate", 2, "required_if_applicable")})
+
+    def test_v2_policy_equals_v1_except_identity(self):
+        p1, p2 = self.v1["safety_gate_policy"], self.v2["safety_gate_policy"]
+        self.assertEqual(p2, {**p1, "version": 2, "definitions": {"id": "evaldefs_metrics", "version": 2}})
+        policy = SafetyGatePolicy.model_validate(p2)
+        # The pins are the authoritative committed manifests: preserved, not repinned (F3 is not part of PR-A).
+        self.assertEqual(policy.golden_manifest, pin_manifest(H.manifest_of(H.split_doc(Split.GOLDEN))))
+        self.assertEqual(policy.held_out_manifest, pin_manifest(H.manifest_of(H.split_doc(Split.HELD_OUT))))
+
+    def test_v2_rubric_is_v1_unchanged(self):
+        self.assertEqual(self.v2["reviewer_rubric"], self.v1["reviewer_rubric"])
+        rubric = ReviewerRubric.model_validate(self.v2["reviewer_rubric"])
+        self.assertEqual((rubric.id, rubric.version, rubric.min_independent_reviewers, rubric.disagreement_policy.value),
+                         ("rubric_reviewer_usefulness", 1, 2, "third_reviewer"))
+
+    def test_v2_contains_no_adjudication_or_run_records(self):
+        for marker in ('"id": "adjudication_', '"raw_labels"', '"final_labels"', '"adjudicated"', "evalrun_",
+                       '"observations"', "comparison_", "promotion_"):
+            with self.subTest(marker=marker):
+                self.assertNotIn(marker, self.v2_text)
+
+    def test_existing_validators_still_reject_malformed_v2(self):
+        """Reconfirmation only: these are the unchanged v1 validators applied to v2 data."""
+        doc = copy.deepcopy(self.v2["metric_definitions"])
+        doc["metrics"].append(copy.deepcopy(doc["metrics"][0]))
+        with self.assertRaises(ValidationError):
+            MetricDefinitionSet.model_validate(doc)
+        doc = copy.deepcopy(self.v2["metric_definitions"])
+        doc["metrics"][0]["unit"] = "percent"
+        with self.assertRaises(ValidationError):
+            MetricDefinitionSet.model_validate(doc)
+        latency = next(m for m in self.metrics.metrics if m.id == "latency_p50")
+        wrong_kind = _METRIC_VALUE.validate_python({"kind": "count", "metric_id": "latency_p50", "metric_version": 1,
+                                                    "status": "not_measured"})
+        with self.assertRaises(ContractViolation) as ctx:
+            check_metric_value(wrong_kind, latency, EvaluationRun.model_validate(run_payload()))
+        self.assertEqual(ctx.exception.code, "metric_kind_mismatch")
+
+    def test_v1_definitions_remain_default_and_unchanged(self):
+        import hashlib
+        self.assertEqual(H.DEFINITIONS_FILE, "evaluation-definitions-v0.2.0-dev.json")
+        digest = hashlib.sha256((H.FIXTURE_DIR / H.DEFINITIONS_FILE).read_bytes()).hexdigest()
+        self.assertEqual(digest, V1_DEFINITIONS_SHA256)
+        self.assertEqual((self.v1["metric_definitions"]["version"], self.v1["safety_gate_policy"]["version"]), (1, 1))
+
+    def test_integrated_review_metrics_report_not_measured_without_review_evidence(self):
+        """D5: generating run kinds do not establish integrated review. Without genuine review evidence the
+        only honest value is ``not_measured``; claiming ``not_applicable`` for the run kind is rejected.
+        Accepting ``not_measured`` is not evidence that any review or measurement exists."""
+        import test_promotion_gates as G
+        run = G.run(kind="deterministic_baseline", components=("eligibility", "recommendation"),
+                    definitions=DefinitionsPin(id="evaldefs_metrics", version=2),
+                    safety_policy=DefinitionsPin(id="evaldefs_safety_gate", version=2))
+        defs = {m.id: m for m in self.metrics.metrics}
+        for mid, kind in (("reviewer_correction_rate", "ratio"), ("review_elapsed_time_p50", "duration")):
+            extra = {"statistic": "p50"} if kind == "duration" else {}
+            base = {"kind": kind, "metric_id": mid, "metric_version": 1, **extra}
+            with self.subTest(metric=mid):
+                check_metric_value(_METRIC_VALUE.validate_python({**base, "status": "not_measured"}), defs[mid], run)
+                with self.assertRaises(ContractViolation) as ctx:
+                    check_metric_value(_METRIC_VALUE.validate_python(
+                        {**base, "status": "not_applicable", "not_applicable_reason": "run_kind_not_applicable"}),
+                        defs[mid], run)
+                self.assertEqual(ctx.exception.code, "unjustified_not_applicable")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -90,26 +90,66 @@ class PartitionTests(unittest.TestCase):
         held = H.split_doc(Split.HELD_OUT)
         forbidden = held_out_owned_ids() | {c["id"] for c in held["cases"]}
         forbidden |= {c["legacy_label"] for c in held["cases"] if "legacy_label" in c}
-        for name in (H.SPLIT_FILES[Split.GOLDEN], H.DEFINITIONS_FILE):
+        for name in (H.SPLIT_FILES[Split.GOLDEN], H.DEFINITIONS_FILE, H.DEFINITIONS_V2_FILE):
             text = (H.FIXTURE_DIR / name).read_text(encoding="utf-8")
             with self.subTest(file=name):
                 self.assertEqual(sorted(i for i in forbidden if i in text), [])
 
+    #: Pre-existing, documented parallel construction (contract-v0.2-evaluation.md, "g024 / h005"): the held-out
+    #: twin of g024 shares its title. Recorded as an observation in F4 PR-A, not changed (case edits are out of
+    #: scope). Any other shared prose fails.
+    DOCUMENTED_GOLDEN_TWIN_TITLES = frozenset({"Recommendation for an ineligible opportunity is stopped at verification"})
+
+    def test_no_held_out_case_free_text_in_golden_or_definitions_files(self):
+        """Contract-level leakage check on committed text (F4 PR-A).
+
+        Held-out case prose (titles and other free-text values of at least 20
+        characters, excluding provenance citations) must not appear in the
+        definitions files, and only the documented g024/h005 twin title may
+        appear in the golden file. Codes and shared vocabulary are deliberately
+        not banned, and the held-out manifest pin is permitted. This is not
+        custody or confidentiality proof: the nominal held-out set is
+        repository-visible and exposed.
+        """
+        prose = set()
+
+        def walk(value):
+            if isinstance(value, dict):
+                for key, v in value.items():
+                    if key != "provenance":  # shared plan citations, not case content
+                        walk(v)
+            elif isinstance(value, list):
+                for v in value:
+                    walk(v)
+            elif isinstance(value, str) and " " in value and len(value) >= 20:
+                prose.add(value)
+
+        walk(H.split_doc(Split.HELD_OUT)["cases"])
+        self.assertGreater(len(prose), 0)  # the check is not vacuous
+        allowed = {H.SPLIT_FILES[Split.GOLDEN]: self.DOCUMENTED_GOLDEN_TWIN_TITLES}
+        for name in (H.SPLIT_FILES[Split.GOLDEN], H.DEFINITIONS_FILE, H.DEFINITIONS_V2_FILE):
+            text = (H.FIXTURE_DIR / name).read_text(encoding="utf-8")
+            with self.subTest(file=name):
+                self.assertEqual({p for p in prose if p in text}, set(allowed.get(name, ())))
+
     def test_policy_refers_to_held_out_by_manifest_pin_only(self):
-        policy = SafetyGatePolicy.model_validate(H.load(H.DEFINITIONS_FILE)["safety_gate_policy"])
         held_ids = {c["id"] for c in H.split_doc(Split.HELD_OUT)["cases"]}
-        mandatory = {c.case_id for r in policy.categories for c in r.mandatory_golden_cases}
-        self.assertEqual(mandatory & held_ids, set())
-        self.assertEqual(policy.held_out_manifest, pin_manifest(H.manifest_of(H.split_doc(Split.HELD_OUT))))
+        for name in (H.DEFINITIONS_FILE, H.DEFINITIONS_V2_FILE):
+            policy = SafetyGatePolicy.model_validate(H.load(name)["safety_gate_policy"])
+            mandatory = {c.case_id for r in policy.categories for c in r.mandatory_golden_cases}
+            with self.subTest(file=name):
+                self.assertEqual(mandatory & held_ids, set())
+                self.assertEqual(policy.held_out_manifest, pin_manifest(H.manifest_of(H.split_doc(Split.HELD_OUT))))
 
     def test_held_out_file_covers_required_categories_by_itself(self):
-        policy = SafetyGatePolicy.model_validate(H.load(H.DEFINITIONS_FILE)["safety_gate_policy"])
         cases = H.cases_of(H.split_doc(Split.HELD_OUT))
-        for rule in policy.categories:
-            if rule.held_out_coverage_required:
-                covering = [c for c in cases if any(sig.category is rule.category for s in c.steps for sig in s.safety)]
-                with self.subTest(category=rule.category.value):
-                    self.assertGreaterEqual(len(covering), rule.held_out_min_cases)
+        for name in (H.DEFINITIONS_FILE, H.DEFINITIONS_V2_FILE):
+            policy = SafetyGatePolicy.model_validate(H.load(name)["safety_gate_policy"])
+            for rule in policy.categories:
+                if rule.held_out_coverage_required:
+                    covering = [c for c in cases if any(sig.category is rule.category for s in c.steps for sig in s.safety)]
+                    with self.subTest(file=name, category=rule.category.value):
+                        self.assertGreaterEqual(len(covering), rule.held_out_min_cases)
 
     def test_committed_held_out_is_nominal_and_exposed(self):
         manifest = H.manifest_of(H.split_doc(Split.HELD_OUT))

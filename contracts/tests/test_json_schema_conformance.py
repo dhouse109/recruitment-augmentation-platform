@@ -404,6 +404,13 @@ class EvaluationConformanceTests(unittest.TestCase):
                 with self.assertRaises(ValidationError, msg=f"Pydantic accepted: {label}"):
                     model.model_validate(payload)
 
+    def test_draft_definitions_v2_conform_to_existing_schemas(self):
+        """F4 PR-A: the proposed draft v2 objects validate against the committed (not regenerated) schemas."""
+        v2 = self.H.load(self.H.DEFINITIONS_V2_FILE)
+        self._accept("metric-definition-set", [v2["metric_definitions"]])
+        self._accept("safety-gate-policy", [v2["safety_gate_policy"]])
+        self._accept("reviewer-rubric", [v2["reviewer_rubric"]])
+
     def test_malformed_evaluation_records_rejected_by_both(self):
         case = copy.deepcopy(self.docs[next(iter(self.docs))]["cases"][0])
         bad_step = copy.deepcopy(case)

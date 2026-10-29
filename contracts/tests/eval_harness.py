@@ -99,6 +99,8 @@ FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 LAYER_FILES = ("foundations-v0.2.0-dev.json", "eligibility-evidence-v0.2.0-dev.json", "review-v0.2.0-dev.json")
 SPLIT_FILES = {Split.GOLDEN: "evaluation-golden-v0.2.0-dev.json", Split.HELD_OUT: "evaluation-nominal-held-out-v0.2.0-dev.json"}
 DEFINITIONS_FILE = "evaluation-definitions-v0.2.0-dev.json"
+#: Proposed draft definitions v2 (F4, PR-A). Not the default: DEFINITIONS_FILE (v1) remains the harness default.
+DEFINITIONS_V2_FILE = "evaluation-definitions-v2-v0.2.0-dev.json"
 
 #: Candidate-scoped record kinds. Everything else in a context is shared base.
 SCOPED_KINDS = ("candidates", "profiles", "applications", "evidence", "claims", "participations",

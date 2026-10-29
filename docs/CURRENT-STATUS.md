@@ -54,8 +54,8 @@ The v0.1 contracts and domain mapping in documentation are proposals and design 
 ## Open follow-ups and owner decisions (each needs separate authorization)
 
 - **F2 historical exposure:** forward redaction of restricted source material is merged (PR #8), so the current tree is clean. Earlier copies remain in Git history and GitHub PR refs; history rewriting is not authorized and the repository remains private.
-- **F3:** give evaluation cases g002 and g008 separate scenarios.
-- **F4:** review the draft metric definitions, comparison flags, safety-gate policy and reviewer rubric (all `status: draft`).
+- **F3:** give evaluation cases g002 and g008 separate scenarios. Required before the owner reviews those two labels (F4 B3); needs separate versioned case, manifest and draft-policy revisions.
+- **F4:** Stage A owner decisions B1–B5 and N1–N3 and PR-A specification decisions D1–D5 were approved on 2026-10-29 (`docs/evaluation/F4-definitions-decision-record.md`). PR-A proposes draft definitions v2 (`contracts/fixtures/evaluation-definitions-v2-v0.2.0-dev.json`): definition text and tests only, with no model, schema or contract-version change. **No definition is approved**; v1 and v2 remain `status: draft`, and v1 is still the harness default. Proposed follow-ups — PR-B (adjudication contracts), PR-C to PR-E (replicate, comparison, verifier-observation and coverage contracts) and PR-F (research-selection record) — and Slice 0 are **not authorized**.
 - **O3, O4 and the remainder of O5:** open contract decisions.
 - **Freeze:** Contract v0.2 freeze readiness is assessed in `docs/models/contract-v0.2-freeze-readiness.md` (assessment only; not ready).
 
@@ -63,7 +63,7 @@ The v0.1 contracts and domain mapping in documentation are proposals and design 
 
 - Drupal core version, physical entity types, module strategy, secure service delegation.
 - Database/index backend, model providers, LangGraph/LangChain/Temporal/LangFuse topology, deployment.
-- Quantitative non-safety evaluation thresholds and how human subjective cases are adjudicated.
+- Quantitative non-safety evaluation thresholds; reviewer and adjudicator staffing and trusted attestation for subjective adjudication (the procedure is decided in F4 B2).
 - Framework choice for spec-driven versus custom R&D execution.
 - Retention/compliance measures needed before real-applicant deployment.
 
