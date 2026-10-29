@@ -87,18 +87,18 @@ Options for the owner, none of which this PR takes:
 
 ## Test evidence
 
-Fresh clone of branch `contracts/v0.2-evaluation` at code commit `192e489098caf34cc586ff7b2c1ba793f7cb4dc9` (review repair R1–R4; later commits change documentation only), Python 3.13.18, `pydantic==2.13.5`, `jsonschema==4.26.0`. PR #6 ended at 288 tests; PR #7 now adds 118 (89 before the review repair):
+Fresh clone of branch `contracts/v0.2-evaluation` at code commit `584d3b6931974e5420802c901c9d87772454f7f2` (review repairs R1–R6; later commits change documentation only), Python 3.13.18, `pydantic==2.13.5`, `jsonschema==4.26.0`. PR #6 ended at 288 tests; PR #7 now adds 124 (89 initially, 118 after R1–R4):
 
 | Command (from `contracts/`) | Result |
 |---|---|
 | `python -m rap_contracts.schema_export --check` | `schema drift: NONE` |
-| `python -m unittest discover -s tests` (dev requirements) | **406 tests, OK, 0 skipped** |
-| `python -m unittest discover -s tests` (runtime requirements only) | **406 tests, OK, 15 skipped** (JSON Schema conformance, as designed) |
+| `python -m unittest discover -s tests` (dev requirements) | **412 tests, OK, 0 skipped** |
+| `python -m unittest discover -s tests` (runtime requirements only) | **412 tests, OK, 15 skipped** (JSON Schema conformance, as designed) |
 | `python -m unittest discover -s tests -p 'test_evaluation*.py'` | 52 tests, OK |
-| `python -m unittest discover -s tests -p 'test_promotion_gates.py'` | 34 tests, OK |
+| `python -m unittest discover -s tests -p 'test_promotion_gates.py'` | 40 tests, OK |
 | `python -m unittest discover -s tests -p 'test_json_schema_conformance.py'` | 15 tests, OK (independent JSON Schema conformance) |
-| `PYTHONPATH=tests python -m unittest test_evaluation_cases test_dataset_partition test_promotion_gates` | 70 tests, OK |
+| `PYTHONPATH=tests python -m unittest test_evaluation_cases test_dataset_partition test_promotion_gates` | 76 tests, OK |
 
-The 31 evaluation cases and their manifest hashes are byte-identical to the pre-repair head `36557e41`; all 31 still pass.
+The 31 evaluation cases and their manifest hashes are byte-identical to the original head `36557e41`; all 31 still pass. No exported schema changed in the R5–R6 repair.
 
 These are local, manually reported executions; no GitHub CI checks are configured. The PR #7 description repeats them against the final head.

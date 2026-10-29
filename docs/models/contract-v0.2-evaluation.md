@@ -167,9 +167,9 @@ A `HeldOutGateAttestation` counts only when its manifest, policy **and `Configur
 **Comparison.** `RunComparison` records per-case outcomes for both runs (with a derived `change`; no delta, threshold or score fields) and typed metric values side by side. It has **no self-declared status**. `assess_comparison` recomputes completeness against the supplied runs, observations, metric definitions and golden case pins:
 
 - records contradicting evidence raise: run, configuration, dataset or definitions mismatch; a case not pinned; a case hash or version not matching its pin; a recorded outcome differing from the run's observation; an unknown metric; an unjustified `not_applicable`; a value kind not matching the definition's unit;
-- gaps make it incomplete: a pinned case missing; an observation missing; **any case not conclusively executed (pass or fail) on both sides**; a required metric missing; a `required_observed` metric not observed on both sides; a `required_if_applicable` metric neither observed nor justified `not_applicable`; and no required outcome metric observed at all.
+- gaps make it incomplete: a pinned case missing; an observation missing; **any case not conclusively executed (pass or fail) on both sides**; any case whose execution **errored** on either side, even when its observation reports `fail` (R5); a required metric missing; a `required_observed` metric not observed on both sides; a `required_if_applicable` metric neither observed nor justified `not_applicable`; and no required outcome metric observed at all.
 
-`check_promotion_inputs` validates the decision's configuration pins, runs, manifests, policy, definitions, gate results and comparison pins (content hash) against the actual records and returns the outcomes the evidence supports. `promote` is supported only with an eligible gate for every candidate run and a complete comparison for every candidate run; otherwise only `reject` or `not_determined` (`promotion_not_supported`).
+`check_promotion_inputs` validates the decision's configuration pins, runs, manifests, policy, definitions, gate results and comparison pins. Each gate must name the exact safety policy, cover every policy category and carry a result consistent with its categories and global reasons (R6). It checks these (content hash) against the actual records and returns the outcomes the evidence supports. `promote` is supported only with an eligible gate for every candidate run and a complete comparison for every candidate run; otherwise only `reject` or `not_determined` (`promotion_not_supported`).
 
 **Draft v1 comparison flags (owner-reviewable):** eligibility label correctness and unknown-state preservation `required_observed`; verifier detection recall and false-alarm rate `required_if_applicable` (`requires_component: verifier`); p95 latency and cost `reported`; citation precision, reviewer usefulness and the zero-tolerance counts `not_compared` (violations are enforced by the safety gate).
 
@@ -258,7 +258,7 @@ A `HeldOutGateAttestation` counts only when its manifest, policy **and `Configur
 
 ## Review repair evidence
 
-Each bypass was reproduced against PR head `36557e41` before the repair and is now rejected by a named regression test.
+Each bypass was reproduced against the PR head of the time before the repair (`36557e41` for R1–R4, `7699fd97` for R5–R6; the new R5/R6 tests fail against `7699fd97`'s `promotion.py`) and is now rejected by a named regression test.
 
 | Finding | Bypass at `36557e41` | After repair | Regression tests (`tests/test_promotion_gates.py` unless noted) |
 |---|---|---|---|
@@ -268,6 +268,8 @@ Each bypass was reproduced against PR head `36557e41` before the repair and is n
 | R4 | `promote` validated with no comparison evidence | `PromotionDecision` rejects `promote` without comparison pins; `check_promotion_inputs` returns `comparison_missing` / `comparison_incomplete` and raises `promotion_not_supported` | `PromotionDecisionTests`, `ComparisonTests`, `ComparableRunTests` |
 | A | Count, duration and cost values had no type | Typed union; ratio invariants unchanged; no fabricated zeros; justified `not_applicable` only | `test_evaluation_contracts.TypedMetricValueTests` |
 | Acceptance 2 | — | Inconclusive / not-evaluated / missing cases make a comparison incomplete | `ComparisonTests.test_inconclusive_or_missing_execution_is_incomplete` |
+| R5 | At `7699fd97`, an executed case whose target step **errored** (so `derive_case_outcome` reports `fail`) counted as a conclusive outcome, i.e. a measured failure or regression | `case_execution_errored`: the comparison is incomplete and cannot support `promote`. A genuine assertion failure (mismatched target) stays conclusive | `ErroredExecutionTests` |
+| R6 | At `7699fd97`, gate evaluations were checked only for run id and worst result: a gate for another policy, or one declaring `eligible_for_human_decision` over failed/insufficient categories or global reasons, was accepted | `GateEvaluation` validates result consistency; `check_promotion_inputs(…, policy, …)` re-checks the exact policy pin, category coverage and consistency → `promotion_gate_policy_mismatch` / `promotion_gate_inconsistent` / `promotion_policy_mismatch` | `GateIdentityTests` |
 
 All T3/T4 runs, observations, attestations, metric values and comparisons in these tests are **synthetic gate-logic examples** typed into the test file (`logic_only_*` helpers); they use the genuine committed case pins and are never committed as records.
 
