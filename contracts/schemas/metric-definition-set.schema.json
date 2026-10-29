@@ -1,0 +1,218 @@
+{
+  "$defs": {
+    "ComparisonRequirement": {
+      "description": "How a metric participates in a baseline-vs-candidate comparison (draft v1 flags are owner-reviewable).",
+      "enum": [
+        "required_observed",
+        "required_if_applicable",
+        "reported",
+        "not_compared"
+      ],
+      "title": "ComparisonRequirement",
+      "type": "string"
+    },
+    "Component": {
+      "description": "Generating components a strategy contains. Determines which outcome metrics can apply.",
+      "enum": [
+        "eligibility",
+        "recommendation",
+        "verifier",
+        "retrieval",
+        "model"
+      ],
+      "title": "Component",
+      "type": "string"
+    },
+    "MetricDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "applicable_run_kinds": {
+          "items": {
+            "$ref": "#/$defs/RunKind"
+          },
+          "minItems": 1,
+          "title": "Applicable Run Kinds",
+          "type": "array"
+        },
+        "comparison": {
+          "$ref": "#/$defs/ComparisonRequirement",
+          "default": "not_compared"
+        },
+        "denominator": {
+          "maxLength": 300,
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]*$",
+          "title": "Denominator",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 300,
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]*$",
+          "title": "Description",
+          "type": "string"
+        },
+        "family": {
+          "$ref": "#/$defs/MetricFamily"
+        },
+        "gate": {
+          "$ref": "#/$defs/MetricGate"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "numerator": {
+          "maxLength": 300,
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]*$",
+          "title": "Numerator",
+          "type": "string"
+        },
+        "requires_component": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Component"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "safety_category": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SafetyCategory"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "unit": {
+          "enum": [
+            "ratio",
+            "count",
+            "milliseconds",
+            "usd",
+            "ordinal_distribution"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "zero_denominator": {
+          "const": "not_applicable",
+          "default": "not_applicable",
+          "title": "Zero Denominator",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "family",
+        "description",
+        "numerator",
+        "denominator",
+        "unit",
+        "applicable_run_kinds",
+        "gate"
+      ],
+      "title": "MetricDefinition",
+      "type": "object"
+    },
+    "MetricFamily": {
+      "enum": [
+        "conformance",
+        "outcome"
+      ],
+      "title": "MetricFamily",
+      "type": "string"
+    },
+    "MetricGate": {
+      "enum": [
+        "zero_tolerance",
+        "report_only",
+        "threshold_uncalibrated"
+      ],
+      "title": "MetricGate",
+      "type": "string"
+    },
+    "RunKind": {
+      "enum": [
+        "fixture_conformance",
+        "deterministic_baseline",
+        "single_model",
+        "multi_agent"
+      ],
+      "title": "RunKind",
+      "type": "string"
+    },
+    "SafetyCategory": {
+      "enum": [
+        "cross_org_access",
+        "unauthorized_source_access",
+        "stale_or_withdrawn_source",
+        "hard_eligibility_violation",
+        "critical_unsupported_claim",
+        "unauthorized_review_write",
+        "prohibited_review_transition",
+        "source_content_integrity",
+        "prompt_injection_compliance"
+      ],
+      "title": "SafetyCategory",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/metric-definition-set.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Opaque synthetic evaluation definitions set identifier.",
+      "maxLength": 64,
+      "pattern": "^evaldefs_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "metrics": {
+      "items": {
+        "$ref": "#/$defs/MetricDefinition"
+      },
+      "minItems": 1,
+      "title": "Metrics",
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "approved"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "status",
+    "metrics"
+  ],
+  "title": "MetricDefinitionSet",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.4"
+}

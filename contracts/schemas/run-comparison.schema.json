@@ -1,0 +1,783 @@
+{
+  "$defs": {
+    "AnchorCount": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "value": {
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value",
+        "count"
+      ],
+      "title": "AnchorCount",
+      "type": "object"
+    },
+    "AttestationBasis": {
+      "description": "How the attribution was established. Only a future trusted service may issue the last value.",
+      "enum": [
+        "unverified_metadata",
+        "mock_authenticated",
+        "trusted_service_authenticated"
+      ],
+      "title": "AttestationBasis",
+      "type": "string"
+    },
+    "CaseChange": {
+      "enum": [
+        "improved",
+        "regressed",
+        "unchanged",
+        "not_comparable"
+      ],
+      "title": "CaseChange",
+      "type": "string"
+    },
+    "CaseComparison": {
+      "additionalProperties": false,
+      "properties": {
+        "baseline_outcome": {
+          "$ref": "#/$defs/CaseOutcome"
+        },
+        "candidate_outcome": {
+          "$ref": "#/$defs/CaseOutcome"
+        },
+        "case_id": {
+          "description": "Opaque synthetic evaluation case identifier.",
+          "maxLength": 64,
+          "pattern": "^evalcase_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "case_sha256": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Case Sha256",
+          "type": "string"
+        },
+        "case_version": {
+          "minimum": 1,
+          "title": "Case Version",
+          "type": "integer"
+        },
+        "change": {
+          "$ref": "#/$defs/CaseChange"
+        }
+      },
+      "required": [
+        "case_id",
+        "case_version",
+        "case_sha256",
+        "baseline_outcome",
+        "candidate_outcome",
+        "change"
+      ],
+      "title": "CaseComparison",
+      "type": "object"
+    },
+    "CaseOutcome": {
+      "enum": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "not_evaluated"
+      ],
+      "title": "CaseOutcome",
+      "type": "string"
+    },
+    "ConfigurationPin": {
+      "additionalProperties": false,
+      "description": "Stable identity of a system configuration. ``fingerprint`` is recomputed, never trusted as declared.",
+      "properties": {
+        "fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "fingerprint_version": {
+          "const": 1,
+          "title": "Fingerprint Version",
+          "type": "integer"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "fingerprint_version",
+        "fingerprint"
+      ],
+      "title": "ConfigurationPin",
+      "type": "object"
+    },
+    "CostValue": {
+      "additionalProperties": false,
+      "description": "Attributed spend as decimal strings (no floats). per_unit_usd = total_usd / units.",
+      "properties": {
+        "kind": {
+          "const": "cost",
+          "default": "cost",
+          "title": "Kind",
+          "type": "string"
+        },
+        "metric_id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Metric Id",
+          "type": "string"
+        },
+        "metric_version": {
+          "minimum": 1,
+          "title": "Metric Version",
+          "type": "integer"
+        },
+        "not_applicable_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NotApplicableReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "per_unit_usd": {
+          "anyOf": [
+            {
+              "description": "Non-negative decimal USD string",
+              "pattern": "^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,8})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Per Unit Usd"
+        },
+        "status": {
+          "$ref": "#/$defs/MeasurementStatus"
+        },
+        "total_usd": {
+          "anyOf": [
+            {
+              "description": "Non-negative decimal USD string",
+              "pattern": "^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,8})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Usd"
+        },
+        "units": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Units"
+        }
+      },
+      "required": [
+        "metric_id",
+        "metric_version",
+        "status"
+      ],
+      "title": "CostValue",
+      "type": "object"
+    },
+    "CountValue": {
+      "additionalProperties": false,
+      "description": "Count of events. Observed requires at least one observed unit: a zero over zero units is not a measurement.",
+      "properties": {
+        "count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Count"
+        },
+        "kind": {
+          "const": "count",
+          "default": "count",
+          "title": "Kind",
+          "type": "string"
+        },
+        "metric_id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Metric Id",
+          "type": "string"
+        },
+        "metric_version": {
+          "minimum": 1,
+          "title": "Metric Version",
+          "type": "integer"
+        },
+        "not_applicable_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NotApplicableReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "$ref": "#/$defs/MeasurementStatus"
+        },
+        "units_observed": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Units Observed"
+        }
+      },
+      "required": [
+        "metric_id",
+        "metric_version",
+        "status"
+      ],
+      "title": "CountValue",
+      "type": "object"
+    },
+    "DefinitionsPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Opaque synthetic evaluation definitions set identifier.",
+          "maxLength": 64,
+          "pattern": "^evaldefs_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "DefinitionsPin",
+      "type": "object"
+    },
+    "DistributionValue": {
+      "additionalProperties": false,
+      "description": "Ordinal rubric distribution. Only trusted, adjudicated labels may populate it.",
+      "properties": {
+        "counts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AnchorCount"
+          },
+          "title": "Counts",
+          "type": "array"
+        },
+        "kind": {
+          "const": "distribution",
+          "default": "distribution",
+          "title": "Kind",
+          "type": "string"
+        },
+        "metric_id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Metric Id",
+          "type": "string"
+        },
+        "metric_version": {
+          "minimum": 1,
+          "title": "Metric Version",
+          "type": "integer"
+        },
+        "not_applicable_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NotApplicableReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "$ref": "#/$defs/MeasurementStatus"
+        }
+      },
+      "required": [
+        "metric_id",
+        "metric_version",
+        "status"
+      ],
+      "title": "DistributionValue",
+      "type": "object"
+    },
+    "DurationValue": {
+      "additionalProperties": false,
+      "description": "Latency statistic. Not instrumented is ``not_measured``, never 0 ms.",
+      "properties": {
+        "kind": {
+          "const": "duration",
+          "default": "duration",
+          "title": "Kind",
+          "type": "string"
+        },
+        "metric_id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Metric Id",
+          "type": "string"
+        },
+        "metric_version": {
+          "minimum": 1,
+          "title": "Metric Version",
+          "type": "integer"
+        },
+        "milliseconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Milliseconds"
+        },
+        "not_applicable_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NotApplicableReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "samples": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Samples"
+        },
+        "statistic": {
+          "enum": [
+            "p50",
+            "p95"
+          ],
+          "title": "Statistic",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/MeasurementStatus"
+        }
+      },
+      "required": [
+        "metric_id",
+        "metric_version",
+        "status",
+        "statistic"
+      ],
+      "title": "DurationValue",
+      "type": "object"
+    },
+    "ManifestPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Opaque synthetic evaluation dataset manifest identifier.",
+          "maxLength": 64,
+          "pattern": "^evalset_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "root": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Root",
+          "type": "string"
+        },
+        "split": {
+          "$ref": "#/$defs/Split"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "split",
+        "root"
+      ],
+      "title": "ManifestPin",
+      "type": "object"
+    },
+    "MeasurementStatus": {
+      "enum": [
+        "observed",
+        "not_run",
+        "not_measured",
+        "not_applicable",
+        "errored"
+      ],
+      "title": "MeasurementStatus",
+      "type": "string"
+    },
+    "MetricComparison": {
+      "additionalProperties": false,
+      "description": "Both values side by side. No delta, threshold or score: interpretation is the human decider's.",
+      "properties": {
+        "baseline": {
+          "discriminator": {
+            "mapping": {
+              "cost": "#/$defs/CostValue",
+              "count": "#/$defs/CountValue",
+              "distribution": "#/$defs/DistributionValue",
+              "duration": "#/$defs/DurationValue",
+              "ratio": "#/$defs/RatioValue"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RatioValue"
+            },
+            {
+              "$ref": "#/$defs/CountValue"
+            },
+            {
+              "$ref": "#/$defs/DurationValue"
+            },
+            {
+              "$ref": "#/$defs/CostValue"
+            },
+            {
+              "$ref": "#/$defs/DistributionValue"
+            }
+          ],
+          "title": "Baseline"
+        },
+        "candidate": {
+          "discriminator": {
+            "mapping": {
+              "cost": "#/$defs/CostValue",
+              "count": "#/$defs/CountValue",
+              "distribution": "#/$defs/DistributionValue",
+              "duration": "#/$defs/DurationValue",
+              "ratio": "#/$defs/RatioValue"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RatioValue"
+            },
+            {
+              "$ref": "#/$defs/CountValue"
+            },
+            {
+              "$ref": "#/$defs/DurationValue"
+            },
+            {
+              "$ref": "#/$defs/CostValue"
+            },
+            {
+              "$ref": "#/$defs/DistributionValue"
+            }
+          ],
+          "title": "Candidate"
+        },
+        "metric_id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Metric Id",
+          "type": "string"
+        },
+        "metric_version": {
+          "minimum": 1,
+          "title": "Metric Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "metric_id",
+        "metric_version",
+        "baseline",
+        "candidate"
+      ],
+      "title": "MetricComparison",
+      "type": "object"
+    },
+    "NotApplicableReason": {
+      "enum": [
+        "run_kind_not_applicable",
+        "component_not_in_strategy",
+        "zero_denominator"
+      ],
+      "title": "NotApplicableReason",
+      "type": "string"
+    },
+    "RatioValue": {
+      "additionalProperties": false,
+      "description": "Rate. Observed: numerator <= denominator, denominator >= 1, value = numerator / denominator.",
+      "properties": {
+        "denominator": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Denominator"
+        },
+        "kind": {
+          "const": "ratio",
+          "default": "ratio",
+          "title": "Kind",
+          "type": "string"
+        },
+        "metric_id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Metric Id",
+          "type": "string"
+        },
+        "metric_version": {
+          "minimum": 1,
+          "title": "Metric Version",
+          "type": "integer"
+        },
+        "not_applicable_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NotApplicableReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "numerator": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Numerator"
+        },
+        "status": {
+          "$ref": "#/$defs/MeasurementStatus"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "metric_id",
+        "metric_version",
+        "status"
+      ],
+      "title": "RatioValue",
+      "type": "object"
+    },
+    "RecordAttribution": {
+      "additionalProperties": false,
+      "description": "Who a record says acted. ``asserted_*`` fields are claims, not authentication or authorization.\n\nA Pydantic model cannot verify ``attestation_basis``. A value of\n``trusted_service_authenticated`` is meaningful only when written by the\nfuture evaluation-record service (``promotion.EvaluationRecordService``),\nwhich must authenticate the principal and check an explicit role grant.",
+      "properties": {
+        "asserted_kind": {
+          "enum": [
+            "human",
+            "service"
+          ],
+          "title": "Asserted Kind",
+          "type": "string"
+        },
+        "asserted_role": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{1,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asserted Role"
+        },
+        "attestation_basis": {
+          "$ref": "#/$defs/AttestationBasis"
+        },
+        "principal_id": {
+          "maxLength": 64,
+          "pattern": "^principal_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Principal Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "principal_id",
+        "asserted_kind",
+        "attestation_basis"
+      ],
+      "title": "RecordAttribution",
+      "type": "object"
+    },
+    "Split": {
+      "enum": [
+        "golden",
+        "held_out"
+      ],
+      "title": "Split",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/run-comparison.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Documented baseline-vs-candidate comparison. Completeness is recomputed, never declared.",
+  "properties": {
+    "baseline_config": {
+      "$ref": "#/$defs/ConfigurationPin"
+    },
+    "baseline_run_id": {
+      "description": "Opaque synthetic evaluation run identifier.",
+      "maxLength": 64,
+      "pattern": "^evalrun_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Baseline Run Id",
+      "type": "string"
+    },
+    "candidate_config": {
+      "$ref": "#/$defs/ConfigurationPin"
+    },
+    "candidate_run_id": {
+      "description": "Opaque synthetic evaluation run identifier.",
+      "maxLength": 64,
+      "pattern": "^evalrun_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Candidate Run Id",
+      "type": "string"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/CaseComparison"
+      },
+      "minItems": 1,
+      "title": "Cases",
+      "type": "array"
+    },
+    "definitions": {
+      "$ref": "#/$defs/DefinitionsPin"
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^comparison_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "manifests": {
+      "items": {
+        "$ref": "#/$defs/ManifestPin"
+      },
+      "minItems": 1,
+      "title": "Manifests",
+      "type": "array"
+    },
+    "metrics": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/MetricComparison"
+      },
+      "title": "Metrics",
+      "type": "array"
+    },
+    "recorded_at": {
+      "format": "date-time",
+      "title": "Recorded At",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "#/$defs/RecordAttribution"
+    }
+  },
+  "required": [
+    "id",
+    "baseline_run_id",
+    "baseline_config",
+    "candidate_run_id",
+    "candidate_config",
+    "manifests",
+    "definitions",
+    "cases",
+    "recorded_at",
+    "recorded_by"
+  ],
+  "title": "RunComparison",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.4"
+}

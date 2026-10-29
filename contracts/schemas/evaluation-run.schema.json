@@ -1,0 +1,435 @@
+{
+  "$defs": {
+    "CodeRevision": {
+      "additionalProperties": false,
+      "properties": {
+        "commit": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{40}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dirty"
+        },
+        "status": {
+          "enum": [
+            "recorded",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "CodeRevision",
+      "type": "object"
+    },
+    "Component": {
+      "description": "Generating components a strategy contains. Determines which outcome metrics can apply.",
+      "enum": [
+        "eligibility",
+        "recommendation",
+        "verifier",
+        "retrieval",
+        "model"
+      ],
+      "title": "Component",
+      "type": "string"
+    },
+    "ConfigurationPin": {
+      "additionalProperties": false,
+      "description": "Stable identity of a system configuration. ``fingerprint`` is recomputed, never trusted as declared.",
+      "properties": {
+        "fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "fingerprint_version": {
+          "const": 1,
+          "title": "Fingerprint Version",
+          "type": "integer"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "fingerprint_version",
+        "fingerprint"
+      ],
+      "title": "ConfigurationPin",
+      "type": "object"
+    },
+    "DefinitionsPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Opaque synthetic evaluation definitions set identifier.",
+          "maxLength": 64,
+          "pattern": "^evaldefs_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "DefinitionsPin",
+      "type": "object"
+    },
+    "ManifestPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Opaque synthetic evaluation dataset manifest identifier.",
+          "maxLength": 64,
+          "pattern": "^evalset_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "root": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Root",
+          "type": "string"
+        },
+        "split": {
+          "$ref": "#/$defs/Split"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "split",
+        "root"
+      ],
+      "title": "ManifestPin",
+      "type": "object"
+    },
+    "Measurement": {
+      "additionalProperties": false,
+      "description": "A value exists only when it was observed. No fabricated zeros.",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/MeasurementStatus"
+        },
+        "unit": {
+          "enum": [
+            "milliseconds",
+            "usd",
+            "count"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "status",
+        "unit"
+      ],
+      "title": "Measurement",
+      "type": "object"
+    },
+    "MeasurementStatus": {
+      "enum": [
+        "observed",
+        "not_run",
+        "not_measured",
+        "not_applicable",
+        "errored"
+      ],
+      "title": "MeasurementStatus",
+      "type": "string"
+    },
+    "OptionalPin": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "pinned",
+            "not_applicable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/+-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "OptionalPin",
+      "type": "object"
+    },
+    "RunKind": {
+      "enum": [
+        "fixture_conformance",
+        "deterministic_baseline",
+        "single_model",
+        "multi_agent"
+      ],
+      "title": "RunKind",
+      "type": "string"
+    },
+    "RunPurpose": {
+      "enum": [
+        "regression",
+        "tuning",
+        "model_selection",
+        "promotion_assessment"
+      ],
+      "title": "RunPurpose",
+      "type": "string"
+    },
+    "Split": {
+      "enum": [
+        "golden",
+        "held_out"
+      ],
+      "title": "Split",
+      "type": "string"
+    },
+    "StrategyPin": {
+      "additionalProperties": false,
+      "description": "Versioned identity of the implementation strategy under evaluation (not its run kind).",
+      "properties": {
+        "components": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Component"
+          },
+          "title": "Components",
+          "type": "array",
+          "uniqueItems": true
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "StrategyPin",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/evaluation-run.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code_revision": {
+      "$ref": "#/$defs/CodeRevision"
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completed At"
+    },
+    "configuration": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ConfigurationPin"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "contract_version": {
+      "pattern": "^0\\.2\\.0-dev\\.[a-z]+\\.[0-9]+$",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "cost": {
+      "$ref": "#/$defs/Measurement"
+    },
+    "definitions": {
+      "$ref": "#/$defs/DefinitionsPin"
+    },
+    "errors": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_]{0,63}$",
+        "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
+    "executed_by": {
+      "description": "Identifier of the adapter/authority component and its version, e.g. 'fixture-adapter/0.2.0-dev.foundations'.",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[0-9A-Za-z.+-]{1,64}$",
+      "title": "Executed By",
+      "type": "string"
+    },
+    "id": {
+      "description": "Opaque synthetic evaluation run identifier.",
+      "maxLength": 64,
+      "pattern": "^evalrun_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "judge": {
+      "$ref": "#/$defs/OptionalPin"
+    },
+    "latency": {
+      "$ref": "#/$defs/Measurement"
+    },
+    "manifests": {
+      "items": {
+        "$ref": "#/$defs/ManifestPin"
+      },
+      "minItems": 1,
+      "title": "Manifests",
+      "type": "array"
+    },
+    "model": {
+      "$ref": "#/$defs/OptionalPin"
+    },
+    "prompt": {
+      "$ref": "#/$defs/OptionalPin"
+    },
+    "purpose": {
+      "$ref": "#/$defs/RunPurpose"
+    },
+    "replicates": {
+      "minimum": 1,
+      "title": "Replicates",
+      "type": "integer"
+    },
+    "retrieval_index": {
+      "$ref": "#/$defs/OptionalPin"
+    },
+    "run_kind": {
+      "$ref": "#/$defs/RunKind"
+    },
+    "safety_policy": {
+      "$ref": "#/$defs/DefinitionsPin"
+    },
+    "source_authority": {
+      "enum": [
+        "fixture_mock",
+        "drupal"
+      ],
+      "title": "Source Authority",
+      "type": "string"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "partial",
+        "failed",
+        "aborted"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "strategy": {
+      "$ref": "#/$defs/StrategyPin"
+    }
+  },
+  "required": [
+    "id",
+    "run_kind",
+    "purpose",
+    "manifests",
+    "definitions",
+    "safety_policy",
+    "contract_version",
+    "code_revision",
+    "strategy",
+    "source_authority",
+    "retrieval_index",
+    "prompt",
+    "model",
+    "judge",
+    "replicates",
+    "started_at",
+    "status",
+    "latency",
+    "cost",
+    "executed_by"
+  ],
+  "title": "EvaluationRun",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.4"
+}

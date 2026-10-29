@@ -1,0 +1,255 @@
+{
+  "$defs": {
+    "AdjudicationStatus": {
+      "enum": [
+        "adjudicated",
+        "disputed",
+        "unresolved"
+      ],
+      "title": "AdjudicationStatus",
+      "type": "string"
+    },
+    "AttestationBasis": {
+      "description": "How the attribution was established. Only a future trusted service may issue the last value.",
+      "enum": [
+        "unverified_metadata",
+        "mock_authenticated",
+        "trusted_service_authenticated"
+      ],
+      "title": "AttestationBasis",
+      "type": "string"
+    },
+    "FinalLabel": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Dimension",
+          "type": "string"
+        },
+        "value": {
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dimension",
+        "value"
+      ],
+      "title": "FinalLabel",
+      "type": "object"
+    },
+    "RawLabel": {
+      "additionalProperties": false,
+      "description": "One reviewer's independent judgment on one dimension.",
+      "properties": {
+        "dimension": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Dimension",
+          "type": "string"
+        },
+        "labeled_at": {
+          "format": "date-time",
+          "title": "Labeled At",
+          "type": "string"
+        },
+        "rationale": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "minLength": 1,
+              "pattern": "^[^\\r\\n]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rationale"
+        },
+        "reviewer": {
+          "$ref": "#/$defs/RecordAttribution"
+        },
+        "value": {
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "reviewer",
+        "dimension",
+        "value",
+        "labeled_at"
+      ],
+      "title": "RawLabel",
+      "type": "object"
+    },
+    "RecordAttribution": {
+      "additionalProperties": false,
+      "description": "Who a record says acted. ``asserted_*`` fields are claims, not authentication or authorization.\n\nA Pydantic model cannot verify ``attestation_basis``. A value of\n``trusted_service_authenticated`` is meaningful only when written by the\nfuture evaluation-record service (``promotion.EvaluationRecordService``),\nwhich must authenticate the principal and check an explicit role grant.",
+      "properties": {
+        "asserted_kind": {
+          "enum": [
+            "human",
+            "service"
+          ],
+          "title": "Asserted Kind",
+          "type": "string"
+        },
+        "asserted_role": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{1,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asserted Role"
+        },
+        "attestation_basis": {
+          "$ref": "#/$defs/AttestationBasis"
+        },
+        "principal_id": {
+          "maxLength": 64,
+          "pattern": "^principal_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Principal Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "principal_id",
+        "asserted_kind",
+        "attestation_basis"
+      ],
+      "title": "RecordAttribution",
+      "type": "object"
+    },
+    "RubricPin": {
+      "additionalProperties": false,
+      "properties": {
+        "rubric_id": {
+          "maxLength": 64,
+          "pattern": "^rubric_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Rubric Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "rubric_id",
+        "version"
+      ],
+      "title": "RubricPin",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/adjudication-record.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Raw labels are retained; a correction is a new record that ``supersedes`` the prior one.",
+  "properties": {
+    "case_id": {
+      "description": "Opaque synthetic evaluation case identifier.",
+      "maxLength": 64,
+      "pattern": "^evalcase_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "case_version": {
+      "minimum": 1,
+      "title": "Case Version",
+      "type": "integer"
+    },
+    "final_labels": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/FinalLabel"
+      },
+      "title": "Final Labels",
+      "type": "array"
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^adjudication_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "raw_labels": {
+      "items": {
+        "$ref": "#/$defs/RawLabel"
+      },
+      "minItems": 1,
+      "title": "Raw Labels",
+      "type": "array"
+    },
+    "recorded_at": {
+      "format": "date-time",
+      "title": "Recorded At",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "#/$defs/RecordAttribution"
+    },
+    "resolution_note": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Resolution Note"
+    },
+    "rubric": {
+      "$ref": "#/$defs/RubricPin"
+    },
+    "status": {
+      "$ref": "#/$defs/AdjudicationStatus"
+    },
+    "supersedes": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "pattern": "^adjudication_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Supersedes"
+    }
+  },
+  "required": [
+    "id",
+    "case_id",
+    "case_version",
+    "rubric",
+    "raw_labels",
+    "status",
+    "recorded_at",
+    "recorded_by"
+  ],
+  "title": "AdjudicationRecord",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.4"
+}

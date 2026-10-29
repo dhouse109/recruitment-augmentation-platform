@@ -1,0 +1,135 @@
+{
+  "$defs": {
+    "DisagreementPolicy": {
+      "enum": [
+        "third_reviewer",
+        "recorded_discussion"
+      ],
+      "title": "DisagreementPolicy",
+      "type": "string"
+    },
+    "RubricDimension": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 300,
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]*$",
+          "title": "Description",
+          "type": "string"
+        },
+        "rationale_required_at_or_below": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rationale Required At Or Below"
+        },
+        "scale": {
+          "items": {
+            "$ref": "#/$defs/ScaleAnchor"
+          },
+          "minItems": 2,
+          "title": "Scale",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "description",
+        "scale"
+      ],
+      "title": "RubricDimension",
+      "type": "object"
+    },
+    "ScaleAnchor": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "maxLength": 300,
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]*$",
+          "title": "Label",
+          "type": "string"
+        },
+        "value": {
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value",
+        "label"
+      ],
+      "title": "ScaleAnchor",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/reviewer-rubric.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Versioned rubric. A draft rubric is a proposal until the owner approves it.",
+  "properties": {
+    "dimensions": {
+      "items": {
+        "$ref": "#/$defs/RubricDimension"
+      },
+      "minItems": 1,
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "disagreement_policy": {
+      "$ref": "#/$defs/DisagreementPolicy"
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^rubric_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "min_independent_reviewers": {
+      "minimum": 1,
+      "title": "Min Independent Reviewers",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "approved"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "status",
+    "dimensions",
+    "min_independent_reviewers",
+    "disagreement_policy"
+  ],
+  "title": "ReviewerRubric",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.4"
+}

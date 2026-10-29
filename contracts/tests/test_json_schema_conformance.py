@@ -335,5 +335,145 @@ class ReviewConformanceTests(unittest.TestCase):
             _model("review-reason-vocabulary").model_validate(vocab)
 
 
+# ---------------------------------------------------------------------------
+# 0.2.0-dev.foundations.4: evaluation, adjudication and promotion schemas (D-004.12)
+# ---------------------------------------------------------------------------
+
+_PYDANTIC_MODELS.update({
+    "evaluation-case": "rap_contracts.evaluation:EvaluationCase",
+    "evaluation-dataset-manifest": "rap_contracts.evaluation:EvaluationDatasetManifest",
+    "evaluation-run": "rap_contracts.evaluation:EvaluationRun",
+    "case-observation": "rap_contracts.evaluation:CaseObservation",
+    "reviewer-rubric": "rap_contracts.adjudication:ReviewerRubric",
+    "adjudication-record": "rap_contracts.adjudication:AdjudicationRecord",
+    "metric-definition-set": "rap_contracts.promotion:MetricDefinitionSet",
+    "safety-gate-policy": "rap_contracts.promotion:SafetyGatePolicy",
+    "promotion-decision": "rap_contracts.promotion:PromotionDecision",
+    "held-out-gate-attestation": "rap_contracts.promotion:HeldOutGateAttestation",
+    "run-comparison": "rap_contracts.promotion:RunComparison",
+})
+
+
+@unittest.skipIf(Draft202012Validator is None, "jsonschema not installed; install contracts/requirements-dev.txt")
+class EvaluationConformanceTests(unittest.TestCase):
+    """Committed evaluation fixtures and harness-generated records against the committed schemas."""
+
+    @classmethod
+    def setUpClass(cls):
+        import eval_harness as H
+        import test_adjudication
+        import test_promotion_gates
+        from rap_contracts.evaluation import Split
+
+        cls.H = H
+        cls.defs = H.load(H.DEFINITIONS_FILE)
+        cls.docs = {split: H.split_doc(split) for split in Split}
+        cls.observations = [H.run_case(c, doc).observation.model_dump(mode="json")
+                            for doc in cls.docs.values() for c in H.cases_of(doc)]
+        cls.run_record = test_promotion_gates.run().model_dump(mode="json")
+        cls.decision = test_promotion_gates.decision()
+        cls.attestation = test_promotion_gates.attestation(test_promotion_gates.policy()).model_dump(mode="json")
+        cls.adjudication = test_adjudication.record()
+        cls.comparison = test_promotion_gates.Scenario().comparison.model_dump(mode="json")
+
+    def _accept(self, name, items):
+        validator = _validator(name)
+        for i, item in enumerate(items):
+            with self.subTest(schema=name, item=item.get("id", item.get("case_id", i))):
+                self.assertEqual([e.message for e in validator.iter_errors(item)], [])
+
+    def test_committed_and_generated_records_accepted(self):
+        self._accept("evaluation-case", [c for doc in self.docs.values() for c in doc["cases"]])
+        self._accept("evaluation-dataset-manifest", [doc["manifest"] for doc in self.docs.values()])
+        self._accept("metric-definition-set", [self.defs["metric_definitions"]])
+        self._accept("safety-gate-policy", [self.defs["safety_gate_policy"]])
+        self._accept("reviewer-rubric", [self.defs["reviewer_rubric"]])
+        self._accept("case-observation", self.observations)
+        self._accept("evaluation-run", [self.run_record])
+        self._accept("promotion-decision", [self.decision])
+        self._accept("held-out-gate-attestation", [self.attestation])
+        self._accept("adjudication-record", [self.adjudication])
+        self._accept("run-comparison", [self.comparison])
+        self.assertEqual(len(self.observations), 31)
+
+    def _both_reject(self, name, cases):
+        validator, model = _validator(name), _model(name)
+        for label, payload in cases.items():
+            with self.subTest(schema=name, case=label):
+                self.assertTrue(list(validator.iter_errors(payload)), f"JSON Schema accepted: {label}")
+                with self.assertRaises(ValidationError, msg=f"Pydantic accepted: {label}"):
+                    model.model_validate(payload)
+
+    def test_malformed_evaluation_records_rejected_by_both(self):
+        case = copy.deepcopy(self.docs[next(iter(self.docs))]["cases"][0])
+        bad_step = copy.deepcopy(case)
+        bad_step["steps"][0]["operation"] = "run_model"
+        manifest = copy.deepcopy(self.docs[next(iter(self.docs))]["manifest"])
+        obs = copy.deepcopy(self.observations[0])
+        self._both_reject("evaluation-case", {
+            "unknown operation": bad_step,
+            "free-text expected output": {**case, "expected_output": "Strong fit"},
+            "no steps": {**case, "steps": []},
+        })
+        self._both_reject("evaluation-dataset-manifest", {
+            "unknown custody": {**manifest, "custody": "trust_me"},
+            "real data policy": {**manifest, "data_policy": "production"},
+        })
+        self._both_reject("case-observation", {
+            "copied text": {**obs, "admitted_text": "Synthetic"},
+            "caller-visible observation": {**obs, "visibility": "public"},
+        })
+        self._both_reject("evaluation-run", {
+            "unknown run kind": {**self.run_record, "run_kind": "vibes"},
+            "accuracy score field": {**self.run_record, "accuracy": 0.97},
+        })
+        self._both_reject("promotion-decision", {
+            "waiver": {**self.decision, "waiver": "accepted"},
+            "auto-promotion": {**self.decision, "decision": "auto_promote"},
+        })
+        self._both_reject("held-out-gate-attestation", {
+            "case identifiers": {**self.attestation, "case_ids": ["evalcase_h001"]},
+        })
+        self._both_reject("run-comparison", {
+            "self-declared completeness": {**self.comparison, "status": "complete"},
+            "invented delta": {**self.comparison, "metrics": [{**self.comparison["metrics"][0], "delta": 0.1}]},
+            "threshold verdict": {**self.comparison, "passed_threshold": True},
+        })
+        self._both_reject("promotion-decision", {
+            "self-declared comparison status": {**self.decision, "comparison_status": "complete"},
+        })
+        self._both_reject("adjudication-record", {
+            "llm judge field": {**self.adjudication, "llm_judge_score": 0.8},
+        })
+
+    def test_documented_gaps_python_only(self):
+        """Case grammar, value-iff-observed, zero-tolerance completeness and promotion strictness are Python-only."""
+        case = copy.deepcopy(self.docs[next(iter(self.docs))]["cases"][0])
+        for step in case["steps"]:
+            step["role"] = "prerequisite"
+            step.pop("consequence_of", None)
+        self.assertEqual(list(_validator("evaluation-case").iter_errors(case)), [])
+        with self.assertRaises(ValidationError):
+            _model("evaluation-case").model_validate(case)
+        fabricated = {**self.run_record, "latency": {"status": "not_measured", "unit": "milliseconds", "value": 0}}
+        self.assertEqual(list(_validator("evaluation-run").iter_errors(fabricated)), [])
+        with self.assertRaises(ValidationError):
+            _model("evaluation-run").model_validate(fabricated)
+        edited = copy.deepcopy(self.comparison)
+        edited["cases"][0]["change"] = "improved"  # contradicts identical outcomes
+        self.assertEqual(list(_validator("run-comparison").iter_errors(edited)), [])
+        with self.assertRaises(ValidationError):
+            _model("run-comparison").model_validate(edited)
+        forged = copy.deepcopy(self.run_record)
+        forged["configuration"]["fingerprint"] = "sha256:" + "f" * 64
+        self.assertEqual(list(_validator("evaluation-run").iter_errors(forged)), [])
+        with self.assertRaises(ValidationError):
+            _model("evaluation-run").model_validate(forged)
+        weak = {**self.decision, "decided_by": {**self.decision["decided_by"], "attestation_basis": "unverified_metadata"}}
+        self.assertEqual(list(_validator("promotion-decision").iter_errors(weak)), [])
+        with self.assertRaises(ValidationError):
+            _model("promotion-decision").model_validate(weak)
+
+
 if __name__ == "__main__":
     unittest.main()

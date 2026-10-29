@@ -1,0 +1,303 @@
+{
+  "$defs": {
+    "AttestationBasis": {
+      "description": "How the attribution was established. Only a future trusted service may issue the last value.",
+      "enum": [
+        "unverified_metadata",
+        "mock_authenticated",
+        "trusted_service_authenticated"
+      ],
+      "title": "AttestationBasis",
+      "type": "string"
+    },
+    "ComparisonPin": {
+      "additionalProperties": false,
+      "properties": {
+        "comparison_id": {
+          "maxLength": 64,
+          "pattern": "^comparison_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Comparison Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "comparison_id",
+        "sha256"
+      ],
+      "title": "ComparisonPin",
+      "type": "object"
+    },
+    "ConfigurationPin": {
+      "additionalProperties": false,
+      "description": "Stable identity of a system configuration. ``fingerprint`` is recomputed, never trusted as declared.",
+      "properties": {
+        "fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "fingerprint_version": {
+          "const": 1,
+          "title": "Fingerprint Version",
+          "type": "integer"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "fingerprint_version",
+        "fingerprint"
+      ],
+      "title": "ConfigurationPin",
+      "type": "object"
+    },
+    "DecisionOutcome": {
+      "enum": [
+        "promote",
+        "reject",
+        "not_determined"
+      ],
+      "title": "DecisionOutcome",
+      "type": "string"
+    },
+    "DefinitionsPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Opaque synthetic evaluation definitions set identifier.",
+          "maxLength": 64,
+          "pattern": "^evaldefs_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "DefinitionsPin",
+      "type": "object"
+    },
+    "GateResult": {
+      "enum": [
+        "blocked",
+        "insufficient_evidence",
+        "eligible_for_human_decision"
+      ],
+      "title": "GateResult",
+      "type": "string"
+    },
+    "ManifestPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Opaque synthetic evaluation dataset manifest identifier.",
+          "maxLength": 64,
+          "pattern": "^evalset_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "root": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Root",
+          "type": "string"
+        },
+        "split": {
+          "$ref": "#/$defs/Split"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "split",
+        "root"
+      ],
+      "title": "ManifestPin",
+      "type": "object"
+    },
+    "RecordAttribution": {
+      "additionalProperties": false,
+      "description": "Who a record says acted. ``asserted_*`` fields are claims, not authentication or authorization.\n\nA Pydantic model cannot verify ``attestation_basis``. A value of\n``trusted_service_authenticated`` is meaningful only when written by the\nfuture evaluation-record service (``promotion.EvaluationRecordService``),\nwhich must authenticate the principal and check an explicit role grant.",
+      "properties": {
+        "asserted_kind": {
+          "enum": [
+            "human",
+            "service"
+          ],
+          "title": "Asserted Kind",
+          "type": "string"
+        },
+        "asserted_role": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{1,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asserted Role"
+        },
+        "attestation_basis": {
+          "$ref": "#/$defs/AttestationBasis"
+        },
+        "principal_id": {
+          "maxLength": 64,
+          "pattern": "^principal_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Principal Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "principal_id",
+        "asserted_kind",
+        "attestation_basis"
+      ],
+      "title": "RecordAttribution",
+      "type": "object"
+    },
+    "Split": {
+      "enum": [
+        "golden",
+        "held_out"
+      ],
+      "title": "Split",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/promotion-decision.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Explicit accept/reject record (ADR-0003 decision 10). Strict: no waiver field exists.\n\nModel validation checks shape only. Whether ``promote`` is supported is\nestablished solely by ``check_promotion_inputs`` against the actual runs,\nobservations, comparisons, definitions and gate evaluations.",
+  "properties": {
+    "baseline_config": {
+      "$ref": "#/$defs/ConfigurationPin"
+    },
+    "baseline_run_id": {
+      "description": "Opaque synthetic evaluation run identifier.",
+      "maxLength": 64,
+      "pattern": "^evalrun_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Baseline Run Id",
+      "type": "string"
+    },
+    "candidate_config": {
+      "$ref": "#/$defs/ConfigurationPin"
+    },
+    "candidate_run_ids": {
+      "items": {
+        "description": "Opaque synthetic evaluation run identifier.",
+        "maxLength": 64,
+        "pattern": "^evalrun_[a-z0-9]+(?:_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Candidate Run Ids",
+      "type": "array"
+    },
+    "comparisons": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ComparisonPin"
+      },
+      "title": "Comparisons",
+      "type": "array"
+    },
+    "decided_at": {
+      "format": "date-time",
+      "title": "Decided At",
+      "type": "string"
+    },
+    "decided_by": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RecordAttribution"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "decision": {
+      "$ref": "#/$defs/DecisionOutcome"
+    },
+    "definitions": {
+      "$ref": "#/$defs/DefinitionsPin"
+    },
+    "gate_result": {
+      "$ref": "#/$defs/GateResult"
+    },
+    "held_out_custody_basis": {
+      "enum": [
+        "unverified_declaration",
+        "trusted_custodian"
+      ],
+      "title": "Held Out Custody Basis",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 64,
+      "pattern": "^promotion_[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "manifests": {
+      "items": {
+        "$ref": "#/$defs/ManifestPin"
+      },
+      "minItems": 1,
+      "title": "Manifests",
+      "type": "array"
+    },
+    "rationale": {
+      "maxLength": 300,
+      "minLength": 1,
+      "pattern": "^[^\\r\\n]*$",
+      "title": "Rationale",
+      "type": "string"
+    },
+    "safety_policy": {
+      "$ref": "#/$defs/DefinitionsPin"
+    }
+  },
+  "required": [
+    "id",
+    "baseline_config",
+    "candidate_config",
+    "baseline_run_id",
+    "candidate_run_ids",
+    "safety_policy",
+    "definitions",
+    "manifests",
+    "gate_result",
+    "held_out_custody_basis",
+    "decision",
+    "rationale",
+    "decided_at"
+  ],
+  "title": "PromotionDecision",
+  "type": "object",
+  "x-contract-status": "partial development version; proposed; NOT frozen",
+  "x-contract-version": "0.2.0-dev.foundations.4"
+}
