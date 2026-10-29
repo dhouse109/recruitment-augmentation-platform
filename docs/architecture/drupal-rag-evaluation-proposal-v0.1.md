@@ -18,7 +18,7 @@ This proposal makes two specific architecture changes relative to Foundation v0.
 - **P-002 — Drupal-first reference implementation [PROPOSED]:** Drupal is the authoritative application/data layer for the first pilot, with a controlled retrieval projection available to external AI services. The *core domain contracts* remain portable to other authoritative systems in later adapters.
 - **P-003 — Evaluation as a first-class product capability [PROPOSED]:** A versioned regression dataset and reproducible offline evaluation harness exist before model-driven suggestions are promoted. LangFuse can correlate evaluations and traces, but observability tooling alone does not create ground truth.
 
-Neither proposal changes the approved **D-001 general-purpose core plus nonprofit internship pilot** strategy. Both require project-owner review before being marked accepted.
+Neither proposal changes the approved **D-001 general-purpose core plus nonprofit internship pilot** strategy. At the time of writing both required project-owner review. *Editorial note (2026-10-29): P-002 and P-003 were subsequently accepted in direction as D-002 ([ADR-0002](../decisions/ADR-0002-drupal-authoritative-reference-and-rag-boundaries.md)) and D-003 ([ADR-0003](../decisions/ADR-0003-versioned-agent-evaluation-and-prompt-promotion.md)); those ADRs govern this proposal.*
 
 ## 2. Provenance
 
@@ -214,6 +214,8 @@ Proposed nonfunctional amendments: strict freshness checks, indexed-data deletio
 
 ## 9. What remains open
 
+*Editorial note (2026-10-29): items 1 and 2 were answered when D-002 and D-003 were accepted in direction; they are kept as historical record. Items 3–5 remain open as recorded in the ADRs.*
+
 1. Confirm **P-002:** Is Drupal a required first-pilot source of truth (my recommendation), while other ATS/CMS systems remain future adapters?
 2. Confirm **P-003:** Is measurable evaluation/prompt-regression testing an explicit first-release showcase (my recommendation), with a quality gate before model changes?
 3. Do you want the **in-Drupal** AI experience delivered using the Drupal AI module ecosystem, or is a native Drupal UI invoking the external service enough? A hybrid is also possible.
@@ -232,4 +234,4 @@ Proposed nonfunctional amendments: strict freshness checks, indexed-data deletio
 ## Change log
 
 - **v0.1.0 — 2026-10-12:** Proposed source-of-truth, inside/outside Drupal, RAG boundaries and continuous evaluation architecture for review before updating the approved project baseline.
-- **v0.1.1 — 2026-10-29:** Editorial redaction (F2). Replaced the private-discussion summary in §2 with a neutral provenance statement and generalized principles; removed identifying attributions, dialogue and dated source references; clarified that D-002 and D-003 govern. No architectural content changed. Earlier versions remain in Git history.
+- **v0.1.1 — 2026-10-29:** Editorial redaction (F2). Replaced the private-discussion summary in §2 with a neutral provenance statement and generalized principles; removed identifying attributions, dialogue and dated source references; clarified that D-002 and D-003 govern. No architectural content changed. Also annotated §1 and §9 to record that P-002 and P-003 were later accepted in direction as D-002 and D-003. Earlier versions remain in Git history.

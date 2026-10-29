@@ -11,7 +11,7 @@
 
 We need to know whether a change in prompt, provider, retrieval strategy or agent topology actually improves safe reviewer assistance. Trace collection without labeled cases is observability, not evaluation. A change must be compared on a frozen dataset with enough metadata to reproduce the experiment and inspect regressions.
 
-The historical interview described ad-hoc spreadsheet comparison, not a mature evaluation suite. This new evaluation design is an independently proposed capability.
+This evaluation design is an independently proposed capability of this project. It does not describe, reproduce or depend on any prior system's evaluation practice. *(Editorial redaction 2026-10-29, follow-up F2; the earlier wording remains in Git history.)*
 
 ## Two partitions
 
