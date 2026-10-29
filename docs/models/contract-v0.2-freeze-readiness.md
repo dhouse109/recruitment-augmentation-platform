@@ -39,7 +39,7 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 
 ## Compatibility summary
 
-- PR #4–#6 schema bodies are pinned by digest (`Pr4/Pr5/Pr6CompatibilityTests`); only `$id` and `x-contract-version` changed for the 25 existing schemas.
+- PR #4–#6 schema bodies are pinned by digest (`Pr4/Pr5/Pr6CompatibilityTests`); only `$id` and `x-contract-version` changed for the 25 existing schemas; 11 schemas are new in PR #7.
 - PR #4–#6 fixture files are unchanged and are now content-pinned by the evaluation manifests.
 - No existing model class or validator changed in PR #7.
 - JSON Schema cannot express cross-record rules, case grammar, value-only-when-observed, zero-tolerance completeness or promotion strictness; these are Python-only and documented as such in `test_json_schema_conformance.py`.
@@ -82,17 +82,23 @@ Options for the owner, none of which this PR takes:
 | Transcript-derived content in repository history | Present | High | Recorded as F2 | Owner action required |
 | Single maintainer cannot provide independent dual adjudication | High | Medium | Rubric requires two reviewers; single-reviewer flag | Owner decision on reviewers |
 | No CI: evidence depends on manually reported runs | High | Medium | Clean-clone commands in PRs | CI enablement is an owner/spend decision |
+| Configuration pins or comparison metric values asserted without real run provenance | Medium | High | Recomputed fingerprints, lineage checks, `run_provenance_basis`, comparison validation against observations | Requires the future trusted run registry |
+| Draft comparison flags or gate policy adopted without review | Medium | Medium | All definitions `status: draft`; gate requires an approved policy | Owner review (F4) |
 
 ## Test evidence
 
-Fresh clone of branch `contracts/v0.2-evaluation` at code commit `8174ed6edbd31236f57f28c79f300205b2f37481` (later commits change documentation only), Python 3.13.18, `pydantic==2.13.5`, `jsonschema==4.26.0`. PR #6 ended at 288 tests; PR #7 adds 89:
+Fresh clone of branch `contracts/v0.2-evaluation` at code commit `192e489098caf34cc586ff7b2c1ba793f7cb4dc9` (review repair R1–R4; later commits change documentation only), Python 3.13.18, `pydantic==2.13.5`, `jsonschema==4.26.0`. PR #6 ended at 288 tests; PR #7 now adds 118 (89 before the review repair):
 
 | Command (from `contracts/`) | Result |
 |---|---|
 | `python -m rap_contracts.schema_export --check` | `schema drift: NONE` |
-| `python -m unittest discover -s tests` (dev requirements) | **377 tests, OK, 0 skipped** |
-| `python -m unittest discover -s tests` (runtime requirements only) | **377 tests, OK, 15 skipped** (JSON Schema conformance, as designed) |
-| `python -m unittest discover -s tests -p 'test_evaluation*.py'` | 43 tests, OK |
-| `PYTHONPATH=tests python -m unittest test_evaluation_cases test_dataset_partition test_promotion_gates` | 50 tests, OK |
+| `python -m unittest discover -s tests` (dev requirements) | **406 tests, OK, 0 skipped** |
+| `python -m unittest discover -s tests` (runtime requirements only) | **406 tests, OK, 15 skipped** (JSON Schema conformance, as designed) |
+| `python -m unittest discover -s tests -p 'test_evaluation*.py'` | 52 tests, OK |
+| `python -m unittest discover -s tests -p 'test_promotion_gates.py'` | 34 tests, OK |
+| `python -m unittest discover -s tests -p 'test_json_schema_conformance.py'` | 15 tests, OK (independent JSON Schema conformance) |
+| `PYTHONPATH=tests python -m unittest test_evaluation_cases test_dataset_partition test_promotion_gates` | 70 tests, OK |
+
+The 31 evaluation cases and their manifest hashes are byte-identical to the pre-repair head `36557e41`; all 31 still pass.
 
 These are local, manually reported executions; no GitHub CI checks are configured. The PR #7 description repeats them against the final head.
