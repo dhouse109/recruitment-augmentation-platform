@@ -296,9 +296,12 @@ class DerivationTests(unittest.TestCase):
 
     def test_exactly_two_designated_primaries(self):
         """Failure-first P3: an extra reviewer was counted as another independent reviewer on main."""
+        third = [lab(P1, ES), lab(P2, ES), lab("principal_example_reviewer_3", ES)]
         bad = {
-            "third primary label": record_with(ES, [lab(P1, ES), lab(P2, ES), lab("principal_example_reviewer_3", ES)],
-                                               result(ES)),
+            "third primary label": record_with(ES, third, result(ES)),
+            # Isolates the designation rule: the declared result already matches what derivation would give.
+            "third primary label with a consistent result": record_with(
+                ES, third, result(ES, resolution="unresolved"), status="unresolved"),
             "primaries not distinct": record(primary_reviewers=[P1, P1]),
             "three designated primaries": record(primary_reviewers=[P1, P2, "principal_example_reviewer_3"]),
             "one designated primary": record(primary_reviewers=[P1]),
