@@ -23,7 +23,7 @@ T1 schema validation · T2 mock-level observed behavior (reference validators, m
 | D-004.09 reason codes, conditional narrative | `review.py` (#6) | T2 | g012–g020 (reason pins exercised) | Write service enforcement (T4) |
 | D-004.10 bounded claim vocabulary | `claims.py` (#5) | T2 | g008, g023, h001, h004 | Adapter/source enforcement (T4); O3 vocabulary authority source |
 | D-004.11 RAG authorization and currentness | `evidence.py` (#5) | T2 (mock authority and chunk store) | g004, g006, g007, g009, g010, g011, h002 | Real index, live ACL, invalidation (T4); model compliance with injected text (T3/T4) |
-| D-004.12 evaluation, adjudication, held-out | `evaluation.py`, `adjudication.py`, `promotion.py` (#7) | T1/T2 (contracts, conformance harness) | all 31 | Executed no-model baseline (T3), human adjudication, trusted custody, a recorded promotion decision |
+| D-004.12 evaluation, adjudication, held-out | `evaluation.py`, `adjudication.py`, `promotion.py` (#7; adjudication integrity F4 PR-B) | T1/T2 (contracts, conformance harness) | all 31 | Executed no-model baseline (T3), human adjudication, trusted custody, a recorded promotion decision |
 
 Every decision has a reference contract and T2 evidence. **No decision has T3 or T4 evidence.**
 
@@ -34,7 +34,7 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 | O3 | Must `ClaimVocabulary` (like `PolicySet`) carry its own authoritative source reference? | Open |
 | O4 | Additional requirement kinds for the pilot (schedule windows, location mode)? | Open; needs fairness/accommodation review |
 | O5 (remainder) | How rule outcomes cite opportunity-subject evidence directly | Partly resolved in PR #6 (recommendations may cite it) |
-| PR #7 drafts | Approve or revise the draft metric definitions, safety-gate policy and reviewer rubric | F4 policy decisions (B1–B5, N1–N3) and PR-A decisions (D1–D5) approved 2026-10-29 ([record](../evaluation/F4-definitions-decision-record.md)); draft definitions v2 proposed in PR-A. **No definition is approved** (v1 and v2 remain `draft`); adjudication, execution-semantics and research-selection contracts (proposed PR-B to PR-F) are not authorized |
+| PR #7 drafts | Approve or revise the draft metric definitions, safety-gate policy and reviewer rubric | F4 policy decisions (B1–B5, N1–N3) and PR-A decisions (D1–D5) approved 2026-10-29 ([record](../evaluation/F4-definitions-decision-record.md)); draft definitions v2 added by PR-A (PR #10, merged 2026-10-29); adjudication integrity and draft rubric v2 added by F4 PR-B. **No definition or rubric is approved** (every version remains `draft`); execution-semantics and research-selection contracts (proposed PR-C to PR-F) are not authorized |
 | Custody | Where genuine held-out labels live and who authors them | Owner decision before any held-out run |
 
 ## Compatibility summary
@@ -42,6 +42,7 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 - PR #4–#6 schema bodies are pinned by digest (`Pr4/Pr5/Pr6CompatibilityTests`); only `$id` and `x-contract-version` changed for the 25 existing schemas; 11 schemas are new in PR #7.
 - PR #4–#6 fixture files are unchanged and are now content-pinned by the evaluation manifests.
 - No existing model class or validator changed in PR #7.
+- F4 PR-B (`0.2.0-dev.foundations.5`) intentionally changes `AdjudicationRecord`, `ReviewerRubric` and `DistributionValue`, and so the `adjudication-record`, `reviewer-rubric` and `run-comparison` bodies; the other 33 bodies are pinned by digest (`Pr4/Pr5/Pr6/Pr7CompatibilityTests`). Both committed copies of rubric v1 still validate.
 - JSON Schema cannot express cross-record rules, case grammar, value-only-when-observed, zero-tolerance completeness or promotion strictness; these are Python-only and documented as such in `test_json_schema_conformance.py`.
 
 ## Freeze-readiness checklist
@@ -49,12 +50,12 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 | # | Criterion | Status |
 |---|---|---|
 | 1 | Every D-004 decision has a reference contract, schema and positive/negative tests | **Met** |
-| 2 | Schema generation reproducible; drift none; prior schema bodies unchanged | **Met** (pinned Pydantic 2.13.5) |
+| 2 | Schema generation reproducible; drift none; prior schema bodies unchanged except documented, intentional changes | **Met** (pinned Pydantic 2.13.5). F4 PR-B intentionally changes three evaluation bodies (`adjudication-record`, `reviewer-rubric`, `run-comparison`); every other body is pinned by digest |
 | 3 | Independent JSON Schema conformance for every exported schema | **Met** (dev requirements) |
 | 4 | Accepted ADR vocabulary used throughout code and fixtures | **Met** in code and fixtures; proposed docs synchronized in F1 (2026-10-29) |
 | 5 | At least one real producer (engine/adapter) round-trips its outputs through the contracts | **Not met** — no eligibility engine, recommendation engine, verifier or adapter exists |
 | 6 | Open decisions O3, O4, O5-remainder dispositioned or explicitly deferred to a later version | **Not met** (owner decision) |
-| 7 | Draft evaluation definitions (metrics, gate policy, rubric) approved | **Not met** — F4 policy decisions recorded (2026-10-29) and draft definitions v2 proposed (PR-A); v1 and v2 definitions remain `draft` (owner decision) |
+| 7 | Draft evaluation definitions (metrics, gate policy, rubric) approved | **Not met** — F4 policy decisions recorded (2026-10-29), draft definitions v2 added (PR #10) and draft rubric v2 added (F4 PR-B); every definition and rubric version remains `draft` (owner decision) |
 | 8 | Source hygiene: no transcript-derived or private material in the repository | **Partly met** — current tree redacted (F2 forward redaction, 2026-10-29); earlier copies remain in Git history and GitHub PR refs; history rewriting not authorized |
 | 9 | Documentation status consistent with merged state | **Met** as of the F1 documentation sync (2026-10-29); keep current with each PR |
 | 10 | Reproducible evidence from a clean checkout, recorded in the PR | **Met** (see below); no CI checks are configured |
@@ -83,7 +84,7 @@ Options for the owner, none of which this PR takes:
 | Single maintainer cannot provide independent dual adjudication | High | Medium | Rubric requires two reviewers; single-reviewer flag | Owner decision on reviewers |
 | No CI: evidence depends on manually reported runs | High | Medium | Clean-clone commands in PRs | CI enablement is an owner/spend decision |
 | Configuration pins or comparison metric values asserted without real run provenance | Medium | High | Recomputed fingerprints, lineage checks, `run_provenance_basis`, comparison validation against observations | Requires the future trusted run registry |
-| Draft comparison flags or gate policy adopted without review | Medium | Medium | All definitions `status: draft`; gate requires an approved policy; F4 decisions recorded and v2 drafts proposed (PR-A) | Owner approval of definitions pending |
+| Draft comparison flags or gate policy adopted without review | Medium | Medium | All definitions `status: draft`; gate requires an approved policy; F4 decisions recorded and v2 drafts added (PR #10, F4 PR-B) | Owner approval of definitions pending |
 
 ## Test evidence
 

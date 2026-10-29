@@ -169,7 +169,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/evaluation-dataset-manifest.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/evaluation-dataset-manifest.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Versioned split manifest.\n\n``repository_visible`` manifests pin each case by content hash. Externally\ncustodied manifests carry only salted commitments: no case IDs, labels or\nscenario details, and never the salt.",
@@ -264,5 +264,5 @@
   "title": "EvaluationDatasetManifest",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.4"
+  "x-contract-version": "0.2.0-dev.foundations.5"
 }

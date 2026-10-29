@@ -192,7 +192,53 @@ class Pr6CompatibilityTests(unittest.TestCase):
         self.assertEqual(len(prior), 25)
 
     def test_version_label_sorts_after_pr6(self):
-        self.assertEqual(CONTRACT_VERSION, "0.2.0-dev.foundations.4")
+        # Pinned to .foundations.4 by PR #7; F4 PR-B moves it on (exact pin: Pr7CompatibilityTests).
+        self.assertTrue(CONTRACT_VERSION.startswith("0.2.0-dev.foundations."))
+        self.assertGreater(int(CONTRACT_VERSION.rsplit(".", 1)[1]), 3)
+
+
+#: PR #7 (0.2.0-dev.foundations.4) evaluation schema bodies as merged on main @ 089f52bd (PR #10 left
+#: them unchanged); same digest rule as above. F4 PR-B changes exactly the three in PRB_CHANGED_SCHEMAS.
+PR7_SCHEMA_BODY_DIGESTS = {
+    "case-observation": "624fc074a96692be65d66fd81c20d10a514b09f85677cbdb080adec6a031885e",
+    "evaluation-case": "d5f9a92f6cadd8e6d1e2c79762c2cfcc6f8d06e2288a5de46acac48691330425",
+    "evaluation-dataset-manifest": "a0d8ae63301b2c167172fa5cf013bd9be6470bafee1a06bcf0ebe899afcde756",
+    "evaluation-run": "d1075362bc12d62c56ab9520ef716626969596c168ab6e5e75b1b2667329135c",
+    "held-out-gate-attestation": "99abd0a1d7da1e217c262730cd3ba931fda3034e20b84cd616d947da60c78162",
+    "metric-definition-set": "d436b0c54b2d9e4f18a5f0bceaf597a7dfdf07ea7290cec69e31450c479aad5f",
+    "promotion-decision": "a61bb473d643e468ac8be7afeebf846c80cc6e157ae73d2ffbeb29022f304430",
+    "safety-gate-policy": "f069d73a61dac0a89913000c7eebbfde4765ac9916e7c4499e89342c75655ce1",
+}
+#: Bodies F4 PR-B changes on purpose, with their PR #7 digests (adjudication integrity, owner decisions E1-E14).
+PRB_CHANGED_SCHEMAS = {
+    "adjudication-record": "13dc28a2e80d244416397b97163c245ca9afd692e0db86414735640557a20e22",
+    "reviewer-rubric": "1e045eae58d3e2254d008afa20cc99eec6e0e64fc9c3fcaf3c6ebf9980baa8eb",
+    "run-comparison": "47b63b2d328d21b8235cd6f3f8ae35224b2c4cb43426ef3762629f92d308c68a",
+}
+
+
+def _body_digest(name):
+    body = build_schema(name, EXPORTED_MODELS[name])
+    body.pop("$id")
+    body.pop("x-contract-version")
+    return hashlib.sha256(json.dumps(body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+class Pr7CompatibilityTests(unittest.TestCase):
+    def test_pr7_unchanged_schema_bodies(self):
+        for name, digest in PR7_SCHEMA_BODY_DIGESTS.items():
+            with self.subTest(schema=name):
+                self.assertEqual(_body_digest(name), digest)
+
+    def test_only_the_three_adjudication_bodies_changed(self):
+        self.assertEqual(set(PR7_SCHEMA_BODY_DIGESTS) | set(PRB_CHANGED_SCHEMAS), PR7_NEW_SCHEMAS)
+        for name, pr7_digest in PRB_CHANGED_SCHEMAS.items():
+            with self.subTest(schema=name):
+                self.assertNotEqual(_body_digest(name), pr7_digest)
+        self.assertEqual(len(EXPORTED_MODELS), 36)  # nothing added or removed
+
+    def test_version_label_is_foundations_5(self):
+        self.assertEqual(CONTRACT_VERSION, "0.2.0-dev.foundations.5")
 
 
 if __name__ == "__main__":

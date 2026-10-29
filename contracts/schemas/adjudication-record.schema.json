@@ -19,32 +19,78 @@
       "title": "AttestationBasis",
       "type": "string"
     },
-    "FinalLabel": {
+    "Derivation": {
+      "enum": [
+        "unanimous",
+        "adjudicator_resolution",
+        "none"
+      ],
+      "title": "Derivation",
+      "type": "string"
+    },
+    "DimensionResult": {
       "additionalProperties": false,
+      "description": "The derived result for one dimension. Recomputed from the raw labels, never trusted as declared.",
       "properties": {
+        "derivation": {
+          "$ref": "#/$defs/Derivation"
+        },
         "dimension": {
           "pattern": "^[a-z][a-z0-9_]{0,63}$",
           "title": "Dimension",
           "type": "string"
         },
+        "not_applicable_reason": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Not Applicable Reason"
+        },
+        "resolution": {
+          "$ref": "#/$defs/Resolution"
+        },
         "value": {
-          "maximum": 10,
-          "minimum": 0,
-          "title": "Value",
-          "type": "integer"
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
         }
       },
       "required": [
         "dimension",
-        "value"
+        "resolution",
+        "derivation"
       ],
-      "title": "FinalLabel",
+      "title": "DimensionResult",
       "type": "object"
     },
     "RawLabel": {
       "additionalProperties": false,
-      "description": "One reviewer's independent judgment on one dimension.",
+      "description": "One reviewer's judgment on one dimension: a scale value, or N/A with a reason (never both).",
       "properties": {
+        "applicability": {
+          "enum": [
+            "scored",
+            "not_applicable"
+          ],
+          "title": "Applicability",
+          "type": "string"
+        },
         "dimension": {
           "pattern": "^[a-z][a-z0-9_]{0,63}$",
           "title": "Dimension",
@@ -54,6 +100,19 @@
           "format": "date-time",
           "title": "Labeled At",
           "type": "string"
+        },
+        "not_applicable_reason": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Not Applicable Reason"
         },
         "rationale": {
           "anyOf": [
@@ -73,17 +132,29 @@
         "reviewer": {
           "$ref": "#/$defs/RecordAttribution"
         },
+        "role": {
+          "$ref": "#/$defs/ReviewRole"
+        },
         "value": {
-          "maximum": 10,
-          "minimum": 0,
-          "title": "Value",
-          "type": "integer"
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
         }
       },
       "required": [
         "reviewer",
+        "role",
         "dimension",
-        "value",
+        "applicability",
         "labeled_at"
       ],
       "title": "RawLabel",
@@ -132,6 +203,95 @@
       "title": "RecordAttribution",
       "type": "object"
     },
+    "Resolution": {
+      "enum": [
+        "scored",
+        "not_applicable",
+        "disputed",
+        "unresolved"
+      ],
+      "title": "Resolution",
+      "type": "string"
+    },
+    "ReviewItemKey": {
+      "additionalProperties": false,
+      "description": "Stable identity of one expected output position, whether or not an output was produced.\n\n``output_slot`` names a position fixed by the case (not by what a run produced),\nso that several outputs of one case and replicate stay distinct and baseline and\ncandidate items align. ``replicate`` is identity only: replicate observations\nare not part of this contract version.",
+      "properties": {
+        "case_id": {
+          "description": "Opaque synthetic evaluation case identifier.",
+          "maxLength": 64,
+          "pattern": "^evalcase_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "case_sha256": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Case Sha256",
+          "type": "string"
+        },
+        "case_version": {
+          "minimum": 1,
+          "title": "Case Version",
+          "type": "integer"
+        },
+        "output_slot": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Output Slot",
+          "type": "string"
+        },
+        "replicate": {
+          "minimum": 1,
+          "title": "Replicate",
+          "type": "integer"
+        },
+        "run_id": {
+          "description": "Opaque synthetic evaluation run identifier.",
+          "maxLength": 64,
+          "pattern": "^evalrun_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Run Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "case_id",
+        "case_version",
+        "case_sha256",
+        "replicate",
+        "output_slot"
+      ],
+      "title": "ReviewItemKey",
+      "type": "object"
+    },
+    "ReviewRole": {
+      "enum": [
+        "primary",
+        "adjudicator"
+      ],
+      "title": "ReviewRole",
+      "type": "string"
+    },
+    "ReviewSubject": {
+      "additionalProperties": false,
+      "description": "The produced output an adjudication record judges.",
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/ReviewItemKey"
+        },
+        "output_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+          "title": "Output Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item",
+        "output_id"
+      ],
+      "title": "ReviewSubject",
+      "type": "object"
+    },
     "RubricPin": {
       "additionalProperties": false,
       "properties": {
@@ -155,29 +315,31 @@
       "type": "object"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/adjudication-record.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/adjudication-record.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Raw labels are retained; a correction is a new record that ``supersedes`` the prior one.",
+  "description": "Adjudication of one produced output. Raw labels are retained; results and status are recomputed.\n\n``primary_reviewers`` and ``adjudicator`` are designations recorded with the\nrecord. They are structural claims: whether those principals hold the asserted\nroles, are independent of the configuration and labels, and are who they claim\nto be can only be established by a future trusted evaluation-record service.",
   "properties": {
-    "case_id": {
-      "description": "Opaque synthetic evaluation case identifier.",
-      "maxLength": 64,
-      "pattern": "^evalcase_[a-z0-9]+(?:_[a-z0-9]+)*$",
-      "title": "Case Id",
-      "type": "string"
+    "adjudicator": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "pattern": "^principal_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Adjudicator"
     },
-    "case_version": {
-      "minimum": 1,
-      "title": "Case Version",
-      "type": "integer"
-    },
-    "final_labels": {
-      "default": [],
+    "dimension_results": {
       "items": {
-        "$ref": "#/$defs/FinalLabel"
+        "$ref": "#/$defs/DimensionResult"
       },
-      "title": "Final Labels",
+      "minItems": 1,
+      "title": "Dimension Results",
       "type": "array"
     },
     "id": {
@@ -185,6 +347,17 @@
       "pattern": "^adjudication_[a-z0-9]+(?:_[a-z0-9]+)*$",
       "title": "Id",
       "type": "string"
+    },
+    "primary_reviewers": {
+      "items": {
+        "maxLength": 64,
+        "pattern": "^principal_[a-z0-9]+(?:_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Primary Reviewers",
+      "type": "array"
     },
     "raw_labels": {
       "items": {
@@ -223,6 +396,9 @@
     "status": {
       "$ref": "#/$defs/AdjudicationStatus"
     },
+    "subject": {
+      "$ref": "#/$defs/ReviewSubject"
+    },
     "supersedes": {
       "anyOf": [
         {
@@ -240,10 +416,11 @@
   },
   "required": [
     "id",
-    "case_id",
-    "case_version",
+    "subject",
     "rubric",
+    "primary_reviewers",
     "raw_labels",
+    "dimension_results",
     "status",
     "recorded_at",
     "recorded_by"
@@ -251,5 +428,5 @@
   "title": "AdjudicationRecord",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.4"
+  "x-contract-version": "0.2.0-dev.foundations.5"
 }

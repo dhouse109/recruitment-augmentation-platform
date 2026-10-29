@@ -1,0 +1,109 @@
+{
+  "fixture_set": "contract-v0.2-evaluation-rubric-v2",
+  "contract_version": "0.2.0-dev.foundations.5",
+  "data_policy": "Wholly synthetic reference definitions. No reviews, labels or measured results.",
+  "notes": [
+    "Status 'draft': proposed reviewer rubric v2 for owner review (F4 PR-B). Nothing here is approved; rubric v1 (in both definitions files) is unchanged.",
+    "Exactly two designated independent primary reviewers per dimension (min_independent_reviewers: 2); a distinct designated adjudicator only when they disagree (third_reviewer). No majority voting.",
+    "N/A is allowed only for the listed reasons, and only when the review item carries the matching pinned expectation. A reviewer may not choose N/A because an output omitted required information; that is scored. evidence_support and explanation_clarity have no N/A.",
+    "Review items, output slots and applicability expectations are caller-declared in this contract version; structural consistency with a pinned case does not prove they were derived from it.",
+    "No adjudication record exists. Nothing is genuinely reportable until a trusted evaluation-record service exists."
+  ],
+  "reviewer_rubric": {
+    "id": "rubric_reviewer_usefulness",
+    "version": 2,
+    "status": "draft",
+    "min_independent_reviewers": 2,
+    "disagreement_policy": "third_reviewer",
+    "dimensions": [
+      {
+        "code": "evidence_support",
+        "description": "Every material statement is supported by cited, current, authorized evidence",
+        "scale": [
+          {
+            "value": 0,
+            "label": "unsupported"
+          },
+          {
+            "value": 1,
+            "label": "partly supported"
+          },
+          {
+            "value": 2,
+            "label": "fully supported"
+          }
+        ],
+        "rationale_required_at_or_below": 1
+      },
+      {
+        "code": "unknown_handling",
+        "description": "Missing, contested or inferred facts are shown as such, never filled in",
+        "scale": [
+          {
+            "value": 0,
+            "label": "invents or hides unknowns"
+          },
+          {
+            "value": 1,
+            "label": "partly explicit"
+          },
+          {
+            "value": 2,
+            "label": "explicit"
+          }
+        ],
+        "rationale_required_at_or_below": 1,
+        "not_applicable_reasons": [
+          {
+            "reason": "pinned_case_expects_no_unknown_or_contested_facts",
+            "requires_expectation": "no_unknown_or_contested_facts_expected"
+          }
+        ]
+      },
+      {
+        "code": "explanation_clarity",
+        "description": "A coordinator can follow the rule and evidence trail",
+        "scale": [
+          {
+            "value": 0,
+            "label": "unclear"
+          },
+          {
+            "value": 1,
+            "label": "adequate"
+          },
+          {
+            "value": 2,
+            "label": "clear"
+          }
+        ],
+        "rationale_required_at_or_below": 0
+      },
+      {
+        "code": "follow_up_actionability",
+        "description": "The suggestion supports a concrete follow-up decision only",
+        "scale": [
+          {
+            "value": 0,
+            "label": "not actionable"
+          },
+          {
+            "value": 1,
+            "label": "partly actionable"
+          },
+          {
+            "value": 2,
+            "label": "actionable"
+          }
+        ],
+        "rationale_required_at_or_below": 0,
+        "not_applicable_reasons": [
+          {
+            "reason": "pinned_case_expects_no_follow_up",
+            "requires_expectation": "no_follow_up_expected"
+          }
+        ]
+      }
+    ]
+  }
+}

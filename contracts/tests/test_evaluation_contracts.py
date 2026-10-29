@@ -190,6 +190,19 @@ def mv(kind, status, **fields):
     return {"kind": kind, "metric_id": "m", "metric_version": 1, "status": status, **fields}
 
 
+def coverage(reportable=0, eligible=0, ineligible=0, unreviewed=0, missing=0, absent=0, failed=0, unexpected=0, dims=()):
+    """Diagnostic usefulness coverage (F4 E9). Produced-expected items = reviewed + unreviewed - unexpected."""
+    reviewed = reportable + eligible + ineligible
+    produced_expected = reviewed + unreviewed - unexpected
+    return {"items_total": produced_expected + unexpected + missing + absent + failed,
+            "produced_expected": produced_expected, "produced_unexpected": unexpected, "missing": missing,
+            "correctly_absent": absent, "generation_failed": failed, "reviewed": reviewed, "unreviewed": unreviewed,
+            "genuinely_reportable": reportable, "structurally_eligible_only": eligible,
+            "structurally_ineligible": ineligible,
+            "dimension_states": [{"dimension": d, "scored": reviewed, "not_applicable": 0, "disputed": 0, "unresolved": 0}
+                                 for d in dims]}
+
+
 class TypedMetricValueTests(unittest.TestCase):
     """A: each metric unit has its own value type; no fabricated zeros; ratio invariants unchanged."""
 
@@ -211,7 +224,9 @@ class TypedMetricValueTests(unittest.TestCase):
             mv("duration", "not_measured", statistic="p95"),
             mv("cost", "observed", total_usd="1.20", units=3, per_unit_usd="0.40"),
             mv("cost", "not_applicable", not_applicable_reason="run_kind_not_applicable"),
-            mv("distribution", "observed", counts=[{"value": 2, "count": 3}, {"value": 1, "count": 1}]),
+            mv("distribution", "observed", coverage=coverage(reportable=4, missing=1, failed=1),
+               dimensions=[{"dimension": "evidence_support", "anchors": [{"value": 2, "count": 3}, {"value": 1, "count": 1}]}]),
+            mv("distribution", "not_measured", coverage=coverage(eligible=2, unreviewed=1, missing=1)),
         ):
             with self.subTest(payload=payload):
                 self._accepts(payload)
@@ -234,8 +249,52 @@ class TypedMetricValueTests(unittest.TestCase):
             "cost as float": mv("cost", "observed", total_usd=1.2, units=3, per_unit_usd=0.4),
             "cost in scientific notation": mv("cost", "observed", total_usd="1e-3", units=1, per_unit_usd="1e-3"),
             "cost zero units observed": mv("cost", "observed", total_usd="0", units=0, per_unit_usd="0"),
-            "empty observed distribution": mv("distribution", "observed", counts=[]),
-            "distribution with zero labels": mv("distribution", "observed", counts=[{"value": 2, "count": 0}]),
+            "observed distribution without coverage": mv("distribution", "observed", dimensions=[
+                {"dimension": "evidence_support", "anchors": [{"value": 2, "count": 1}]}]),
+            "observed distribution with zero-count anchors only": mv("distribution", "observed", coverage=coverage(
+                reportable=1), dimensions=[{"dimension": "evidence_support", "anchors": [{"value": 2, "count": 0}],
+                                            "unresolved": 1}]),
+        })
+
+    def test_usefulness_distribution_populations_and_coverage(self):
+        """F4 E9: coverage is diagnostic; measurement blocks come only from genuinely reportable records.
+        Values here are SYNTHETIC shapes: no contract function can yet produce an observed distribution."""
+        es, fu = "evidence_support", "follow_up_actionability"
+        dist = lambda status, **f: mv("distribution", status, **f)  # noqa: E731
+        for name, payload in {
+            "zero-scored population (genuine zeros)": dist("observed", coverage=coverage(reportable=3),
+                                                          dimensions=[{"dimension": es, "anchors": [{"value": 0, "count": 3}]}]),
+            "one dimension all N/A beside a scored one": dist("observed", coverage=coverage(reportable=2), dimensions=[
+                {"dimension": es, "anchors": [{"value": 1, "count": 2}]}, {"dimension": fu, "not_applicable": 2}]),
+            "disputed and unresolved counted, not scored": dist("observed", coverage=coverage(reportable=3), dimensions=[
+                {"dimension": es, "anchors": [{"value": 2, "count": 1}], "disputed": 1, "unresolved": 1}]),
+            "every dimension N/A is not a measurement": dist("not_applicable", not_applicable_reason="zero_denominator",
+                                                             coverage=coverage(reportable=2)),
+            "missing, failed and unreviewed stay diagnostic": dist("not_measured", coverage=coverage(
+                eligible=1, ineligible=1, unreviewed=2, missing=3, absent=1, failed=2, unexpected=1, dims=(es,))),
+        }.items():
+            with self.subTest(name):
+                self._accepts(payload)
+        broken_presence = {**coverage(reportable=1), "items_total": 5}
+        broken_review = {**coverage(reportable=1), "unreviewed": 3}
+        broken_states = coverage(eligible=2, dims=(es,))
+        broken_states["dimension_states"][0]["scored"] = 1
+        self._rejects({
+            "all N/A presented as observed": dist("observed", coverage=coverage(reportable=2),
+                                                  dimensions=[{"dimension": es, "not_applicable": 2}]),
+            "measurement blocks without observation": dist("not_measured", coverage=coverage(eligible=1),
+                                                           dimensions=[{"dimension": es, "anchors": [{"value": 2, "count": 1}]}]),
+            "dimension does not account for every record": dist("observed", coverage=coverage(reportable=3), dimensions=[
+                {"dimension": es, "anchors": [{"value": 2, "count": 2}]}]),
+            "anchors from non-reportable records": dist("observed", coverage=coverage(eligible=2), dimensions=[
+                {"dimension": es, "anchors": [{"value": 2, "count": 2}]}]),
+            "duplicate anchor value": dist("observed", coverage=coverage(reportable=2), dimensions=[
+                {"dimension": es, "anchors": [{"value": 2, "count": 1}, {"value": 2, "count": 1}]}]),
+            "duplicate dimension block": dist("observed", coverage=coverage(reportable=1), dimensions=[
+                {"dimension": es, "anchors": [{"value": 2, "count": 1}]}] * 2),
+            "presence counts do not reconcile": dist("not_measured", coverage=broken_presence),
+            "produced items neither reviewed nor unreviewed": dist("not_measured", coverage=broken_review),
+            "dimension states do not cover reviewed items": dist("not_measured", coverage=broken_states),
         })
 
     def test_not_applicable_reason_rules(self):

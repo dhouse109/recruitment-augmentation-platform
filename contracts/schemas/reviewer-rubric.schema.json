@@ -2,11 +2,32 @@
   "$defs": {
     "DisagreementPolicy": {
       "enum": [
-        "third_reviewer",
-        "recorded_discussion"
+        "third_reviewer"
       ],
       "title": "DisagreementPolicy",
       "type": "string"
+    },
+    "NotApplicableRule": {
+      "additionalProperties": false,
+      "description": "An allowed N/A reason, valid only when the review item carries ``requires_expectation`` (E10).",
+      "properties": {
+        "reason": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Reason",
+          "type": "string"
+        },
+        "requires_expectation": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Requires Expectation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason",
+        "requires_expectation"
+      ],
+      "title": "NotApplicableRule",
+      "type": "object"
     },
     "RubricDimension": {
       "additionalProperties": false,
@@ -22,6 +43,14 @@
           "pattern": "^[^\\r\\n]*$",
           "title": "Description",
           "type": "string"
+        },
+        "not_applicable_reasons": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NotApplicableRule"
+          },
+          "title": "Not Applicable Reasons",
+          "type": "array"
         },
         "rationale_required_at_or_below": {
           "anyOf": [
@@ -79,7 +108,7 @@
       "type": "object"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/reviewer-rubric.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/reviewer-rubric.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Versioned rubric. A draft rubric is a proposal until the owner approves it.",
@@ -102,7 +131,7 @@
       "type": "string"
     },
     "min_independent_reviewers": {
-      "minimum": 1,
+      "const": 2,
       "title": "Min Independent Reviewers",
       "type": "integer"
     },
@@ -131,5 +160,5 @@
   "title": "ReviewerRubric",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.4"
+  "x-contract-version": "0.2.0-dev.foundations.5"
 }

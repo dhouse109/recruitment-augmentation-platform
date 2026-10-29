@@ -411,6 +411,68 @@ class EvaluationConformanceTests(unittest.TestCase):
         self._accept("safety-gate-policy", [v2["safety_gate_policy"]])
         self._accept("reviewer-rubric", [v2["reviewer_rubric"]])
 
+    def test_adjudication_integrity_conformance(self):
+        """F4 PR-B (0.2.0-dev.foundations.5): rubric v2, the per-output adjudication record and the
+        diagnostic usefulness value against the regenerated schemas. Records here are SYNTHETIC."""
+        import test_adjudication as A
+
+        rubric_v2 = self.H.load(self.H.RUBRIC_V2_FILE)["reviewer_rubric"]
+        self._accept("reviewer-rubric", [rubric_v2, self.H.load(self.H.DEFINITIONS_FILE)["reviewer_rubric"]])
+        disputed = A.record_with(A.ES, [A.lab(A.P1, A.ES, 2), A.lab(A.P2, A.ES, 0, rationale="x")],
+                                 A.result(A.ES, resolution="disputed"), status="disputed")
+        not_applicable = A.record_with(A.UH, [A.lab(A.P1, A.UH, na=A.NA_UNKNOWN), A.lab(A.P2, A.UH, na=A.NA_UNKNOWN)],
+                                       A.result(A.UH, na=A.NA_UNKNOWN))
+        self._accept("adjudication-record", [disputed, not_applicable])
+        coverage = {"items_total": 3, "produced_expected": 1, "produced_unexpected": 0, "missing": 1,
+                    "correctly_absent": 0, "generation_failed": 1, "reviewed": 1, "unreviewed": 0,
+                    "genuinely_reportable": 0, "structurally_eligible_only": 1, "structurally_ineligible": 0,
+                    "dimension_states": [{"dimension": "evidence_support", "scored": 1, "not_applicable": 0,
+                                          "disputed": 0, "unresolved": 0}]}
+        usefulness = {"kind": "distribution", "metric_id": "reviewer_usefulness", "metric_version": 2,
+                      "status": "not_measured", "coverage": coverage}
+        with_usefulness = {**self.comparison, "metrics": self.comparison["metrics"] + [
+            {"metric_id": "reviewer_usefulness", "metric_version": 2, "baseline": usefulness, "candidate": usefulness}]}
+        self._accept("run-comparison", [with_usefulness])
+        _model("run-comparison").model_validate(with_usefulness)
+        legacy = {"kind": "distribution", "metric_id": "reviewer_usefulness", "metric_version": 1, "status": "observed",
+                  "counts": [{"value": 2, "count": 1}]}
+        self._both_reject("reviewer-rubric", {
+            "recorded discussion (N1)": {**rubric_v2, "disagreement_policy": "recorded_discussion"},
+            "three primaries": {**rubric_v2, "min_independent_reviewers": 3},
+        })
+        record = A.record()
+        self._both_reject("adjudication-record", {
+            "three designated primaries": {**record, "primary_reviewers": [A.P1, A.P2, "principal_example_reviewer_3"]},
+            "unknown review role": {**record, "raw_labels": [{**record["raw_labels"][0], "role": "observer"}]},
+            "value above every scale": {**record, "raw_labels": [{**record["raw_labels"][0], "value": 11}]},
+            "no subject": {k: v for k, v in record.items() if k != "subject"},
+            "legacy case-scoped shape": {**{k: v for k, v in record.items() if k != "subject"},
+                                         "case_id": "evalcase_g001", "case_version": 1},
+            "self-declared reportability": {**record, "reportable": True},
+        })
+        self._both_reject("run-comparison", {
+            "legacy flat distribution": {**self.comparison, "metrics": self.comparison["metrics"] + [
+                {"metric_id": "reviewer_usefulness", "metric_version": 1, "baseline": legacy, "candidate": legacy}]},
+        })
+        # Python-only: result derivation, designated-primary membership and coverage reconciliation.
+        python_only = {
+            "adjudication-record": [
+                A.record_with(A.ES, [A.lab(A.P1, A.ES), A.lab(A.P2, A.ES)], A.result(A.ES, 1)),
+                A.record_with(A.ES, [A.lab(A.P1, A.ES), A.lab(A.P2, A.ES), A.lab("principal_example_reviewer_3", A.ES)],
+                              A.result(A.ES)),
+            ],
+            "run-comparison": [{**self.comparison, "metrics": self.comparison["metrics"] + [
+                {"metric_id": "reviewer_usefulness", "metric_version": 2,
+                 "baseline": {**usefulness, "coverage": {**coverage, "items_total": 9}},
+                 "candidate": usefulness}]}],
+        }
+        for name, payloads in python_only.items():
+            for payload in payloads:
+                with self.subTest(schema=name, gap="python-only"):
+                    self.assertEqual(list(_validator(name).iter_errors(payload)), [])
+                    with self.assertRaises(ValidationError):
+                        _model(name).model_validate(payload)
+
     def test_malformed_evaluation_records_rejected_by_both(self):
         case = copy.deepcopy(self.docs[next(iter(self.docs))]["cases"][0])
         bad_step = copy.deepcopy(case)
