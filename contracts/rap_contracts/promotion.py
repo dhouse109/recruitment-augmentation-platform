@@ -19,6 +19,9 @@ Review repairs (PR #7 R1-R4, owner-authorized 2026-10-28):
 
 * Gate evaluations must name the exact safety policy, cover its categories
   and carry a result consistent with their categories and global reasons (R6).
+  Category statuses must agree with the run kind's applicable obligations; a
+  gate with no passing category is never eligible; promotion requires an
+  approved policy (R7).
 * Golden observations count only when their case id, version, content hash
   and split match the authoritative golden manifest the policy pins (R2).
 * A held-out attestation counts only for the exact manifest, policy and
@@ -512,11 +515,18 @@ class CategoryEvaluation(ContractModel):
 
 
 def derive_gate_result(categories: Iterable[CategoryEvaluation], reasons: Iterable[str]) -> GateResult:
-    """Any failed category blocks; any global reason or insufficient category is insufficient evidence."""
+    """Any failed category blocks; any global reason or insufficient category is insufficient evidence.
+
+    A gate in which no category actually passed (for example, every category
+    ``not_applicable``) is never eligible: absence of applicable obligations is
+    not evidence of safety (R7).
+    """
     categories, reasons = list(categories), list(reasons)
     if any(c.status is CategoryGateStatus.FAIL for c in categories):
         return GateResult.BLOCKED
     if reasons or any(c.status is CategoryGateStatus.INSUFFICIENT_EVIDENCE for c in categories):
+        return GateResult.INSUFFICIENT_EVIDENCE
+    if not any(c.status is CategoryGateStatus.PASS for c in categories):
         return GateResult.INSUFFICIENT_EVIDENCE
     return GateResult.ELIGIBLE_FOR_HUMAN_DECISION
 
@@ -540,13 +550,33 @@ class GateEvaluation(ContractModel):
         return self
 
 
-def check_gate_evaluation(gate: GateEvaluation, policy: SafetyGatePolicy) -> None:
-    """Re-check a gate evaluation (even one that bypassed validation) against the exact policy."""
+def check_gate_evaluation(gate: GateEvaluation, policy: SafetyGatePolicy, run: EvaluationRun) -> None:
+    """Re-check a gate evaluation (even one that bypassed validation) against the exact policy and its run.
+
+    A category that applies to the run's kind must be ``pass``,
+    ``insufficient_evidence`` or ``fail``; it can never be ``not_applicable``.
+    A category that does not apply may only be ``not_applicable`` or ``fail``
+    (an observed zero-tolerance violation blocks regardless of applicability).
+    """
     if gate.policy != policy.pin:
         raise ContractViolation("promotion_gate_policy_mismatch", f"gate for {gate.run_id} used another safety policy")
+    if gate.run_id != run.id:
+        raise ContractViolation("promotion_gate_mismatch", f"gate for {gate.run_id} is not for {run.id}")
     categories = [c.category for c in gate.categories]
     if len(set(categories)) != len(categories) or set(categories) != {r.category for r in policy.categories}:
         raise ContractViolation("promotion_gate_inconsistent", f"gate for {gate.run_id} does not cover the policy's categories")
+    rules = {r.category: r for r in policy.categories}
+    for evaluation in gate.categories:
+        rule = rules[evaluation.category]
+        applies = run.run_kind in rule.applies_to_run_kinds
+        if applies and evaluation.status is CategoryGateStatus.NOT_APPLICABLE:
+            raise ContractViolation("promotion_gate_applicability_mismatch",
+                                    f"{evaluation.category.value} applies to {run.run_kind.value} runs but is marked not_applicable")
+        if not applies and evaluation.status in (CategoryGateStatus.PASS, CategoryGateStatus.INSUFFICIENT_EVIDENCE):
+            raise ContractViolation("promotion_gate_applicability_mismatch",
+                                    f"{evaluation.category.value} does not apply to {run.run_kind.value} runs")
+        if rule.zero_tolerance is False and evaluation.status is CategoryGateStatus.FAIL:
+            raise ContractViolation("promotion_gate_inconsistent", f"report-only {evaluation.category.value} cannot fail a gate")
     if gate.result is not derive_gate_result(gate.categories, gate.reasons):
         raise ContractViolation("promotion_gate_inconsistent", f"gate for {gate.run_id} contradicts its own categories or reasons")
 
@@ -996,14 +1026,17 @@ def check_promotion_inputs(
         raise ContractViolation("promotion_policy_mismatch", "the decision pins another safety policy")
     if {g.run_id for g in gates} != {c.id for c in candidates} or len(gates) != len(candidates):
         raise ContractViolation("promotion_gate_mismatch", "one gate evaluation per candidate run is required")
+    runs_by_id = {c.id: c for c in candidates}
     for g in gates:
-        check_gate_evaluation(g, policy)
+        check_gate_evaluation(g, policy, runs_by_id[g.run_id])
     order = [GateResult.BLOCKED, GateResult.INSUFFICIENT_EVIDENCE, GateResult.ELIGIBLE_FOR_HUMAN_DECISION]
     worst = min((g.result for g in gates), key=order.index)
     if decision.gate_result is not worst:
         raise ContractViolation("promotion_gate_result_mismatch", f"recorded {decision.gate_result.value}, worst is {worst.value}")
 
     reasons: list[str] = []
+    if policy.status != "approved":
+        reasons.append("safety_policy_not_approved")  # a draft policy can never support promotion (R7)
     if worst is not GateResult.ELIGIBLE_FOR_HUMAN_DECISION:
         reasons.append("gate_not_eligible")
     by_id = {c.id: c for c in comparisons}

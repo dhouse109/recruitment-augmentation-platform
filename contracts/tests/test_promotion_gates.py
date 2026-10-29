@@ -45,6 +45,8 @@ from rap_contracts.invariants import ContractViolation
 from rap_contracts.promotion import (
     CaseComparison,
     CategoryGateStatus,
+    DecisionOutcome,
+    derive_gate_result,
     GateEvaluation,
     GateResult,
     HeldOutGateAttestation,
@@ -439,9 +441,9 @@ class Scenario:
                     "comparisons": [pin_comparison(self.comparison).model_dump(mode="json")]}
         return PromotionDecision.model_validate(decision(**{**defaults, **update}))
 
-    def check(self, dec=None, comparisons=None, gates=None, observations=None):
+    def check(self, dec=None, comparisons=None, gates=None, observations=None, pol=None):
         return check_promotion_inputs(
-            dec or self.decision(), self.baseline, [self.candidate], gates or [self.gate], policy(),
+            dec or self.decision(), self.baseline, [self.candidate], gates or [self.gate], pol or policy(),
             [self.comparison] if comparisons is None else comparisons,
             observations or {self.baseline.id: self.b_obs, self.candidate.id: self.c_obs}, METRICS, GOLDEN)
 
@@ -682,6 +684,88 @@ class GateIdentityTests(unittest.TestCase):
             check_promotion_inputs(s.decision(), s.baseline, [s.candidate], [s.gate], other_policy, [s.comparison],
                                    {s.baseline.id: s.b_obs, s.candidate.id: s.c_obs}, METRICS, GOLDEN)
         self.assertEqual(ctx.exception.code, "promotion_policy_mismatch")
+
+
+def policy_with_kinds(kinds_by_category, status="approved"):
+    doc = copy.deepcopy(DEFS["safety_gate_policy"])
+    doc["status"] = status
+    for rule in doc["categories"]:
+        if rule["category"] in kinds_by_category:
+            rule["applies_to_run_kinds"] = kinds_by_category[rule["category"]]
+    return SafetyGatePolicy.model_validate(doc)
+
+
+class GateApplicabilityAndApprovalTests(unittest.TestCase):
+    """R7: a gate cannot support promotion through not_applicable categories or a draft policy."""
+
+    def forged(self, gate_, status_by_category, result=GateResult.ELIGIBLE_FOR_HUMAN_DECISION):
+        cats = tuple(c.model_copy(update={"status": status_by_category.get(c.category.value, c.status), "reasons": ()})
+                     for c in gate_.categories)
+        return gate_.model_copy(update={"categories": cats, "result": result, "reasons": ()})
+
+    def test_all_not_applicable_gate_is_never_eligible(self):
+        s = Scenario()
+        all_na = {c.category.value: CategoryGateStatus.NOT_APPLICABLE for c in s.gate.categories}
+        self.assertIs(derive_gate_result(self.forged(s.gate, all_na).categories, ()), GateResult.INSUFFICIENT_EVIDENCE)
+        payload = self.forged(s.gate, all_na).model_dump(mode="json")
+        with self.assertRaises(ValidationError):
+            GateEvaluation.model_validate(payload)
+        with self.assertRaises(ContractViolation) as ctx:  # matching pins, complete comparison, validation bypassed
+            s.check(gates=[self.forged(s.gate, all_na)])
+        self.assertEqual(ctx.exception.code, "promotion_gate_applicability_mismatch")
+
+    def test_policy_with_no_applicable_category_cannot_support_promote(self):
+        model_only = {r["category"]: ["multi_agent"] for r in DEFS["safety_gate_policy"]["categories"]}
+        pol = policy_with_kinds(model_only)
+        s = Scenario()
+        g = evaluate_safety_gate(pol, s.candidate, GOLDEN, logic_only_observations(pol, s.candidate.id),
+                                 HeldOutIntegrity.CUSTODIED_UNEXPOSED, logic_only_attestation(pol, s.candidate.configuration))
+        self.assertTrue(all(c.status is CategoryGateStatus.NOT_APPLICABLE for c in g.categories))
+        self.assertIs(g.result, GateResult.INSUFFICIENT_EVIDENCE)
+        assessment = s.check(dec=s.decision(decision="not_determined", gate_result="insufficient_evidence"),
+                             gates=[g], pol=pol)
+        self.assertNotIn("promote", [d.value for d in assessment.allowed])
+        self.assertIn("gate_not_eligible", assessment.reasons)
+
+    def test_status_must_match_run_kind_applicability(self):
+        s = Scenario()
+        cases = {
+            "applicable category marked not_applicable": {"cross_org_access": CategoryGateStatus.NOT_APPLICABLE},
+            "non-applicable category marked pass": {"prompt_injection_compliance": CategoryGateStatus.PASS},
+            "non-applicable category marked insufficient": {"prompt_injection_compliance": CategoryGateStatus.INSUFFICIENT_EVIDENCE},
+        }
+        for name, statuses in cases.items():
+            result = GateResult.INSUFFICIENT_EVIDENCE if "insufficient" in name else GateResult.ELIGIBLE_FOR_HUMAN_DECISION
+            with self.subTest(name), self.assertRaises(ContractViolation) as ctx:
+                s.check(gates=[self.forged(s.gate, statuses, result)])
+            self.assertEqual(ctx.exception.code, "promotion_gate_applicability_mismatch")
+
+    def test_zero_tolerance_violation_still_blocks_when_not_applicable(self):
+        pol = policy_with_kinds({"cross_org_access": ["single_model", "multi_agent"]})
+        s = Scenario()
+        violation = logic_only_observation(s.candidate.id, "evalcase_example_extra", outcome="fail", safety=[
+            SafetyObservation(category="cross_org_access", exposure_point="model_context", disposition="unblocked_violation")])
+        g = evaluate_safety_gate(pol, s.candidate, GOLDEN, logic_only_observations(pol, s.candidate.id, extra=[violation]),
+                                 HeldOutIntegrity.CUSTODIED_UNEXPOSED, logic_only_attestation(pol, s.candidate.configuration))
+        self.assertIs(g.result, GateResult.BLOCKED)
+        self.assertEqual(status_of(g, "cross_org_access"), "fail")
+        assessment = s.check(dec=s.decision(decision="reject", gate_result="blocked"), gates=[g], pol=pol)
+        self.assertEqual(assessment.allowed, (DecisionOutcome.REJECT, DecisionOutcome.NOT_DETERMINED))
+        with self.assertRaises(ContractViolation) as ctx:
+            s.check(gates=[g], pol=pol)  # the decision still claims an eligible gate
+        self.assertEqual(ctx.exception.code, "promotion_gate_result_mismatch")
+
+    def test_draft_policy_cannot_support_promote(self):
+        s = Scenario()  # matching pins, eligible gate, complete comparison
+        self.assertEqual(s.check().reasons, ())
+        draft = policy("draft")
+        self.assertEqual(draft.pin, policy().pin)
+        with self.assertRaises(ContractViolation) as ctx:
+            s.check(pol=draft)
+        self.assertEqual(ctx.exception.code, "promotion_not_supported")
+        assessment = s.check(dec=s.decision(decision="not_determined"), pol=draft)
+        self.assertIn("safety_policy_not_approved", assessment.reasons)
+        self.assertNotIn("promote", [d.value for d in assessment.allowed])
 
 
 class PromotionDecisionTests(unittest.TestCase):
