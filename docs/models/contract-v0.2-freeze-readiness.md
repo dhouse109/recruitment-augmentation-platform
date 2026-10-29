@@ -136,7 +136,7 @@ These are synthetic, contract-level checks. They are not integrated safety evide
 
 ### F4 PR-B evidence (adjudication integrity)
 
-Fresh clone of branch `contracts/f4-adjudication-integrity` at code commit `32b26676ac7d578682f1978be0597eb443f0da1b` (base `main` @ `089f52bd524545e38a85c0adec26b298a4800504`; later commits change documentation only), Python 3.13.18, `pydantic==2.13.5`, `jsonschema==4.26.0` (dev) and `pydantic==2.13.5` without `jsonschema` (runtime). `CONTRACT_VERSION` is `0.2.0-dev.foundations.5`. The suite grows from 432 to 460 test methods: `test_adjudication.py` is rewritten (11 to 31 methods), and `test_evaluation_contracts.py`, `test_json_schema_conformance.py` and `test_schemas.py` gain 1, 1 and 3 methods.
+Fresh clone of branch `contracts/f4-adjudication-integrity` at code commit `32b26676ac7d578682f1978be0597eb443f0da1b` (base `main` @ `089f52bd524545e38a85c0adec26b298a4800504`; later commits change documentation only), Python 3.13.18, `pydantic==2.13.5`, `jsonschema==4.26.0` (dev) and `pydantic==2.13.5` without `jsonschema` (runtime). `CONTRACT_VERSION` is `0.2.0-dev.foundations.5`. The suite grows from 432 to 460 test methods: `test_adjudication.py` is rewritten (8 to 31 methods), and `test_evaluation_contracts.py`, `test_json_schema_conformance.py` and `test_schemas.py` gain 1, 1 and 3 methods.
 
 | Command (from `contracts/`) | Result |
 |---|---|
