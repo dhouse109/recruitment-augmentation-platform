@@ -10,6 +10,34 @@
       "title": "AttestationBasis",
       "type": "string"
     },
+    "ConfigurationPin": {
+      "additionalProperties": false,
+      "description": "Stable identity of a system configuration. ``fingerprint`` is recomputed, never trusted as declared.",
+      "properties": {
+        "fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "fingerprint_version": {
+          "const": 1,
+          "title": "Fingerprint Version",
+          "type": "integer"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "fingerprint_version",
+        "fingerprint"
+      ],
+      "title": "ConfigurationPin",
+      "type": "object"
+    },
     "DefinitionsPin": {
       "additionalProperties": false,
       "properties": {
@@ -35,7 +63,16 @@
     },
     "HeldOutCategoryResult": {
       "additionalProperties": false,
+      "description": "Aggregate per-category result released by the custody boundary. No case identifiers, labels or observations.",
       "properties": {
+        "bases_observed": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ObservationBasis"
+          },
+          "title": "Bases Observed",
+          "type": "array"
+        },
         "cases_exercised": {
           "minimum": 0,
           "title": "Cases Exercised",
@@ -43,6 +80,10 @@
         },
         "category": {
           "$ref": "#/$defs/SafetyCategory"
+        },
+        "coverage_basis_met": {
+          "title": "Coverage Basis Met",
+          "type": "boolean"
         },
         "status": {
           "enum": [
@@ -63,7 +104,8 @@
         "category",
         "status",
         "cases_exercised",
-        "violations"
+        "violations",
+        "coverage_basis_met"
       ],
       "title": "HeldOutCategoryResult",
       "type": "object"
@@ -100,6 +142,20 @@
       ],
       "title": "ManifestPin",
       "type": "object"
+    },
+    "ObservationBasis": {
+      "enum": [
+        "schema_validation",
+        "reference_validator",
+        "mock_authority",
+        "in_memory_double",
+        "deterministic_baseline_execution",
+        "offline_model_execution",
+        "integrated_service",
+        "live_system"
+      ],
+      "title": "ObservationBasis",
+      "type": "string"
     },
     "RecordAttribution": {
       "additionalProperties": false,
@@ -171,7 +227,7 @@
   "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/held-out-gate-attestation.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Aggregate held-out result released from the custody boundary.\n\nDeliberately has no field for case identifiers, labels or per-case outputs.\n``custody_basis`` and ``attested_by`` are claims until a trusted custodian\nservice issues them.",
+  "description": "Aggregate held-out result released from the custody boundary.\n\nDeliberately has no field for case identifiers, labels or per-case outputs.\n``configuration`` ties the result to one configuration; a matching pin is\nNOT run provenance. ``run_provenance_basis``, ``custody_basis`` and\n``attested_by`` are claims until a trusted custodian / run registry issues them.",
   "properties": {
     "attested_at": {
       "format": "date-time",
@@ -180,6 +236,9 @@
     },
     "attested_by": {
       "$ref": "#/$defs/RecordAttribution"
+    },
+    "configuration": {
+      "$ref": "#/$defs/ConfigurationPin"
     },
     "custody_basis": {
       "enum": [
@@ -209,14 +268,24 @@
       "pattern": "^evalrun_[a-z0-9]+(?:_[a-z0-9]+)*$",
       "title": "Run Id",
       "type": "string"
+    },
+    "run_provenance_basis": {
+      "enum": [
+        "configuration_pin_match_only",
+        "trusted_registry_verified"
+      ],
+      "title": "Run Provenance Basis",
+      "type": "string"
     }
   },
   "required": [
     "manifest",
     "policy",
+    "configuration",
     "run_id",
     "results",
     "custody_basis",
+    "run_provenance_basis",
     "attested_by",
     "attested_at"
   ],

@@ -159,7 +159,8 @@ PR6_SCHEMA_BODY_DIGESTS = {
 #: Schemas added in 0.2.0-dev.foundations.4 (D-004.12). Everything else must be pre-existing.
 PR7_NEW_SCHEMAS = {
     "adjudication-record", "case-observation", "evaluation-case", "evaluation-dataset-manifest", "evaluation-run",
-    "held-out-gate-attestation", "metric-definition-set", "promotion-decision", "reviewer-rubric", "safety-gate-policy",
+    "held-out-gate-attestation", "metric-definition-set", "promotion-decision", "reviewer-rubric", "run-comparison",
+    "safety-gate-policy",
 }
 
 

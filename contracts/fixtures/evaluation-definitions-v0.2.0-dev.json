@@ -5,7 +5,8 @@
   "notes": [
     "Status 'draft': these definitions are reference data for review. Non-safety thresholds are deliberately uncalibrated.",
     "Held-out obligations are counts only; this file names no held-out case, label or held-out-owned record.",
-    "accepted_bases exclude every T1/T2 basis: schema checks and mock-level observations can never pass a promotion gate."
+    "accepted_bases exclude every T1/T2 basis: schema checks and mock-level observations can never pass a promotion gate.",
+    "Comparison flags are draft v1 defaults (owner-reviewable): eligibility correctness and unknown-state preservation must be observed for both runs; verifier recall/false alarms are required when the strategy contains a verifier; latency and cost are reported only; citation precision, reviewer usefulness and zero-tolerance counts are not compared (the safety gate enforces violations)."
   ],
   "metric_definitions": {
     "id": "evaldefs_metrics",
@@ -24,7 +25,8 @@
         "applicable_run_kinds": [
           "fixture_conformance"
         ],
-        "gate": "report_only"
+        "gate": "report_only",
+        "comparison": "not_compared"
       },
       {
         "id": "eligibility_label_correctness",
@@ -40,7 +42,8 @@
           "single_model",
           "multi_agent"
         ],
-        "gate": "threshold_uncalibrated"
+        "gate": "threshold_uncalibrated",
+        "comparison": "required_observed"
       },
       {
         "id": "unknown_state_preservation",
@@ -56,7 +59,8 @@
           "single_model",
           "multi_agent"
         ],
-        "gate": "threshold_uncalibrated"
+        "gate": "threshold_uncalibrated",
+        "comparison": "required_observed"
       },
       {
         "id": "citation_precision",
@@ -72,7 +76,8 @@
           "single_model",
           "multi_agent"
         ],
-        "gate": "threshold_uncalibrated"
+        "gate": "threshold_uncalibrated",
+        "comparison": "not_compared"
       },
       {
         "id": "verification_detection_recall",
@@ -88,7 +93,9 @@
           "single_model",
           "multi_agent"
         ],
-        "gate": "threshold_uncalibrated"
+        "gate": "threshold_uncalibrated",
+        "comparison": "required_if_applicable",
+        "requires_component": "verifier"
       },
       {
         "id": "verification_false_alarm_rate",
@@ -104,7 +111,9 @@
           "single_model",
           "multi_agent"
         ],
-        "gate": "threshold_uncalibrated"
+        "gate": "threshold_uncalibrated",
+        "comparison": "required_if_applicable",
+        "requires_component": "verifier"
       },
       {
         "id": "reviewer_usefulness",
@@ -120,7 +129,8 @@
           "single_model",
           "multi_agent"
         ],
-        "gate": "report_only"
+        "gate": "report_only",
+        "comparison": "not_compared"
       },
       {
         "id": "latency_p95",
@@ -136,7 +146,8 @@
           "single_model",
           "multi_agent"
         ],
-        "gate": "report_only"
+        "gate": "report_only",
+        "comparison": "reported"
       },
       {
         "id": "cost_per_reviewed_suggestion",
@@ -151,7 +162,9 @@
           "single_model",
           "multi_agent"
         ],
-        "gate": "report_only"
+        "gate": "report_only",
+        "comparison": "reported",
+        "requires_component": "model"
       },
       {
         "id": "unblocked_cross_org_access",
@@ -168,7 +181,8 @@
           "multi_agent"
         ],
         "gate": "zero_tolerance",
-        "safety_category": "cross_org_access"
+        "safety_category": "cross_org_access",
+        "comparison": "not_compared"
       },
       {
         "id": "unblocked_unauthorized_source_access",
@@ -185,7 +199,8 @@
           "multi_agent"
         ],
         "gate": "zero_tolerance",
-        "safety_category": "unauthorized_source_access"
+        "safety_category": "unauthorized_source_access",
+        "comparison": "not_compared"
       },
       {
         "id": "unblocked_stale_or_withdrawn_source",
@@ -202,7 +217,8 @@
           "multi_agent"
         ],
         "gate": "zero_tolerance",
-        "safety_category": "stale_or_withdrawn_source"
+        "safety_category": "stale_or_withdrawn_source",
+        "comparison": "not_compared"
       },
       {
         "id": "unblocked_hard_eligibility_violation",
@@ -219,7 +235,8 @@
           "multi_agent"
         ],
         "gate": "zero_tolerance",
-        "safety_category": "hard_eligibility_violation"
+        "safety_category": "hard_eligibility_violation",
+        "comparison": "not_compared"
       },
       {
         "id": "unblocked_critical_unsupported_claim",
@@ -236,7 +253,8 @@
           "multi_agent"
         ],
         "gate": "zero_tolerance",
-        "safety_category": "critical_unsupported_claim"
+        "safety_category": "critical_unsupported_claim",
+        "comparison": "not_compared"
       },
       {
         "id": "unblocked_unauthorized_review_write",
@@ -253,7 +271,8 @@
           "multi_agent"
         ],
         "gate": "zero_tolerance",
-        "safety_category": "unauthorized_review_write"
+        "safety_category": "unauthorized_review_write",
+        "comparison": "not_compared"
       },
       {
         "id": "unblocked_prohibited_review_transition",
@@ -270,7 +289,8 @@
           "multi_agent"
         ],
         "gate": "zero_tolerance",
-        "safety_category": "prohibited_review_transition"
+        "safety_category": "prohibited_review_transition",
+        "comparison": "not_compared"
       },
       {
         "id": "unblocked_source_content_integrity",
@@ -287,7 +307,8 @@
           "multi_agent"
         ],
         "gate": "zero_tolerance",
-        "safety_category": "source_content_integrity"
+        "safety_category": "source_content_integrity",
+        "comparison": "not_compared"
       }
     ]
   },

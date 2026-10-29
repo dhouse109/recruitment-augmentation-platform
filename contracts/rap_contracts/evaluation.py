@@ -757,6 +757,67 @@ class DefinitionsPin(ContractModel):
     version: Annotated[int, Field(ge=1)]
 
 
+class Component(str, Enum):
+    """Generating components a strategy contains. Determines which outcome metrics can apply."""
+
+    ELIGIBILITY = "eligibility"
+    RECOMMENDATION = "recommendation"
+    VERIFIER = "verifier"
+    RETRIEVAL = "retrieval"
+    MODEL = "model"
+
+
+class StrategyPin(ContractModel):
+    """Versioned identity of the implementation strategy under evaluation (not its run kind)."""
+
+    id: Code
+    version: Annotated[int, Field(ge=1)]
+    components: frozenset[Component] = frozenset()
+
+
+class ConfigurationPin(ContractModel):
+    """Stable identity of a system configuration. ``fingerprint`` is recomputed, never trusted as declared."""
+
+    id: Code
+    fingerprint_version: Literal[1]
+    fingerprint: Sha256
+
+
+def fingerprint_configuration(
+    *, run_kind: "RunKind", strategy: StrategyPin, code_revision: CodeRevision, contract_version: str,
+    retrieval_index: OptionalPin, prompt: OptionalPin, model: OptionalPin, judge: OptionalPin,
+) -> str:
+    """``sha256-canonical-json/v1`` over the configuration-defining fields (fingerprint version 1).
+
+    Included: run kind, strategy (id, version, sorted components), recorded clean
+    code commit, contract version, and the retrieval-index, prompt, model and
+    judge pins. Excluded (execution conditions, checked separately by
+    ``promotion.check_comparable_runs``): source authority, replicate count,
+    timestamps, purpose, manifests, metric definitions and safety policy.
+    """
+    if code_revision.status != "recorded" or code_revision.dirty:
+        raise ContractViolation("configuration_requires_clean_revision", "a configuration needs a recorded, clean commit")
+    return canonical_json_sha256({
+        "fingerprint_version": 1,
+        "run_kind": run_kind.value,
+        "strategy": {"id": strategy.id, "version": strategy.version,
+                     "components": sorted(c.value for c in strategy.components)},
+        "code_commit": code_revision.commit,
+        "contract_version": contract_version,
+        "retrieval_index": retrieval_index.model_dump(mode="json"),
+        "prompt": prompt.model_dump(mode="json"),
+        "model": model.model_dump(mode="json"),
+        "judge": judge.model_dump(mode="json"),
+    })
+
+
+def configuration_fingerprint(run: "EvaluationRun") -> str:
+    return fingerprint_configuration(
+        run_kind=run.run_kind, strategy=run.strategy, code_revision=run.code_revision,
+        contract_version=run.contract_version, retrieval_index=run.retrieval_index, prompt=run.prompt,
+        model=run.model, judge=run.judge)
+
+
 class EvaluationRun(ContractModel):
     id: EvaluationRunId
     run_kind: RunKind
@@ -766,6 +827,8 @@ class EvaluationRun(ContractModel):
     safety_policy: DefinitionsPin
     contract_version: Annotated[str, Field(pattern=r"^0\.2\.0-dev\.[a-z]+\.[0-9]+$")]
     code_revision: CodeRevision
+    strategy: StrategyPin
+    configuration: ConfigurationPin | None = None
     source_authority: Literal["fixture_mock", "drupal"]
     retrieval_index: OptionalPin
     prompt: OptionalPin
@@ -804,6 +867,24 @@ class EvaluationRun(ContractModel):
             raise ValueError("completed_at precedes started_at")
         if (self.status == "completed") != (self.completed_at is not None):
             raise ValueError("completed_at is present only for completed runs")
+        components = self.strategy.components
+        if self.run_kind is RunKind.FIXTURE_CONFORMANCE:
+            if components or self.configuration is not None:
+                raise ValueError("fixture-conformance runs declare no generating components and no configuration")
+        else:
+            if not components:
+                raise ValueError("generating runs declare their strategy components")
+            if (Component.MODEL in components) != (not no_model):
+                raise ValueError("model runs, and only model runs, include the model component")
+            if self.configuration is None:
+                raise ValueError("generating runs carry a configuration pin")
+        if self.configuration is not None:
+            try:
+                expected = configuration_fingerprint(self)
+            except ContractViolation as exc:
+                raise ValueError(str(exc)) from None
+            if self.configuration.fingerprint != expected:
+                raise ValueError("configuration fingerprint does not match the run's own configuration fields")
         return self
 
     @property

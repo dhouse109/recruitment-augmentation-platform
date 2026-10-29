@@ -350,6 +350,7 @@ _PYDANTIC_MODELS.update({
     "safety-gate-policy": "rap_contracts.promotion:SafetyGatePolicy",
     "promotion-decision": "rap_contracts.promotion:PromotionDecision",
     "held-out-gate-attestation": "rap_contracts.promotion:HeldOutGateAttestation",
+    "run-comparison": "rap_contracts.promotion:RunComparison",
 })
 
 
@@ -373,6 +374,7 @@ class EvaluationConformanceTests(unittest.TestCase):
         cls.decision = test_promotion_gates.decision()
         cls.attestation = test_promotion_gates.attestation(test_promotion_gates.policy()).model_dump(mode="json")
         cls.adjudication = test_adjudication.record()
+        cls.comparison = test_promotion_gates.Scenario().comparison.model_dump(mode="json")
 
     def _accept(self, name, items):
         validator = _validator(name)
@@ -391,6 +393,7 @@ class EvaluationConformanceTests(unittest.TestCase):
         self._accept("promotion-decision", [self.decision])
         self._accept("held-out-gate-attestation", [self.attestation])
         self._accept("adjudication-record", [self.adjudication])
+        self._accept("run-comparison", [self.comparison])
         self.assertEqual(len(self.observations), 31)
 
     def _both_reject(self, name, cases):
@@ -431,6 +434,14 @@ class EvaluationConformanceTests(unittest.TestCase):
         self._both_reject("held-out-gate-attestation", {
             "case identifiers": {**self.attestation, "case_ids": ["evalcase_h001"]},
         })
+        self._both_reject("run-comparison", {
+            "self-declared completeness": {**self.comparison, "status": "complete"},
+            "invented delta": {**self.comparison, "metrics": [{**self.comparison["metrics"][0], "delta": 0.1}]},
+            "threshold verdict": {**self.comparison, "passed_threshold": True},
+        })
+        self._both_reject("promotion-decision", {
+            "self-declared comparison status": {**self.decision, "comparison_status": "complete"},
+        })
         self._both_reject("adjudication-record", {
             "llm judge field": {**self.adjudication, "llm_judge_score": 0.8},
         })
@@ -448,6 +459,16 @@ class EvaluationConformanceTests(unittest.TestCase):
         self.assertEqual(list(_validator("evaluation-run").iter_errors(fabricated)), [])
         with self.assertRaises(ValidationError):
             _model("evaluation-run").model_validate(fabricated)
+        edited = copy.deepcopy(self.comparison)
+        edited["cases"][0]["change"] = "improved"  # contradicts identical outcomes
+        self.assertEqual(list(_validator("run-comparison").iter_errors(edited)), [])
+        with self.assertRaises(ValidationError):
+            _model("run-comparison").model_validate(edited)
+        forged = copy.deepcopy(self.run_record)
+        forged["configuration"]["fingerprint"] = "sha256:" + "f" * 64
+        self.assertEqual(list(_validator("evaluation-run").iter_errors(forged)), [])
+        with self.assertRaises(ValidationError):
+            _model("evaluation-run").model_validate(forged)
         weak = {**self.decision, "decided_by": {**self.decision["decided_by"], "attestation_basis": "unverified_metadata"}}
         self.assertEqual(list(_validator("promotion-decision").iter_errors(weak)), [])
         with self.assertRaises(ValidationError):

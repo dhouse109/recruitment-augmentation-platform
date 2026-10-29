@@ -30,7 +30,7 @@ from .claims import CandidateClaim, ClaimVocabulary, ProgramParticipation
 from .eligibility import EligibilityResult, OpportunityRequirement, PolicySet
 from .evaluation import CaseObservation, EvaluationCase, EvaluationDatasetManifest, EvaluationRun
 from .evidence import EvidenceRecord, RetrievalChunk, RetrievalRequest, RetrievalResponse
-from .promotion import HeldOutGateAttestation, MetricDefinitionSet, PromotionDecision, SafetyGatePolicy
+from .promotion import HeldOutGateAttestation, MetricDefinitionSet, PromotionDecision, RunComparison, SafetyGatePolicy
 from .recommendation import Recommendation, VerificationResult
 from .review import (
     AuditEvent,
@@ -93,6 +93,7 @@ EXPORTED_MODELS: dict[str, type[BaseModel]] = {
     "metric-definition-set": MetricDefinitionSet,
     "promotion-decision": PromotionDecision,
     "reviewer-rubric": ReviewerRubric,
+    "run-comparison": RunComparison,
     "safety-gate-policy": SafetyGatePolicy,
 }
 

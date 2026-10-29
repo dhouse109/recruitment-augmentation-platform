@@ -139,7 +139,7 @@ class CaseConformanceTests(unittest.TestCase):
             definitions=DefinitionsPin(id="evaldefs_metrics", version=1),
             safety_policy=DefinitionsPin(id="evaldefs_safety_gate", version=1),
             contract_version="0.2.0-dev.foundations.4", code_revision=CodeRevision(status="unavailable"),
-            source_authority="fixture_mock", retrieval_index=NOT_APPLICABLE, prompt=NOT_APPLICABLE,
+            strategy={"id": "fixture_conformance", "version": 1}, source_authority="fixture_mock", retrieval_index=NOT_APPLICABLE, prompt=NOT_APPLICABLE,
             model=NOT_APPLICABLE, judge=NOT_APPLICABLE, replicates=1, started_at="2026-10-28T20:00:00Z",
             completed_at="2026-10-28T20:00:01Z", status="completed",
             latency=Measurement(status="not_measured", unit="milliseconds"),

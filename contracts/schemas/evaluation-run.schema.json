@@ -43,6 +43,46 @@
       "title": "CodeRevision",
       "type": "object"
     },
+    "Component": {
+      "description": "Generating components a strategy contains. Determines which outcome metrics can apply.",
+      "enum": [
+        "eligibility",
+        "recommendation",
+        "verifier",
+        "retrieval",
+        "model"
+      ],
+      "title": "Component",
+      "type": "string"
+    },
+    "ConfigurationPin": {
+      "additionalProperties": false,
+      "description": "Stable identity of a system configuration. ``fingerprint`` is recomputed, never trusted as declared.",
+      "properties": {
+        "fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "fingerprint_version": {
+          "const": 1,
+          "title": "Fingerprint Version",
+          "type": "integer"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "fingerprint_version",
+        "fingerprint"
+      ],
+      "title": "ConfigurationPin",
+      "type": "object"
+    },
     "DefinitionsPin": {
       "additionalProperties": false,
       "properties": {
@@ -205,6 +245,37 @@
       ],
       "title": "Split",
       "type": "string"
+    },
+    "StrategyPin": {
+      "additionalProperties": false,
+      "description": "Versioned identity of the implementation strategy under evaluation (not its run kind).",
+      "properties": {
+        "components": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Component"
+          },
+          "title": "Components",
+          "type": "array",
+          "uniqueItems": true
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "StrategyPin",
+      "type": "object"
     }
   },
   "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/evaluation-run.schema.json",
@@ -226,6 +297,17 @@
       ],
       "default": null,
       "title": "Completed At"
+    },
+    "configuration": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ConfigurationPin"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "contract_version": {
       "pattern": "^0\\.2\\.0-dev\\.[a-z]+\\.[0-9]+$",
@@ -319,6 +401,9 @@
       ],
       "title": "Status",
       "type": "string"
+    },
+    "strategy": {
+      "$ref": "#/$defs/StrategyPin"
     }
   },
   "required": [
@@ -330,6 +415,7 @@
     "safety_policy",
     "contract_version",
     "code_revision",
+    "strategy",
     "source_authority",
     "retrieval_index",
     "prompt",

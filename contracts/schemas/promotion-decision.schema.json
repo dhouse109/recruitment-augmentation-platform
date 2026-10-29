@@ -10,13 +10,13 @@
       "title": "AttestationBasis",
       "type": "string"
     },
-    "CandidateConfigPin": {
+    "ComparisonPin": {
       "additionalProperties": false,
-      "description": "Identity of the candidate change (prompt / retrieval / model / routing configuration).",
       "properties": {
-        "id": {
-          "pattern": "^[a-z][a-z0-9_]{0,63}$",
-          "title": "Id",
+        "comparison_id": {
+          "maxLength": 64,
+          "pattern": "^comparison_[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Comparison Id",
           "type": "string"
         },
         "sha256": {
@@ -26,10 +26,38 @@
         }
       },
       "required": [
-        "id",
+        "comparison_id",
         "sha256"
       ],
-      "title": "CandidateConfigPin",
+      "title": "ComparisonPin",
+      "type": "object"
+    },
+    "ConfigurationPin": {
+      "additionalProperties": false,
+      "description": "Stable identity of a system configuration. ``fingerprint`` is recomputed, never trusted as declared.",
+      "properties": {
+        "fingerprint": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "fingerprint_version": {
+          "const": 1,
+          "title": "Fingerprint Version",
+          "type": "integer"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "fingerprint_version",
+        "fingerprint"
+      ],
+      "title": "ConfigurationPin",
       "type": "object"
     },
     "DecisionOutcome": {
@@ -161,8 +189,11 @@
   "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.4/promotion-decision.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Explicit accept/reject record (ADR-0003 decision 10). Strict: no waiver field exists.",
+  "description": "Explicit accept/reject record (ADR-0003 decision 10). Strict: no waiver field exists.\n\nModel validation checks shape only. Whether ``promote`` is supported is\nestablished solely by ``check_promotion_inputs`` against the actual runs,\nobservations, comparisons, definitions and gate evaluations.",
   "properties": {
+    "baseline_config": {
+      "$ref": "#/$defs/ConfigurationPin"
+    },
     "baseline_run_id": {
       "description": "Opaque synthetic evaluation run identifier.",
       "maxLength": 64,
@@ -171,7 +202,7 @@
       "type": "string"
     },
     "candidate_config": {
-      "$ref": "#/$defs/CandidateConfigPin"
+      "$ref": "#/$defs/ConfigurationPin"
     },
     "candidate_run_ids": {
       "items": {
@@ -182,6 +213,14 @@
       },
       "minItems": 1,
       "title": "Candidate Run Ids",
+      "type": "array"
+    },
+    "comparisons": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ComparisonPin"
+      },
+      "title": "Comparisons",
       "type": "array"
     },
     "decided_at": {
@@ -202,6 +241,9 @@
     },
     "decision": {
       "$ref": "#/$defs/DecisionOutcome"
+    },
+    "definitions": {
+      "$ref": "#/$defs/DefinitionsPin"
     },
     "gate_result": {
       "$ref": "#/$defs/GateResult"
@@ -241,10 +283,12 @@
   },
   "required": [
     "id",
+    "baseline_config",
     "candidate_config",
     "baseline_run_id",
     "candidate_run_ids",
     "safety_policy",
+    "definitions",
     "manifests",
     "gate_result",
     "held_out_custody_basis",

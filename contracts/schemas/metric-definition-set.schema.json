@@ -1,5 +1,28 @@
 {
   "$defs": {
+    "ComparisonRequirement": {
+      "description": "How a metric participates in a baseline-vs-candidate comparison (draft v1 flags are owner-reviewable).",
+      "enum": [
+        "required_observed",
+        "required_if_applicable",
+        "reported",
+        "not_compared"
+      ],
+      "title": "ComparisonRequirement",
+      "type": "string"
+    },
+    "Component": {
+      "description": "Generating components a strategy contains. Determines which outcome metrics can apply.",
+      "enum": [
+        "eligibility",
+        "recommendation",
+        "verifier",
+        "retrieval",
+        "model"
+      ],
+      "title": "Component",
+      "type": "string"
+    },
     "MetricDefinition": {
       "additionalProperties": false,
       "properties": {
@@ -10,6 +33,10 @@
           "minItems": 1,
           "title": "Applicable Run Kinds",
           "type": "array"
+        },
+        "comparison": {
+          "$ref": "#/$defs/ComparisonRequirement",
+          "default": "not_compared"
         },
         "denominator": {
           "maxLength": 300,
@@ -42,6 +69,17 @@
           "pattern": "^[^\\r\\n]*$",
           "title": "Numerator",
           "type": "string"
+        },
+        "requires_component": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Component"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "safety_category": {
           "anyOf": [

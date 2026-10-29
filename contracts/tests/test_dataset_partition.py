@@ -174,23 +174,18 @@ class ManifestRuleTests(unittest.TestCase):
         self.assertEqual(ctx.exception.code, "manifest_case_modified")
 
     def test_tuning_runs_cannot_reference_held_out(self):
-        base = dict(
-            id="evalrun_tuning_example", run_kind="single_model", purpose="tuning",
-            manifests=(pin_manifest(H.manifest_of(H.split_doc(Split.GOLDEN))),),
-            definitions=DefinitionsPin(id="evaldefs_metrics", version=1),
-            safety_policy=DefinitionsPin(id="evaldefs_safety_gate", version=1),
-            contract_version="0.2.0-dev.foundations.4", code_revision=CodeRevision(status="unavailable"),
-            source_authority="fixture_mock", retrieval_index=NOT_APPLICABLE,
-            prompt={"status": "pinned", "value": "prompt-example/1"}, model={"status": "pinned", "value": "model-example/1"},
-            judge=NOT_APPLICABLE, replicates=1, started_at="2026-10-28T20:00:00Z", status="aborted",
-            latency=Measurement(status="not_run", unit="milliseconds"), cost=Measurement(status="not_run", unit="usd"),
-            executed_by="example-runner/0")
-        EvaluationRun.model_validate(base)  # golden only: allowed
+        import test_promotion_gates as G
+        golden_pin = pin_manifest(H.manifest_of(H.split_doc(Split.GOLDEN)))
         held_pin = pin_manifest(H.manifest_of(H.split_doc(Split.HELD_OUT)))
+        base = G.run("evalrun_tuning_example", kind="single_model", purpose="tuning",
+                     components=("eligibility", "recommendation", "model"), manifests=(golden_pin,),
+                     prompt={"status": "pinned", "value": "prompt-example/1"},
+                     model={"status": "pinned", "value": "model-example/1"}).model_dump(mode="json")
+        EvaluationRun.model_validate(base)  # golden only: allowed (synthetic example)
         for purpose in ("tuning", "model_selection"):
             with self.subTest(purpose=purpose), self.assertRaises(ValidationError):
-                EvaluationRun.model_validate({**base, "purpose": purpose, "manifests": base["manifests"] + (held_pin,)})
-
+                EvaluationRun.model_validate({**base, "purpose": purpose,
+                                              "manifests": base["manifests"] + [held_pin.model_dump(mode="json")]})
 
 if __name__ == "__main__":
     unittest.main()
