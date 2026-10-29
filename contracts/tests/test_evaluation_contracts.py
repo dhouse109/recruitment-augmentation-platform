@@ -309,6 +309,13 @@ class TypedMetricValueTests(unittest.TestCase):
             "disputed and unresolved in a measured dimension": mv("distribution", "observed", coverage=coverage(reportable=3),
                                                                    dimensions=[{"dimension": es, "anchors": [{"value": 2, "count": 1}],
                                                                                 "disputed": 1, "unresolved": 1}]),
+            # Totals balance on scores alone, so only the absence of these fields can reject them.
+            "disputed beside balanced scores": mv("distribution", "observed", coverage=coverage(reportable=2), dimensions=[
+                {"dimension": es, "anchors": [{"value": 2, "count": 2}], "disputed": 1}]),
+            "unresolved beside balanced scores": mv("distribution", "observed", coverage=coverage(reportable=2), dimensions=[
+                {"dimension": es, "anchors": [{"value": 2, "count": 2}], "unresolved": 1}]),
+            "zero disputed field": mv("distribution", "observed", coverage=coverage(reportable=2), dimensions=[
+                {"dimension": es, "anchors": [{"value": 2, "count": 2}], "disputed": 0}]),
         })
 
     def test_not_applicable_reason_rules(self):
