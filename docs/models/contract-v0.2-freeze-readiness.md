@@ -1,7 +1,7 @@
 # Contract v0.2 — D-004.01–.12 Traceability and Freeze-Readiness Assessment
 
 **Document ID:** RAP-CONTRACT-002-FR  
-**Contract version assessed:** `0.2.0-dev.foundations.4` (PR #7 branch, base `main` @ `9f21486f789f5aac0175ed953ae2b35b4e36013d`)  
+**Contract version assessed:** `0.2.0-dev.foundations.4` (PR #7 branch, base `main` @ `9f21486f789f5aac0175ed953ae2b35b4e36013d`). This is the historical basis of the matrix, checklist and first test-evidence table below. Later dated sections add F4 PR-A (still `.foundations.4`) and F4 PR-B (`.foundations.5`) evidence, each verified at its own commit; see [Status note after PR #12](#status-note-after-pr-12-2026-10-31) for the current state. The current contract version is `0.2.0-dev.foundations.5`, still not frozen.  
 **Status:** **ASSESSMENT ONLY.** This document does not freeze Contract v0.2, does not assign release-candidate status and does not authorize application implementation. Only an explicit owner decision can do any of these.
 
 ## Evidence tiers used
@@ -64,6 +64,17 @@ Every decision has a reference contract and T2 evidence. **No decision has T3 or
 ## Assessment
 
 Contract v0.2 is **review-complete at the reference-contract level** (criteria 1–3 and 10) but **not ready for a freeze**. The material gaps are criterion 5 (no producer has yet emitted an `EligibilityResult`, `Recommendation`, `VerificationResult` or `EvaluationRun`, so the shapes are unproven by use), criteria 6–7 (open owner decisions) and criterion 8 (source sanitization: the current tree is redacted, but historical copies remain in Git history and PR refs).
+
+### Status note after PR #12 (2026-10-31)
+
+*Added by the PR-S0 documentation sync. The matrix, checklist and assessment above are **historical** (PR #7 basis) and are not re-verified or relabelled here.*
+
+- **Criterion 5 (a real producer):** partly addressed, still **not met**.
+  - PR #12 added the Slice 0 deterministic eligibility engine (`baseline/rap_baseline`), the first producer of `EligibilityResult`. Every result it returns is accepted by the unmodified contract validators.
+  - `Recommendation`, `VerificationResult`, `EvaluationRun` and `CaseObservation` still have no producer.
+- **D-004.05 / D-004.06 rows:** the "no engine" wording reflects the PR #7 state. An engine now exists, but its evidence is engineering tests on test-local synthetic records against a synthetic source authority (see [`slice-0-eligibility-engine.md`](../baseline/slice-0-eligibility-engine.md)). No `deterministic_baseline` evaluation run has been executed, so **no decision has T3 or T4 evidence**, and no accuracy has been measured.
+- **Open items:** G12 (mixed-basis qualification citations) is an unresolved contract gap. PR-S2 and PR-S3 are not authorized.
+- **No freeze.** None of the above changes the assessment: Contract v0.2 (`0.2.0-dev.foundations.5`) is not ready for a freeze.
 
 Options for the owner, none of which this PR takes:
 
