@@ -48,6 +48,7 @@ class Stage(str, Enum):
     CONTEXT = "context"              # P6: first value-dependent validation (existing wrapper)
     RESULT = "result"                # P7-P9: decision inputs, rules, result construction
     POST_CHECK = "post_check"        # P10: wrapper post-check and provenance subset
+    PROVENANCE = "provenance"        # P11: output digest and provenance record construction
 
 
 #: Stages whose refusals are guaranteed to make zero authority calls.

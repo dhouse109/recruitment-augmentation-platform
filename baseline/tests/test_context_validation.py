@@ -126,6 +126,60 @@ class PostCheckFailureTests(unittest.TestCase):
         self.assertEqual((out.stage, out.code), (Stage.POST_CHECK, "provenance_not_gated"))
 
 
+class UnexpectedPostCheckErrorTests(unittest.TestCase):
+    """R2: an unexpected exception in P10 or provenance construction is ``Errored`` -- never an escaped
+    exception and never a partial ``Assessed``."""
+
+    def assess_with(self, target, attribute, replacement):
+        w = World()
+        ctx, caps = w.build()
+        with mock.patch.object(target, attribute, replacement):
+            try:
+                return assess(w.request(), ctx, StubAuthority(), caps)
+            except Exception as exc:  # noqa: BLE001 - the boundary under test
+                self.fail(f"exception escaped the three-outcome boundary: {type(exc).__name__}")
+
+    def assert_errored(self, out, stage):
+        self.assertIsInstance(out, Errored, str(out))
+        self.assertNotIsInstance(out, Assessed)
+        self.assertFalse(hasattr(out, "result") or hasattr(out, "provenance"))
+        self.assertEqual((out.stage, out.code), (stage, "unexpected_exception"))
+        self.assertGreater(out.authority_calls, 0)
+
+    def test_unexpected_exception_in_post_check_wrapper(self):
+        def post_check_crashes(rctx):
+            if rctx.eligibility_results:
+                raise RuntimeError("synthetic post-check crash")
+            return validate_recommendation_inputs(rctx)
+        out = self.assess_with(engine, "validate_recommendation_inputs", post_check_crashes)
+        self.assert_errored(out, Stage.POST_CHECK)
+        self.assertIn("RuntimeError", out.detail)
+
+    def test_unexpected_exception_in_dependency_collection(self):
+        def crashes(result, ctx):
+            raise KeyError("synthetic missing dependency record")
+        self.assert_errored(self.assess_with(engine, "eligibility_source_refs", crashes), Stage.POST_CHECK)
+
+    def test_unexpected_exception_in_output_digest(self):
+        def crashes(result):
+            raise ValueError("synthetic digest failure")
+        self.assert_errored(self.assess_with(engine, "output_digest", crashes), Stage.PROVENANCE)
+
+    def test_unexpected_exception_in_provenance_record(self):
+        def crashes(**kwargs):
+            raise TypeError("synthetic provenance failure")
+        self.assert_errored(self.assess_with(engine, "AssessmentProvenance", crashes), Stage.PROVENANCE)
+
+    def test_specific_post_check_codes_are_preserved(self):
+        """The generic handler does not swallow the specific ContractViolation / provenance classifications."""
+        out = self.assess_with(rules, "evaluate", unsupported_availability)
+        self.assertEqual((out.stage, out.code), (Stage.POST_CHECK, "post_check_failed"))
+        real = engine.gate_refs
+        drop = lambda p, t: tuple(r for r in real(p, t) if r.entity.entity_type != "program_enrollment")  # noqa: E731
+        out = self.assess_with(engine, "gate_refs", drop)
+        self.assertEqual((out.stage, out.code), (Stage.POST_CHECK, "provenance_not_gated"))
+
+
 class DefenceInDepthTests(unittest.TestCase):
     """If phase-2 validation were bypassed, contradictory inputs still never become an outcome."""
 

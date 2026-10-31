@@ -17,7 +17,7 @@
 | SD-4 | Precedence matrix (§4) | `rules.py` |
 | SD-5 | Citation policy (§4) | `rules.py` |
 | SD-14 | No nominal held-out records or labels in PR-S1 development tests | `tests/builders.py`, `test_label_blindness.py` |
-| SD-15 | Disagreement with a proposed label goes to the owner register; never edit the engine or a label to force agreement | `test_golden_scope_keys.py` |
+| SD-15 | Disagreement with a proposed label goes to the owner register; never edit the engine or a label to force agreement | process rule; no fixture-label comparison remains in PR-S1 tests (review repair R1) |
 | SD-17 | Result id = f(input fingerprint, UTC `as_of`); principal excluded from identity, recorded in provenance | `identity.py`, `provenance.py` |
 | SD-18 | Mixed-basis contradiction: verification first, citing the verification-backed subset. **PR-S1 only; limitation G12** | `rules.py` |
 | SD-19 | A verified contradiction of a self-declared skill yields `needs_information` **only** when preserved as one contested claim | `rules.py`, `test_precedence.py` |
@@ -27,7 +27,7 @@
 2. **Source dependencies** are enumerated in §3. Every decision-relevant authoritative source is gated. Structural metadata that must come from a pre-authorized adapter is listed. The synthetic test authority is not Drupal authorization.
 3. **SD-18 / G12** is recorded as a limitation (§4.4). Results are not an exhaustive account of every failed qualification and are not sufficient for reviewer-facing explanations.
 4. **SD-19.** Neither source is discarded and no authoritative resolution is fabricated. Two conflicting declared claims are refused (`unresolved_conflict`). Revoking either alternative's source refuses the assessment.
-5. **Held-out separation.** PR-S1 tests use new test-local synthetic records (`*_s1_*`). The golden-scope diagnostic loads only golden-split candidates; the fixture's `additional_records` section, which holds the nominal held-out candidates, is never read. A test scans `baseline/` for held-out identifiers. **The earlier read-only desk check (2026-10-31, outside the repository) referenced the already-exposed nominal held-out candidates D and E. It provides no independent held-out evidence.**
+5. **Held-out separation.** PR-S1 tests use only new test-local synthetic records (`*_s1_*`). **Review repair R1 (2026-10-31) removed all contact with contract fixture files.** The first pushed commit (`be4c50c7`) had a golden-scope loader that parsed the full eligibility-evidence fixture JSON, including the section holding nominal held-out records; those records were discarded before model construction but were nevertheless parsed. That loader and the module `test_golden_scope_keys.py` (2 tests comparing engine output with proposed golden labels) are removed. The label-flip test is replaced by synthetic hand-written labels on the PR-S1 world (`SyntheticLabelTests`). Guards: a static scan of `baseline/` for held-out identifiers and fixture references, and a runtime spy asserting that no file under `contracts/` is opened while the scenarios run. **No golden or held-out fixture label is compared in PR-S1 tests, and no blind held-out validation is claimed. The earlier read-only desk check (2026-10-31, outside the repository) referenced the already-exposed nominal held-out candidates D and E and provides no independent held-out evidence.**
 6. **Post-check testing.** A schema-valid but semantically unsupported outcome fails the post-check (`Errored(post_check_failed)`). An invalid reason code fails earlier, at model construction (`Errored(result_construction_failed)`).
 
 ## 2. Execution ordering
@@ -43,7 +43,10 @@
 | 2 | P6 first value-dependent step | `validate_recommendation_inputs(RecommendationContext(eligibility=P, eligibility_results=MappingProxyType({}), capabilities=caps))` | `Refused(context, …)` | — |
 | 2 | P7 freeze `DecisionInputs` (the only rule input; also the fingerprinted object) | — | — | — |
 | 2 | P8–P9 rules, `derive_decision`, `EligibilityResult` | contract models | `Errored(result, rule_evaluation_failed \| result_construction_failed)` | — |
-| 2 | P10 post-check and provenance subset | the same wrapper with `{result.id: result}`; `eligibility_source_refs ⊆ gated` | `Errored(post_check, post_check_failed \| provenance_not_gated)` | — |
+| 2 | P10 post-check and provenance subset | the same wrapper with `{result.id: result}`; `eligibility_source_refs ⊆ gated` | `Errored(post_check, post_check_failed \| provenance_not_gated \| unexpected_exception)` | — |
+| 2 | P11 provenance record (output digest, checks) | — | `Errored(provenance, unexpected_exception)` | — |
+
+`assess` never raises: an unexpected exception in any phase returns `Errored` (review repair R2 extended this to P10 and P11), and no partial `Assessed` is returned.
 
 Only `rules.py` reads claim values, claim states, contested alternatives, participation statuses, opportunity status or required hours. An AST test enforces this; `identity.py` reads only `Enum.value` during canonicalization. Contract model validators run when records are deserialized, before the engine. That is the loader's or adapter's shape validation, not engine use.
 
@@ -133,7 +136,7 @@ Equal IF and equal `as_of` give byte-identical results. Equal IF with a differen
 
 ## 6. Test evidence
 
-107 tests in 11 modules (`baseline/tests`):
+115 tests in 10 modules (`baseline/tests`):
 
 | Module | Tests | Covers |
 |---|---|---|
@@ -145,9 +148,8 @@ Equal IF and equal `as_of` give byte-identical results. Equal IF with a differen
 | `test_determinism.py` | 3 | repeat; shuffled inputs; two processes with different `PYTHONHASHSEED` |
 | `test_isolation.py` | 7 | opportunity, program and organization isolation; no candidate-level field |
 | `test_metamorphic.py` | 6 | inferred claims never change results; verification upgrades reason only; hours monotonicity; requirement removal; contradiction |
-| `test_label_blindness.py` | 6 | no label input or evaluation import; label-flip invariance; held-out identifier scan; golden-only loader |
-| `test_golden_scope_keys.py` | 2 | **diagnostic only:** output vs proposed labels for the 5 golden keys |
-| `test_context_validation.py` | 11 | wrapper called twice with empty then produced results; projection/full-context verdict equality; post-check, construction and provenance failures are `Errored`; defence in depth |
+| `test_label_blindness.py` | 11 | no label input or evaluation import; request has no outcome field; synthetic hand-written labels (supported, key-projection agreement, flip invariance); held-out identifier and fixture-reference scans; runtime no-fixture-open spy |
+| `test_context_validation.py` | 16 | wrapper called twice with empty then produced results; projection/full-context verdict equality; post-check, construction and provenance failures are `Errored`; unexpected P10/P11 exceptions are `Errored` with specific codes preserved (R2); defence in depth |
 
 **Failure-first demonstrations.** Each mutation was run on a scratch copy, one at a time. Counts include failing subtests.
 
@@ -155,7 +157,7 @@ Equal IF and equal `as_of` give byte-identical results. Equal IF with a differen
 |---|---|---|
 | M01 | P6 value-dependent validation moved before the gate | 5 (4) |
 | M02 | gate failures ignored | 62 (5) |
-| M03 | contested-alternative evidence not gated | 28 (18) |
+| M03 | contested-alternative evidence not gated | 29 (19) |
 | M04 | inferred-claim evidence not gated | 11 (5) |
 | M05 | P6 on the full context instead of the projection | 4 (4) |
 | M06 | organization guard over the projection removed | 6 (6) |
@@ -170,20 +172,23 @@ Equal IF and equal `as_of` give byte-identical results. Equal IF with a differen
 | M15 | inferred treated as declared | 8 (6) |
 | M16 | `not_declared` preferred over `contested` | 2 (2) |
 | M17 | unpublished hours checked after declared/contested | 1 (1) |
-| M18 | post-check removed | 4 (4) |
-| M19 | provenance subset check removed | 1 (1) |
-| M20 | deterministic ordering removed | 18 (8) |
-| M21 | gate checks only opportunity and policy | 137 (59) |
+| M18 | post-check removed | 6 (6) |
+| M19 | provenance subset check removed | 2 (2) |
+| M20 | deterministic ordering removed | 19 (9) |
+| M21 | gate checks only opportunity and policy | 136 (62) |
 | M22 | rules evaluate conflicting participation instead of failing closed (defence in depth) | 1 (1) |
+| M23 | P10 unexpected exceptions not caught (R2) | 2 (2) |
+| M24 | P11 provenance construction exceptions not caught (R2) | 2 (2) |
+| M25 | test builders read a contract fixture file (R1) | 1 (1) |
 
-All 22 are caught. M22 was not caught by the first suite, because P6 makes the branch unreachable end to end. `DefenceInDepthTests` was added and catches it.
+All 25 are caught (counts from the R1/R2 head). M05 and M22 were not caught by the first suite. `test_inconsistency_among_unselected_claims_is_not_read` and `DefenceInDepthTests` were added before the first commit. The R2 tests failed against `be4c50c7` (four exceptions escaped) before the repair.
 
 The PR description records exact commands, versions and fresh-clone results.
 
 ## 7. Guarantees NOT established
 
 1. **Drupal authorization, currentness and completeness.** The test authority is synthetic. Absence-based outcomes (`participation_not_recorded`, `availability_not_declared`, `required_hours_not_published`, `qualification_not_evidenced`) assume the supplied context is complete; only the authority can establish that. **T4 only.**
-2. **Any evaluation evidence.** No evaluation run, case observation, metric value, T3 or T4 evidence, accuracy, latency or cost is produced. The golden-scope check compares with **proposed, AI-assisted, unreviewed** labels. Agreement is a common-mode diagnostic, not a measurement.
+2. **Any evaluation evidence.** No evaluation run, case observation, metric value, T3 or T4 evidence, accuracy, latency or cost is produced. PR-S1 tests compare engine output only with synthetic, test-local hand-written labels. That is a consistency check by the same authors, not a measurement, and no fixture label (golden or held-out) is compared.
 3. **Explanations.** None (PR-S2). G12 makes citations non-exhaustive for mixed-basis contradictions.
 4. **Fairness or legal appropriateness** of the fictional rules and precedence choices (D-004.06 review needed before real use).
 5. **Declared-versus-inferred honesty at the source**, and the binding of content to an exact revision. These are adapter obligations.

@@ -1,4 +1,4 @@
-"""Engine orchestration: phases P0-P10 of the approved PR-S1 addendum.
+"""Engine orchestration: phases P0-P11 of the approved PR-S1 addendum (P11 added by review repair R2).
 
 Order (fail closed at every step):
 
@@ -13,10 +13,12 @@ Order (fail closed at every step):
   P8  rules (SD-4/SD-5)
   P9  ``EligibilityResult`` (deterministic id, UTC ``evaluated_at``)
   P10 post-check: the same wrapper with the produced result + provenance subset check
+  P11 provenance record (output digest, checks)
 
 Source-integrity and authorization failures are refusals, never ``unknown``
 rule outcomes. A post-check failure is an engine defect (``Errored``) and the
-verifier is never relaxed.
+verifier is never relaxed. Any unexpected exception in any phase is returned as
+``Errored``; ``assess`` never raises and never returns a partial ``Assessed``.
 """
 
 from __future__ import annotations
@@ -121,16 +123,22 @@ def assess(request: EligibilityRequest | Mapping[str, Any], context, authority,
     try:
         validate_recommendation_inputs(RecommendationContext(
             eligibility=projected, eligibility_results=MappingProxyType({result.id: result}), capabilities=capabilities))
+        dependencies = set(eligibility_source_refs(result, projected))
     except ContractViolation as exc:
         return Errored(Stage.POST_CHECK, "post_check_failed", f"{exc.code}: {exc}", calls())
-    dependencies = set(eligibility_source_refs(result, projected))
+    except Exception as exc:  # unexpected: fail closed inside the three-outcome boundary
+        return Errored(Stage.POST_CHECK, "unexpected_exception", type(exc).__name__, calls())
     if not dependencies <= set(refs):
         return Errored(Stage.POST_CHECK, "provenance_not_gated", "a result dependency was not admitted", calls())
 
-    checks = tuple(r.answer for r in recorder.records if r.answer is not None)
-    provenance = AssessmentProvenance(
-        result_id=result.id, input_fingerprint=fingerprint, output_digest=output_digest(result),
-        principal_id=req.principal_id, as_of=as_of, evaluated_by=EVALUATED_BY,
-        rule_table_version=rules.RULE_TABLE_VERSION, citation_policy_version=rules.CITATION_POLICY_VERSION,
-        gated_refs=tuple(normalize_ref(r) for r in refs), checks=checks)
+    # P11: provenance; nothing is returned as Assessed unless it is complete
+    try:
+        checks = tuple(r.answer for r in recorder.records if r.answer is not None)
+        provenance = AssessmentProvenance(
+            result_id=result.id, input_fingerprint=fingerprint, output_digest=output_digest(result),
+            principal_id=req.principal_id, as_of=as_of, evaluated_by=EVALUATED_BY,
+            rule_table_version=rules.RULE_TABLE_VERSION, citation_policy_version=rules.CITATION_POLICY_VERSION,
+            gated_refs=tuple(normalize_ref(r) for r in refs), checks=checks)
+    except Exception as exc:
+        return Errored(Stage.PROVENANCE, "unexpected_exception", type(exc).__name__, calls())
     return Assessed(result=result, provenance=provenance)
