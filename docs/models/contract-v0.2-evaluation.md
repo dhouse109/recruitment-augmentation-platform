@@ -331,7 +331,7 @@ All T3/T4 runs, observations, attestations, metric values and comparisons in the
 | V2 | `status == errored` ⇒ the id is absent |
 | V3 | `status == not_evaluated` ⇒ the id is absent (and `observed` stays absent, as before) |
 | V4 | Any other operation or any other basis ⇒ the id is absent |
-| V5 | The same rule, expressed in JSON Schema on `case-observation` (and on `evaluation-case`, which embeds the step union) |
+| V5 | The same rule, expressed in the `case-observation` JSON Schema through `StepObservation`. `evaluation-case` carries no binding rule: its body changes only because the `EligibilitySupportStep` description was amended. Both changes are intentional; exactly these two schema bodies differ from `.foundations.5`. |
 
 **Q1 — exact basis.** The obligation applies only to `deterministic_baseline_execution`. It does **not** extend to other T3 bases: `offline_model_execution` carries no obligation and the id is rejected there. Existing T2 observations (`reference_validator`, `mock_authority`, `in_memory_double`) are unaffected; the conformance harness's golden observations re-validate unchanged.
 
