@@ -1,12 +1,13 @@
 """Engine request and the three mutually exclusive outcomes (runtime-local, not contracts).
 
 * ``Assessed`` -- an ``EligibilityResult`` that the unmodified contract
-  validators accepted, plus runtime provenance.
+  validators accepted, plus runtime provenance and (PR-S2) verified findings
+  and a deterministic explanation.
 * ``Refused`` -- a designed fail-closed stop (scope, reference, structure,
   source integrity/authorization, contradictory records). INTERNAL ONLY: codes
   must not be shown to callers or reviewers.
 * ``Errored`` -- an engine or request defect. Never converted into a refusal or
-  an eligibility outcome.
+  an eligibility outcome. Carries no findings and no explanation.
 """
 
 from __future__ import annotations
@@ -20,6 +21,8 @@ from rap_contracts.eligibility import EligibilityResult, PolicyPin
 from rap_contracts.models import CandidateId, ContractModel, OpportunityId, OrganizationId
 from rap_contracts.review import PrincipalId
 
+from .explanation import ExplanationArtifact
+from .findings import FindingsArtifact
 from .provenance import AssessmentProvenance
 
 
@@ -49,6 +52,9 @@ class Stage(str, Enum):
     RESULT = "result"                # P7-P9: decision inputs, rules, result construction
     POST_CHECK = "post_check"        # P10: wrapper post-check and provenance subset
     PROVENANCE = "provenance"        # P11: output digest and provenance record construction
+    SELECTION = "selection"          # P2b (PR-S2): L2 metadata-only projection-selection check (no authority call)
+    FINDINGS = "findings"            # P12-P13 (PR-S2): findings construction and L1 independent verification
+    EXPLANATION = "explanation"      # P14 (PR-S2): deterministic explanation construction and self-check
 
 
 #: Stages whose refusals are guaranteed to make zero authority calls.
@@ -74,5 +80,13 @@ class Errored:
 
 @dataclass(frozen=True)
 class Assessed:
+    """A post-checked result, its provenance, and (PR-S2) independently verified findings and explanation.
+
+    ``findings`` and ``explanation`` are runtime-local, internal artifacts. They are not
+    authorized for reviewer presentation and confer no authorization or decision.
+    """
+
     result: EligibilityResult
     provenance: AssessmentProvenance
+    findings: FindingsArtifact
+    explanation: ExplanationArtifact

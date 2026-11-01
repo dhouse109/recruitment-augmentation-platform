@@ -81,11 +81,19 @@ class OrderingTests(unittest.TestCase):
         self.assertNotIn("postcheck", kinds)
 
 
+#: Modules allowed to read claim values, states, statuses and hours (PR-S2 approved extension, A9):
+#: the rules and findings producer, and the independent findings verifier (L1), which re-derives
+#: everything from the admitted projection. identity.py is checked separately (Enum ``.value`` only).
+VALUE_READERS = ("rules.py", "identity.py", "findings_check.py")
+
+
 class StaticValueAccessTests(unittest.TestCase):
     def test_only_rules_module_reads_value_attributes(self):
-        """identity.py is checked separately: its only such access is Enum ``.value`` in canonicalization."""
-        for path in sorted(PACKAGE.glob("*.py")):
-            if path.name in ("rules.py", "identity.py"):
+        """Recursive over the package (PR-S2): no other module, including subpackages, reads value attributes."""
+        paths = sorted(p for p in PACKAGE.rglob("*.py") if "__pycache__" not in p.parts)
+        self.assertGreaterEqual({p.name for p in paths}, {"findings.py", "explanation.py", "selection_check.py"})
+        for path in paths:
+            if path.name in VALUE_READERS:
                 continue
             attrs = {n.attr for n in ast.walk(ast.parse(path.read_text(encoding="utf-8"))) if isinstance(n, ast.Attribute)}
             with self.subTest(path.name):
@@ -101,6 +109,11 @@ class StaticValueAccessTests(unittest.TestCase):
     def test_rules_module_reads_them(self):  # guards the scan itself against vacuity
         attrs = {n.attr for n in ast.walk(ast.parse((PACKAGE / "rules.py").read_text())) if isinstance(n, ast.Attribute)}
         self.assertLessEqual({"value", "state", "status", "presence", "hours_per_week"}, attrs)
+
+    def test_findings_verifier_reads_them(self):  # the allowlisted L1 verifier genuinely re-reads values
+        tree = ast.parse((PACKAGE / "findings_check.py").read_text(encoding="utf-8"))
+        attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+        self.assertLessEqual({"value", "state", "status", "presence", "hours_per_week", "alternatives"}, attrs)
 
 
 class PreAuthorityRefusalTests(unittest.TestCase):
