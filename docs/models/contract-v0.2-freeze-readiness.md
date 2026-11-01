@@ -82,6 +82,16 @@ Options for the owner, none of which this PR takes:
 - dispose of O3/O4/O5 and the drafts, then decide; or
 - declare an interim status by explicit decision.
 
+### Status note after PR-S3a (2026-11-01)
+
+*Added by Slice 0 PR-S3a. The matrix, checklist, assessment and the PR #12 note above are **historical** and are not rewritten. Since that note, PR-S2 (PR #14) was merged and PR-S3a was authorized (AR-S3a); PR-S3b remains **not authorized**.*
+
+- **Version:** `0.2.0-dev.foundations.6`. One evaluation-contract change: an optional `ObservedRecord.eligibility_result_id`, required only for evaluated `eligibility_support` steps with basis `deterministic_baseline_execution` and absent otherwise (local invariants V1–V5). Exactly two schema bodies change (`case-observation`, `evaluation-case`); the other 34 equal `.foundations.5`. See [`contract-v0.2-evaluation.md`](contract-v0.2-evaluation.md#pr-s3a-generated-result-binding-020-devfoundations6).
+- **Criterion 5 (a real producer):** still **not met**. PR-S3a prepares `CaseObservation` to name a generated result but adds no producer. `Recommendation`, `VerificationResult`, `EvaluationRun` and `CaseObservation` still have none.
+- **Evidence tiers:** V1–V5 are shape constraints and do not prove provenance. No `deterministic_baseline` run has been executed; **no decision has T3 or T4 evidence**.
+- **Open items unchanged:** G12a–c (result level), O3/O5, draft definitions (F4/B3), F3 scenario sharing, source sanitization of history.
+- **No freeze.** Contract v0.2 (`0.2.0-dev.foundations.6`) is not ready for a freeze, and this PR assigns no freeze or release-candidate status.
+
 ## Risk register
 
 | Risk | Likelihood | Impact | Mitigation in place | Residual |

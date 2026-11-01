@@ -2,6 +2,7 @@
 
 **Document ID:** RAP-CONTRACT-002-E  
 **Contract version:** `0.2.0-dev.foundations.4` — **partial development version; proposed; NOT frozen**  
+**Later increment:** `0.2.0-dev.foundations.6` (Slice 0 PR-S3a, generated-result binding) — see [PR-S3a generated-result binding](#pr-s3a-generated-result-binding-020-devfoundations6). The PR #7 text below is unchanged history.  
 **PR:** #7 (Evaluation, Adjudication and Held-Out Separation)  
 **Base:** `main` @ `9f21486f789f5aac0175ed953ae2b35b4e36013d` (merge of PR #6)  
 **Scope:** D-004.12, read with ADR-0003 (D-003)  
@@ -307,6 +308,48 @@ Each bypass was reproduced against the PR head of the time before the repair (`3
 
 All T3/T4 runs, observations, attestations, metric values and comparisons in these tests are **synthetic gate-logic examples** typed into the test file (`logic_only_*` helpers); they use the genuine committed case pins and are never committed as records.
 
+## PR-S3a generated-result binding (`0.2.0-dev.foundations.6`)
+
+*Added by Slice 0 PR-S3a under owner authorization AR-S3a (2026-11-01), implementing §9.1 of RAP-SLICE0-PR-S3-PLAN-2026-11-01 rev. 2.1 with qualifications Q1 and Q2. Base: `main` @ `e5781db7f0f65c9e283e5998fd4ab18bba74ab79`. Contract-only: no runner, no engine execution, no evaluation run.*
+
+**Why.** Under E2 Option B, a `deterministic_baseline` evaluation step generates an `EligibilityResult` with the Slice 0 engine, validates it with `check_eligibility_result`, and compares it with the expected label. The PR #7 observation shape had no place to name the generated result, so an observation could not say which result it judged.
+
+**Change (`rap_contracts/evaluation.py`).**
+
+| Element | Change |
+|---|---|
+| `ObservedRecord` | New optional `eligibility_result_id: EligibilityId \| None = None` |
+| `StepObservation` | Validator enforces V1, V2 and V4; a portable `if`/`then`/`else` in `json_schema_extra` carries V5 |
+| `EligibilitySupportStep` | Description distinguishes T2 label validation (`reference_validator`) from T3 deterministic baseline generation followed by validation (`deterministic_baseline_execution`) |
+| `CONTRACT_VERSION` | `0.2.0-dev.foundations.6` |
+
+**Local invariants (shape only).**
+
+| Id | Rule |
+|---|---|
+| V1 | `operation == eligibility_support`, `basis == deterministic_baseline_execution` and `status` ∈ {`matched`, `mismatched`} ⇒ `observed.eligibility_result_id` is present |
+| V2 | `status == errored` ⇒ the id is absent |
+| V3 | `status == not_evaluated` ⇒ the id is absent (and `observed` stays absent, as before) |
+| V4 | Any other operation or any other basis ⇒ the id is absent |
+| V5 | The same rule, expressed in the `case-observation` JSON Schema through `StepObservation`. `evaluation-case` carries no binding rule: its body changes only because the `EligibilitySupportStep` description was amended. Both changes are intentional; exactly these two schema bodies differ from `.foundations.5`. |
+
+**Q1 — exact basis.** The obligation applies only to `deterministic_baseline_execution`. It does **not** extend to other T3 bases: `offline_model_execution` carries no obligation and the id is rejected there. Existing T2 observations (`reference_validator`, `mock_authority`, `in_memory_double`) are unaffected; the conformance harness's golden observations re-validate unchanged.
+
+**Q2 — provenance is a runner obligation.** V1–V5 are structural checks. Validation accepts any well-formed `eligibility_…` id, including a fabricated one; a test records this limit. PR-S3a **cannot** establish that a named result was returned by a genuine engine execution, from the admitted inputs, under the stated provenance. The future PR-S3b cross-artifact verifier (plan rev. 2.1 checks X1–X9) must bind each observation to the engine-returned result, its input fingerprint and its provenance, and recompute the applicable identities and digests itself rather than trust a declared fingerprint or a sidecar. PR-S3b is **not authorized** and nothing in this increment implements it.
+
+**Schema bodies.** All 36 schemas change in `$id` and `x-contract-version`. Exactly two bodies change; the other 34 equal their `.foundations.5` bodies.
+
+| Schema | `.foundations.5` body (= PR #7) | `.foundations.6` body |
+|---|---|---|
+| `case-observation` | `624fc074a96692be65d66fd81c20d10a514b09f85677cbdb080adec6a031885e` | `c64a695f2868762219a1a3bf17626c6ad436263947de54ff0ae2e1e0be8a76a3` |
+| `evaluation-case` | `d5f9a92f6cadd8e6d1e2c79762c2cfcc6f8d06e2288a5de46acac48691330425` | `ec10f41fa73e60c2d7ac7bec1b1b0c535ee6b48a5fde35f638309ee890e177bc` |
+
+**Compatibility evidence.** The PR #4–#7 digest tables and the F4 PR-B evidence (`PRB_CHANGED_SCHEMAS`) are retained verbatim. `test_pr7_unchanged_schema_bodies` exempts only the explicitly named `PRS3A_CHANGED_SCHEMAS`, and a companion test pins that exemption set and its historical values. `PrS3aCompatibilityTests` checks the two new bodies, the 34 unchanged bodies against `FOUNDATIONS5_SCHEMA_BODY_DIGESTS`, the schema count (36), the version label, and that the changed set is exactly the set of schemas embedding an affected model.
+
+**Unchanged.** Cases, manifests, fixtures, case hashes, manifest roots, metric/safety-gate definitions, the rubric, the conformance harness and `baseline/`.
+
+**Still not established.** Any engine execution under the evaluation contracts, any `deterministic_baseline` run, any T3 or T4 evidence, any measured result, any definition approval or promotion evidence.
+
 ## Test evidence
 
 Recorded in the PR description and in [`contract-v0.2-freeze-readiness.md`](contract-v0.2-freeze-readiness.md#test-evidence) from a fresh clone. Commands (from `contracts/`):
@@ -324,4 +367,4 @@ PYTHONPATH=tests python -m unittest test_evaluation_cases test_dataset_partition
 
 ## Freeze status
 
-**Not frozen.** This PR assigns no release-candidate or freeze status. See the [freeze-readiness assessment](contract-v0.2-freeze-readiness.md).
+**Not frozen.** This PR assigns no release-candidate or freeze status. PR-S3a (`.foundations.6`) does not change this. See the [freeze-readiness assessment](contract-v0.2-freeze-readiness.md).

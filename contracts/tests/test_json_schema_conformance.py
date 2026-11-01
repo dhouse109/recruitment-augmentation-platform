@@ -544,5 +544,78 @@ class EvaluationConformanceTests(unittest.TestCase):
             _model("promotion-decision").model_validate(weak)
 
 
+
+@unittest.skipIf(Draft202012Validator is None, "jsonschema not installed; install contracts/requirements-dev.txt")
+class GeneratedResultBindingConformanceTests(unittest.TestCase):
+    """PR-S3a V5: the committed case-observation schema enforces the same binding shape as Python (V1, V2, V4).
+
+    Synthetic step payloads only; no fixture file is read. Both validators check SHAPE, not provenance.
+    """
+
+    GENERATED = "eligibility_" + "b2" * 20
+
+    def observation(self, operation="eligibility_support", basis="deterministic_baseline_execution",
+                    status="matched", rid=GENERATED):
+        observed = None if status == "not_evaluated" else {"result": "accepted", "decision": "eligible",
+                                                           "eligibility_result_id": rid}
+        if status == "errored" and observed is not None:
+            observed = {"error_type": "engine_refused", "eligibility_result_id": rid}
+        return {"run_id": "evalrun_example", "case_id": "evalcase_example", "case_version": 1,
+                "case_sha256": "sha256:" + "0" * 64, "split": "golden", "execution_status": "executed",
+                "steps": [{"step_id": "s1", "role": "target", "operation": operation, "status": status,
+                           "basis": basis, "observed": observed}],
+                "outcome": {"matched": "pass", "mismatched": "fail", "errored": "fail",
+                            "not_evaluated": "inconclusive"}[status],
+                "latency": {"status": "not_measured", "unit": "milliseconds"},
+                "cost": {"status": "not_applicable", "unit": "usd"}}
+
+    def setUp(self):
+        self.validator, self.model = _validator("case-observation"), _model("case-observation")
+
+    def accepted_by_both(self, payload):
+        self.assertEqual([e.message for e in self.validator.iter_errors(payload)], [])
+        self.model.model_validate(payload)
+
+    def rejected_by_both(self, payload, label):
+        self.assertTrue(list(self.validator.iter_errors(payload)), f"JSON Schema accepted: {label}")
+        with self.assertRaises(ValidationError, msg=f"Pydantic accepted: {label}"):
+            self.model.model_validate(payload)
+
+    def test_accepted_shapes(self):
+        cases = {
+            "matched, named": self.observation(),
+            "mismatched, named": self.observation(status="mismatched"),
+            "errored, unnamed": self.observation(status="errored", rid=None),
+            "not evaluated": self.observation(status="not_evaluated"),
+            "T2 reference validator, unnamed": self.observation(basis="reference_validator", rid=None),
+            "offline model, unnamed": self.observation(basis="offline_model_execution", rid=None),
+            "other operation, unnamed": self.observation(operation="context_validation", rid=None),
+        }
+        for label, payload in cases.items():
+            with self.subTest(label):
+                self.accepted_by_both(payload)
+
+    def test_rejected_shapes(self):
+        cases = {
+            "V1 missing id (null)": self.observation(rid=None),
+            "V1 mismatched missing id": self.observation(status="mismatched", rid=None),
+            "V2 errored with id": self.observation(status="errored"),
+            "V4 T2 basis with id": self.observation(basis="reference_validator"),
+            "V4 offline model with id": self.observation(basis="offline_model_execution"),
+            "V4 other operation with id": self.observation(operation="context_validation"),
+            "malformed id": self.observation(rid="claim_not_a_result"),
+        }
+        missing_key = self.observation()
+        del missing_key["steps"][0]["observed"]["eligibility_result_id"]
+        cases["V1 missing id (absent key)"] = missing_key
+        for label, payload in cases.items():
+            with self.subTest(label):
+                self.rejected_by_both(payload, label)
+
+    def test_fabricated_well_formed_id_is_accepted_by_both(self):
+        """Documented limit: neither validator can know whether a named result was really generated."""
+        self.accepted_by_both(self.observation(rid="eligibility_fabricated_by_hand"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -153,7 +153,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/opportunity.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.6/opportunity.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Minimal opportunity envelope. Qualifications/attributes are deferred (D-004.06/.10).",
@@ -210,5 +210,5 @@
   "title": "Opportunity",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.5"
+  "x-contract-version": "0.2.0-dev.foundations.6"
 }

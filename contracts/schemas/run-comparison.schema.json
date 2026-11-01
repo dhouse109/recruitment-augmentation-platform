@@ -862,7 +862,7 @@
       "type": "object"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/run-comparison.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.6/run-comparison.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Documented baseline-vs-candidate comparison. Completeness is recomputed, never declared.",
@@ -944,5 +944,5 @@
   "title": "RunComparison",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.5"
+  "x-contract-version": "0.2.0-dev.foundations.6"
 }

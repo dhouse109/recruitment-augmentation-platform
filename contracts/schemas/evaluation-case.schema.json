@@ -294,7 +294,7 @@
     },
     "EligibilitySupportStep": {
       "additionalProperties": false,
-      "description": "``eligibility.check_eligibility_result``: is a hand-written label supported? Not an engine.",
+      "description": "``eligibility.check_eligibility_result`` on one assessment key, compared with the expected label.\n\nThe step names a hand-written expected result (``eligibility_result_id``); its key is the label's\norganization, candidate, opportunity and policy pin. The observation basis says what was checked.\nAt T2 (``reference_validator``) the validator checks the hand-written result itself; no engine runs.\nAt T3 (``deterministic_baseline_execution``) the deterministic baseline first generates a result for\nthe label's key, the same validator then checks that generated result, and its decision and rule\noutcomes are compared with the label; the observation names the generated result\n(``ObservedRecord.eligibility_result_id``). Agreement with a label is not reviewed correctness.",
       "properties": {
         "authority_delta": {
           "default": [],
@@ -1503,7 +1503,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/evaluation-case.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.6/evaluation-case.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "One versioned synthetic case: declared scope, initial state, ordered steps and expectations.",
@@ -1648,5 +1648,5 @@
   "title": "EvaluationCase",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.5"
+  "x-contract-version": "0.2.0-dev.foundations.6"
 }
