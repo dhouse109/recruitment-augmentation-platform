@@ -38,7 +38,7 @@
 5. `Refused` / `Errored` → step `errored` with `engine_refused` / `engine_errored`; stage and code go to the
    sidecar; no result id. A refusal is never mapped to a validator `violation`.
 
-**g025 prerequisite (recommended interpretation, pending explicit owner acceptance).** The T2
+**g025 prerequisite (owner-accepted interpretation, 2026-11-01; narrower T2 coverage).** The T2
 conformance harness validates a context that also contains the scope's label results. This runner never constructs
 labels, so `context_validation` runs `validate_recommendation_inputs` over the **admitted non-label context**
 (records, policies, requirements, claims, participations, evidence, vocabularies and capabilities, with an empty
