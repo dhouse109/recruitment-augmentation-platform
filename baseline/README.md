@@ -1,6 +1,6 @@
 # `baseline/` — Slice 0 deterministic eligibility engine (PR-S1) and explanations (PR-S2)
 
-**Status:** owner-authorized PR-S1 (2026-10-31) and PR-S2 (2026-11-01) scope only. Synthetic data only. **Not** an evaluation runner, recommendation engine, reviewer presentation or Drupal integration. Contract v0.2 is unchanged and not frozen. PR-S2 explanations are runtime-local, internal artifacts and are **not authorized for reviewer presentation**.
+**Status:** owner-authorized PR-S1 (merged as PR #12, 2026-10-31) and PR-S2 (merged as PR #14, 2026-11-01) scopes only. Synthetic data only. **Not** an evaluation runner, recommendation engine, reviewer presentation or Drupal integration. Contract v0.2 is unchanged and not frozen. PR-S2 explanations are runtime-local, internal artifacts and are **not authorized for reviewer presentation**.
 
 `rap_baseline.assess(request, context, authority, capabilities)` computes one `rap_contracts.eligibility.EligibilityResult` for **one candidate × one opportunity × one explicitly pinned policy version**. It uses already-loaded records and makes no model call or network request. It writes nothing. The outcome is one of:
 
