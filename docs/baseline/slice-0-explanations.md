@@ -191,7 +191,7 @@ All runs were manual, from a fresh checkout, on Python 3.13.18. No CI is configu
 |---|---|---|
 | contracts | 464 pass | 464 pass, 17 skipped |
 | `schema_export --check` | drift NONE (36 schemas) | drift NONE |
-| baseline | **220 pass** | **220 pass** |
+| baseline | **236 pass** | **236 pass** |
 
 **Baseline test breakdown.** The 115 PR-S1 tests all still pass, run by their exact ids. The only change to them is the approved AST-scan extension in `test_gate_ordering.py`.
 
@@ -202,7 +202,7 @@ All runs were manual, from a fresh checkout, on Python 3.13.18. No CI is configu
 | `test_g12_matrix.py` | 27 | new |
 | `test_findings_check.py` | 17 | new |
 | `test_selection_check.py` | 15 | new |
-| `test_explanation.py` | 24 | new (10 added by review repair R2) |
+| `test_explanation.py` | 39 | new (10 added by review repair R2, 15 by R3) |
 | `test_findings.py` | 8 | new |
 | `test_mutation_harness.py` | 11 | new (review repair R1) |
 
@@ -210,7 +210,7 @@ All runs were manual, from a fresh checkout, on Python 3.13.18. No CI is configu
 
 **Failure-first mutations.** `tests/tools/mutations.py` applies each mutation to a scratch copy and runs the full suite. A mutation counts as caught only under these conditions (review repair R1):
 - the suite completed;
-- it ran exactly the 220 tests the loader discovers in the unmutated copy;
+- it ran exactly the 236 tests the loader discovers in the unmutated copy;
 - it reported genuine failure blocks consistent with its summary, with no module import failure;
 - every listed discriminating test is among the failures.
 
@@ -218,58 +218,60 @@ A runner timeout or crash, a missing or ambiguous test count, a resized run, an 
 
 Two controls run first and are classified as required:
 - a no-op edit → not caught;
-- an import-breaking edit → harness error (it ran 26 of 220 tests).
+- an import-breaking edit → harness error (it ran 26 of 236 tests).
 
-All **46** mutations are caught, with 0 harness errors and 0 not caught. The **PR-S2 count** column is test failures + test errors (failing test methods). Subtests are included, and failures and errors are reported separately since R1. The PR-S1 column is the total recorded in the PR-S1 document. All counts are from the 220-test suite.
+All **48** mutations are caught, with 0 harness errors and 0 not caught. The **PR-S2 count** column is test failures + test errors (failing test methods). Subtests are included, and failures and errors are reported separately since R1. The PR-S1 column is the total recorded in the PR-S1 document. All counts are from the 236-test suite at the R3 head.
 
 | # | Mutation | PR-S1 count | PR-S2 count |
 |---|---|---|---|
 | M01 | P6 before the gate | 5 (4) | 5 + 0 (4) |
 | M02 | gate failures ignored | 62 (5) | 63 + 0 (6) |
-| M03 | contested-alternative evidence not gated | 29 (19) | 28 + 19 (32) |
-| M04 | inferred evidence not gated | 11 (5) | 14 + 12 (14) |
+| M03 | contested-alternative evidence not gated | 29 (19) | 30 + 19 (34) |
+| M04 | inferred evidence not gated | 11 (5) | 16 + 12 (16) |
 | M05 | P6 on the full context | 4 (4) | 4 + 0 (4) |
 | M06 | projection organization guard removed | 6 (6) | 7 + 0 (7) |
 | M07 | P1 organization checks removed | 1 (1) | 2 + 0 (2) |
 | M08 | result id omits the fingerprint | 13 (2) | 29 + 0 (4) |
 | M09 | `as_of` not normalized | 2 (2) | 2 + 0 (2) |
 | M10 | nested `captured_at` not normalized | 2 (2) | 2 + 0 (2) |
-| M11 | principal in the fingerprint | 1 (1) | 107 + 129 (116) |
-| M12 | declaration preferred over verification | 2 (2) | 28 + 36 (37) |
-| M13 | full mixed-basis lacks set cited | 1 (1) | 28 + 36 (37) |
+| M11 | principal in the fingerprint | 1 (1) | 121 + 131 (132) |
+| M12 | declaration preferred over verification | 2 (2) | 31 + 37 (41) |
+| M13 | full mixed-basis lacks set cited | 1 (1) | 31 + 37 (41) |
 | M14 | `not_evidenced` before `only_inferred` | 2 (2) | 1 + 0 (1) |
-| M15 | inferred treated as declared | 8 (6) | 13 + 18 (17) |
+| M15 | inferred treated as declared | 8 (6) | 15 + 18 (19) |
 | M16 | `not_declared` before `contested` | 2 (2) | 3 + 0 (3) |
 | M17 | unpublished hours checked late | 1 (1) | 1 + 0 (1) |
 | M18 | post-check removed | 6 (6) | 7 + 1 (8) |
 | M19 | provenance subset check removed | 2 (2) | 2 + 0 (2) |
-| M20 | deterministic ordering removed | 19 (9) | 59 + 38 (64) |
-| M21 | gate checks only opportunity and policy | 136 (62) | 185 + 129 (128) |
+| M20 | deterministic ordering removed | 19 (9) | 67 + 39 (73) |
+| M21 | gate checks only opportunity and policy | 136 (62) | 199 + 131 (144) |
 | M22 | conflicting participation evaluated | 1 (1) | 1 + 0 (1) |
 | M23 | P10 exceptions escape | 2 (2) | 2 + 0 (2) |
 | M24 | P11 exceptions escape | 2 (2) | 2 + 0 (2) |
 | M25 | builders open a contract file | 1 (1) | 2 + 0 (2) |
-| M26 | drop `uncited_material` | — | 16 + 51 (40) |
-| M27 | merge G12c claims | — | 57 + 56 (73) |
-| M28 | omit alternative index | — | 21 + 19 (31) |
-| M29 | inferred relation as `support` | — | 15 + 18 (18) |
+| M26 | drop `uncited_material` | — | 22 + 52 (47) |
+| M27 | merge G12c claims | — | 67 + 58 (85) |
+| M28 | omit alternative index | — | 23 + 19 (33) |
+| M29 | inferred relation as `support` | — | 17 + 18 (20) |
 | M30 | L1 imports producer classification | — | 1 + 0 (1) |
-| M31 | L1 reads the supplied context | — | 107 + 129 (116) |
+| M31 | L1 reads the supplied context | — | 121 + 131 (132) |
 | **M32** | **I10 weakened to the result-dependency subset (N5 discriminates)** | — | 3 + 0 (3) |
 | M33 | findings on `Refused` | — | 4 + 0 (1) |
 | M34 | engine identity changed | — | 15 + 0 (1) |
-| M35 | `as_of` in the content digest | — | 107 + 129 (116) |
-| M36 | gap mapping swapped | — | 24 + 26 (34) |
+| M35 | `as_of` in the content digest | — | 121 + 131 (132) |
+| M36 | gap mapping swapped | — | 26 + 26 (36) |
 | M37 | template interpolates `field_path` | — | 1 + 0 (1) |
 | M38 | L2 removed | — | 15 + 0 (10) |
 | M39 | I7 relaxed to supportability (N1–N3 discriminate) | — | 3 + 0 (3) |
 | M40 | findings routed through `EVALUATORS` | — | 1 + 0 (1) |
-| M41 | `as_of` rendered into the body | — | 97 + 129 (107) |
+| M41 | `as_of` rendered into the body | — | 97 + 131 (109) |
 | M42 | L1 trusts provenance without recomputing it (N10 discriminates) | — | 2 + 0 (1) |
 | M43 | L2 compares ids, not identity (N8h discriminates) | — | 3 + 0 (2) |
 | M44 | L2 ignores application targets | — | 26 + 5 (19) |
-| M45 | explanation drops `uncited_material` statements and its completeness self-check (R2) | — | 16 + 0 (11) |
-| M46 | P14 completeness self-check removed (R2; omission tests discriminate) | — | 5 + 0 (5) |
+| M45 | explanation drops `uncited_material` statements and its completeness self-check (R2) | — | 30 + 1 (26) |
+| M46 | P14 completeness self-check removed (R2; omission tests discriminate) | — | 19 + 0 (19) |
+| M47 | explanation parameter check removed: keys and references only (R3) | — | 14 + 0 (14) |
+| M48 | explanation parameter check ignores value types (R3) | — | 1 + 0 (1) |
 
 **Earlier mutation run superseded.** The first PR #14 run (head `2ee2594`) had two defects: it could count an incomplete run, or a run with no test count, as caught. Its M24 edit was such a case: it broke module import, and only 15 tests ran. **That run is superseded by this table.**
 
@@ -298,6 +300,13 @@ All **46** mutations are caught, with 0 harness errors and 0 not caught. The **P
    - **R1, mutation-harness reliability:** the classification rules and controls in §8, plus the unit tests in `tests/test_mutation_harness.py`.
    - **R2, explanation completeness:** the P14 self-check now requires a one-to-one, in-order correspondence between the verified findings and the explanation, covering every rule, subject, applicable information gap, contribution and evidence attribution, each with its reference and identifying params. It also requires one rendered line per statement and limitations that match the findings. Any omission or wrong reference is `Errored(explanation, explanation_verification_failed)`.
    - **R2 tests:** an independent test-side checker covers the full matrix and sweep, with C06/G12c checked explicitly. Negative tests cover an omitted uncited contribution, gap, attribution, rule and rendered line, and a wrong reference. Mutations M45–M46 also cover it.
+   - **R3, exact parameter integrity:** the P14 check now requires each statement's **complete typed parameter set** to equal the set derived directly from the verified `FindingsArtifact`. That covers source locators, claim and contested-alternative readings, hours, inferred producer, claim state, field paths, rule and policy versions, and ids.
+     - The expected set is computed without calling `_statements()`; a test proves the producer is not invoked.
+     - Source locators come from an independent locator derivation (`_locator`, from the reference's JSON dump), not from the renderer's `_source`. A test shows both agree for native-revision and logical-snapshot references.
+     - Types are compared, so `True` never passes for `1` and `"20"` never passes for `20`.
+     - Negative tests keep every key and reference correct and change only one parameter: a source locator (C06), the opportunity locator, a claim reading, declared, required and contribution hours, a contested-alternative reading (C04), the inferred producer (C05), a rule version, the policy version, a field path, a claim state, a type, and an extra parameter. Each returns `Errored(explanation, explanation_verification_failed)`.
+     - M47 (parameter check removed) and M48 (types ignored) are caught.
+     - The time-slot handling, escaping and content identity are unchanged: the `PYTHONHASHSEED` artifact dump hash is identical before and after R3.
 
 ## 10. Guarantees NOT established
 

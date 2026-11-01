@@ -346,46 +346,73 @@ def _text_digest(text: str) -> str:
 _DEPTH = {"decision": 0, "rule": 0, "subject": 1, "gap": 2, "contribution": 2, "attribution": 3}
 
 
-def _expected_index(fa: FindingsArtifact) -> list[tuple[str, str, tuple]]:
-    """(key, reference, identifying params) for every finding element, in canonical order (review repair R2).
+def _locator(ref) -> str:
+    """Source locator derived independently of ``_source`` (from the JSON dump, not ``identity.canonical``)."""
+    d = ref.model_dump(mode="json")
+    v = d["version"]
+    token = ("rev:" + v["revision_id"]) if v["kind"] == "native_revision" else ("snapshot:" + v["token"])
+    return "/".join((d["entity"]["source_system"], d["entity"]["entity_type"], d["entity"]["entity_id"])) + "@" + token
 
-    One entry per rule, subject, applicable information gap, contribution and evidence
-    attribution of the verified findings, plus the decision header.
+
+def _typed(**fields) -> tuple[tuple[str, Any], ...]:
+    """Complete expected parameter set: every non-null field, sorted by name."""
+    return tuple(sorted((k, v) for k, v in fields.items() if v is not None))
+
+
+def _expected_index(fa: FindingsArtifact) -> list[tuple[str, str, tuple]]:
+    """(key, reference, COMPLETE typed parameter set) for every finding element, in canonical order.
+
+    Review repairs R2 (one-to-one coverage) and R3 (exact parameter integrity). Derived
+    directly from the verified ``FindingsArtifact`` -- never by calling ``_statements()`` --
+    so a statement with correct key and reference but a substituted locator, reading,
+    hours, producer or version is rejected.
     """
     c = fa.content
-    index = [(f"decision/{c.decision}", "decision", (("opportunity_id", c.opportunity_id), ("policy_id", c.policy_id)))]
+    index = [(f"decision/{c.decision}", "decision",
+              _typed(opportunity_id=c.opportunity_id, policy_id=c.policy_id, policy_version=c.policy_version))]
     for r in c.rules:
         rref = f"rule:{r.rule_id}"
-        index.append((f"rule/{r.result}", rref, (("reason_code", r.reason_code), ("rule_id", r.rule_id))))
+        index.append((f"rule/{r.result}", rref,
+                      _typed(reason_code=r.reason_code, rule_id=r.rule_id, rule_version=r.rule_version)))
         for s in r.subjects:
             req = s.requirement.requirement_id if s.requirement is not None else None
             sref = f"{rref}/subject:{s.kind}:{req or s.program_id or '-'}"
-            index.append((f"subject/{s.kind}/{s.subject_status}/{s.subject_role}", sref,
-                          (("program_id", s.program_id), ("requirement_id", req), ("skill_code", s.skill_code))))
+            index.append((f"subject/{s.kind}/{s.subject_status}/{s.subject_role}", sref, _typed(
+                opportunity_ref=_locator(c.opportunity_ref) if s.kind == "opportunity_status" else None,
+                program_id=s.program_id, skill_code=s.skill_code, requirement_id=req,
+                declared_hours=s.declared_hours, required_hours=s.required_hours)))
             if s.information_gap is not None:
                 index.append((f"gap/{s.information_gap}", f"{sref}/gap", ()))
             for con in s.contributions:
                 cref = f"{sref}/input:{con.input_id}"
-                index.append((f"contribution/{con.role}/{con.rule_standing}", cref, (("input_id", con.input_id),)))
+                index.append((f"contribution/{con.role}/{con.rule_standing}", cref, _typed(
+                    input_id=con.input_id, claim_state=con.claim_state, reading=con.reading,
+                    reading_hours=con.reading_hours, inferred_by=con.inferred_by)))
                 for a in con.evidence:
                     alt = "" if a.alternative_index is None else f"#alt{a.alternative_index}"
-                    index.append((f"attribution/{a.relation}/{a.basis}", f"{cref}/evidence:{a.evidence_id}{alt}",
-                                  (("alternative_index", a.alternative_index), ("evidence_id", a.evidence_id),
-                                   ("field_path", a.field_path))))
+                    index.append((f"attribution/{a.relation}/{a.basis}", f"{cref}/evidence:{a.evidence_id}{alt}", _typed(
+                        evidence_id=a.evidence_id, source=_locator(a.source_ref), field_path=a.field_path,
+                        alternative_index=a.alternative_index, reading=a.reading, reading_hours=a.reading_hours)))
     return index
 
 
+def _typed_view(params: tuple) -> tuple:
+    """Parameters with their exact types, so ``20`` and ``"20"`` (or ``True`` and ``1``) never compare equal."""
+    return tuple((k, type(v).__name__, v) for k, v in params)
+
+
 def _completeness(ea: ExplanationArtifact, fa: FindingsArtifact) -> None:
-    """Every finding element is represented exactly once, in order, with the right reference and identity,
-    and every statement is rendered as one line of the body (review repair R2)."""
+    """Every finding element is represented exactly once, in order, with the right reference and exactly the
+    expected typed parameters, and every statement is rendered as one line of the body (R2, R3)."""
     expected = _expected_index(fa)
     statements = ea.content.statements
     if len(statements) != len(expected):
         raise ExplanationMismatch(f"explanation has {len(statements)} statements for {len(expected)} finding elements")
-    for statement, (key, ref, ident) in zip(statements, expected):
-        params = dict(statement.params)
-        if (statement.key, statement.ref) != (key, ref) or any(params.get(k) != v for k, v in ident):
+    for statement, (key, ref, params) in zip(statements, expected):
+        if (statement.key, statement.ref) != (key, ref):
             raise ExplanationMismatch(f"statement {statement.ref} does not represent finding element {ref}")
+        if _typed_view(tuple(statement.params)) != _typed_view(params):
+            raise ExplanationMismatch(f"statement {statement.ref} parameters differ from the verified findings")
     lines = ea.content.rendered_body.split("\n")
     if len(lines) != len(statements) + 1 + len(ea.content.limitations):
         raise ExplanationMismatch("rendered body lines do not correspond one-to-one with the statements")

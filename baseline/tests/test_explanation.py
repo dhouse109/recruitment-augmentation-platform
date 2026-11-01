@@ -347,5 +347,101 @@ class ExplanationCompletenessTests(unittest.TestCase):
                                 out.findings)
 
 
+# --- review repair R3: exact typed parameter integrity --------------------------------------------
+
+
+def set_param(st, name, value):
+    params = dict(st.params)
+    params[name] = value
+    return dataclasses.replace(st, params=tuple(sorted(params.items())))
+
+
+class ParameterIntegrityTests(unittest.TestCase):
+    """Keys and references stay correct; only a factual parameter changes. Each must be Errored(EXPLANATION)."""
+
+    def substituted(self, case, ref_suffix, name, value, key_prefix=None):
+        real = explanation._statements
+        hits = []
+
+        def statements(fa):
+            out = []
+            for depth, st in real(fa):
+                if st.ref.endswith(ref_suffix) and (key_prefix is None or st.key.startswith(key_prefix)):
+                    hits.append(st.ref)
+                    st = set_param(st, name, value)
+                out.append((depth, st))
+            return out
+        w, cand, kw = CASES[case]()
+        ctx, caps = w.build()
+        from builders import StubAuthority
+        from rap_baseline import Errored, Stage, assess
+        with mock.patch.object(explanation, "_statements", statements):
+            out = assess(w.request(cand, DATA), ctx, StubAuthority(), caps)
+        self.assertEqual(len(hits), 1, hits)
+        self.assertIsInstance(out, Errored, str(out))
+        self.assertEqual((out.stage, out.code), (Stage.EXPLANATION, "explanation_verification_failed"))
+        self.assertIn("parameters differ", out.detail)
+        self.assertFalse(hasattr(out, "explanation"))
+
+    def test_substituted_source_locator(self):  # G12c: the uncited statement's evidence points elsewhere
+        self.substituted("C06", "/evidence:evidence_s1_ana_python_screen", "source",
+                         "fixture/skill_assessment/9204@rev:1")
+
+    def test_substituted_opportunity_locator(self):
+        self.substituted("C01", "subject:opportunity_status:-", "opportunity_ref", "fixture/opportunity/4101@rev:10")
+
+    def test_changed_claim_reading(self):
+        self.substituted("C01", "/input:claim_s1_ana_python_app", "reading", "lacks")
+
+    def test_changed_declared_hours(self):
+        self.substituted("C01", "subject:weekly_hours:requirement_s1_data_hours", "declared_hours", 40)
+
+    def test_changed_required_hours(self):
+        self.substituted("C01", "subject:weekly_hours:requirement_s1_data_hours", "required_hours", 8)
+
+    def test_changed_contribution_hours(self):
+        self.substituted("C01", "/input:claim_s1_ana_hours", "reading_hours", 21)
+
+    def test_changed_contested_alternative_reading(self):
+        self.substituted("C04", "/evidence:evidence_s1_ben_python_app#alt1", "reading", "has")
+
+    def test_changed_inferred_producer(self):
+        self.substituted("C05", "/input:claim_s1_ana_python_inferred", "inferred_by", "other-inference/9")
+
+    def test_changed_rule_version(self):
+        self.substituted("C01", "rule:S1-SKILL-004", "rule_version", 2, key_prefix="rule/")
+
+    def test_changed_policy_version(self):
+        self.substituted("C01", "decision", "policy_version", 2)
+
+    def test_changed_field_path_and_claim_state(self):
+        self.substituted("C06", "/evidence:evidence_s1_ana_python_screen", "field_path", "answers.other")
+        self.substituted("C05", "/input:claim_s1_ana_python_inferred", "claim_state", "declared")
+
+    def test_type_substitution_is_detected(self):  # "20" is not 20
+        self.substituted("C01", "subject:weekly_hours:requirement_s1_data_hours", "declared_hours", "20")
+
+    def test_equal_but_differently_typed_value_is_detected(self):
+        """True == 1 in Python and renders as "1": only the typed comparison distinguishes it."""
+        self.substituted("C04", "/evidence:evidence_s1_ben_python_app#alt1", "alternative_index", True)
+
+    def test_extra_parameter_is_detected(self):
+        self.substituted("C02", "/input:claim_s1_ana_python_lacks", "reading_hours", 5)
+
+    def test_locator_derivations_agree(self):
+        """The verifier's independent locator equals the renderer's for both version kinds."""
+        from builders import snapshot
+        from rap_contracts.models import SourceReference
+        out = run(*CASES["C01"]()[:2], DATA)[0]
+        refs = [out.findings.content.opportunity_ref, SourceReference.model_validate(snapshot("program", "3101", "1"))]
+        for ref in refs:
+            self.assertEqual(explanation._locator(ref), explanation._source(ref))
+
+    def test_expected_index_does_not_call_the_producer(self):
+        out = run(*CASES["C06"]()[:2], DATA)[0]
+        with mock.patch.object(explanation, "_statements", side_effect=AssertionError("producer called")):
+            explanation._completeness(out.explanation, out.findings)
+
+
 if __name__ == "__main__":
     unittest.main()

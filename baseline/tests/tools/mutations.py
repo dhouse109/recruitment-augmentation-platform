@@ -18,7 +18,8 @@ caught; 2 any harness error.
 M01-M25 re-create the PR-S1 failure-first demonstrations on the PR-S2 code (the
 PR-S1 scripts were not committed; descriptions follow docs/baseline/slice-0-eligibility-engine.md
 section 6). M26-M44 are the PR-S2 mutations of plan rev. 2.2 section 10; M45-M46 cover
-review repair R2 (explanation completeness).
+review repair R2 (explanation completeness) and M47-M48 review repair R3 (exact
+explanation parameters).
 
     python -I baseline/tests/tools/mutations.py [--only M32,M38]
 """
@@ -163,6 +164,14 @@ MUTATIONS = [
      ["test_one_to_one_coverage_of_verified_findings", "test_c06_g12c_is_fully_represented"]),
     ("M46", "P14 explanation completeness self-check removed", [(X, "    _completeness(ea, fa)\n", "")],
      ["test_omitted_uncited_material_is_errored", "test_omitted_gap_is_errored", "test_omitted_attribution_is_errored"]),
+    # ---- review repair R3: exact typed parameter integrity --------------------------------------
+    ("M47", "explanation parameter check removed (keys and references only)",
+     [(X, "        if _typed_view(tuple(statement.params)) != _typed_view(params):", "        if False:")],
+     ["test_substituted_source_locator", "test_changed_claim_reading", "test_changed_declared_hours",
+      "test_changed_contested_alternative_reading", "test_changed_inferred_producer", "test_changed_policy_version"]),
+    ("M48", "explanation parameter check ignores value types",
+     [(X, "    return tuple((k, type(v).__name__, v) for k, v in params)", "    return tuple(params)")],
+     ["test_equal_but_differently_typed_value_is_detected"]),
 ]
 
 FAIL_LINE = re.compile(r"^(FAIL|ERROR): (\w+) \(([\w.]+)\)")
