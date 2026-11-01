@@ -108,7 +108,7 @@
       "type": "object"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/reviewer-rubric.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.6/reviewer-rubric.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Versioned rubric. A draft rubric is a proposal until the owner approves it.",
@@ -160,5 +160,5 @@
   "title": "ReviewerRubric",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.5"
+  "x-contract-version": "0.2.0-dev.foundations.6"
 }

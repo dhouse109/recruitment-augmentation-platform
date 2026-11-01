@@ -315,7 +315,7 @@
       "type": "object"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/adjudication-record.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.6/adjudication-record.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Adjudication of one produced output. Raw labels are retained; results and status are recomputed.\n\n``primary_reviewers`` and ``adjudicator`` are designations recorded with the\nrecord. They are structural claims: whether those principals hold the asserted\nroles, are independent of the configuration and labels, and are who they claim\nto be can only be established by a future trusted evaluation-record service.",
@@ -428,5 +428,5 @@
   "title": "AdjudicationRecord",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.5"
+  "x-contract-version": "0.2.0-dev.foundations.6"
 }

@@ -19,9 +19,11 @@ from typing import Annotated, Literal, Union
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 # Semver pre-release precedence: 0.2.0-dev.foundations < .foundations.2 < .foundations.3 < .foundations.4
-# < .foundations.5 (".foundations.N" is kept deliberately: "0.2.0-dev.evaluation.1" would sort BELOW ".foundations.3").
+# < .foundations.5 < .foundations.6 (".foundations.N" is kept deliberately: "0.2.0-dev.evaluation.1" would sort
+# BELOW ".foundations.3").
 # .foundations.5: F4 PR-B adjudication integrity (adjudication-record, reviewer-rubric, run-comparison bodies).
-CONTRACT_VERSION = "0.2.0-dev.foundations.5"
+# .foundations.6: PR-S3a generated-result binding (case-observation, evaluation-case bodies).
+CONTRACT_VERSION = "0.2.0-dev.foundations.6"
 
 # ---------------------------------------------------------------------------
 # Identifiers

@@ -224,7 +224,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/held-out-gate-attestation.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.6/held-out-gate-attestation.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Aggregate held-out result released from the custody boundary.\n\nDeliberately has no field for case identifiers, labels or per-case outputs.\n``configuration`` ties the result to one configuration; a matching pin is\nNOT run provenance. ``run_provenance_basis``, ``custody_basis`` and\n``attested_by`` are claims until a trusted custodian / run registry issues them.",
@@ -292,5 +292,5 @@
   "title": "HeldOutGateAttestation",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.5"
+  "x-contract-version": "0.2.0-dev.foundations.6"
 }

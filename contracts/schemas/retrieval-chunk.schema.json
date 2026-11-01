@@ -144,7 +144,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/retrieval-chunk.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.6/retrieval-chunk.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Derived, disposable projection of one exact source version. Never authoritative.\n\n``access_scope_hint`` is an advisory pre-filter label written by the indexer.\nIt is NEVER used to authorize admission; only the live authority decides.",
@@ -210,5 +210,5 @@
   "title": "RetrievalChunk",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.5"
+  "x-contract-version": "0.2.0-dev.foundations.6"
 }

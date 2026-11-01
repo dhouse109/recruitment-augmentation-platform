@@ -664,5 +664,91 @@ class DefinitionsV2Tests(unittest.TestCase):
                 self.assertEqual(ctx.exception.code, "unjustified_not_applicable")
 
 
+# --- PR-S3a (0.2.0-dev.foundations.6): generated-result binding, structural rules V1-V5 ----------------
+
+GENERATED = "eligibility_" + "a1" * 20  # synthetic, well-formed; NOT the id of any real or fixture result
+
+
+def step(operation="eligibility_support", basis="deterministic_baseline_execution", status="matched", rid=GENERATED,
+         **observed):
+    obs = None if status == "not_evaluated" else {"result": "accepted", "decision": "eligible", **observed}
+    if obs is not None and rid is not None:
+        obs["eligibility_result_id"] = rid
+    return {"step_id": "s1", "role": "target", "operation": operation, "status": status, "basis": basis, "observed": obs}
+
+
+class GeneratedResultBindingTests(unittest.TestCase):
+    """V1-V4 are shape constraints: they cannot prove that a named result exists or was really generated."""
+
+    def accept(self, payload):
+        StepObservation.model_validate(payload)
+
+    def reject(self, payload, label):
+        with self.assertRaises(ValidationError, msg=label):
+            StepObservation.model_validate(payload)
+
+    def test_v1_evaluated_deterministic_baseline_step_names_its_generated_result(self):
+        for status in ("matched", "mismatched"):
+            with self.subTest(status=status):
+                self.accept(step(status=status))
+                self.reject(step(status=status, rid=None), "missing generated result id")
+
+    def test_v2_errored_step_names_no_result(self):
+        self.accept(step(status="errored", rid=None, error_type="engine_refused"))
+        self.reject(step(status="errored", error_type="engine_refused"), "errored step with a result id")
+
+    def test_v3_not_evaluated_has_no_observation(self):
+        self.accept(step(status="not_evaluated", rid=None))
+
+    def test_v4_other_operations_and_bases_name_no_result(self):
+        for basis in ("reference_validator", "schema_validation", "mock_authority", "in_memory_double",
+                      "offline_model_execution", "integrated_service", "live_system"):
+            with self.subTest(basis=basis):
+                self.accept(step(basis=basis, rid=None))
+                self.reject(step(basis=basis), f"result id at basis {basis}")
+        for operation in ("context_validation", "record_set_validation", "recommendation_check",
+                          "verification_acceptance", "retrieval_admission"):
+            with self.subTest(operation=operation):
+                self.reject(step(operation=operation), f"result id on {operation}")
+
+    def test_q1_obligation_is_specific_to_the_deterministic_baseline(self):
+        """Another T3 basis (offline_model_execution) carries no obligation and may not carry the field."""
+        self.accept(step(basis="offline_model_execution", rid=None))
+        self.reject(step(basis="offline_model_execution"), "result id at offline_model_execution")
+
+    def test_id_is_typed(self):
+        for bad in ("claim_s1_x", "eligibility_", "Eligibility_ABC", "eligibility_a-b", "eligibility_" + "a" * 60):
+            with self.subTest(bad=bad):
+                self.reject(step(rid=bad), f"malformed id {bad}")
+
+    def test_shape_only_no_provenance(self):
+        """A well-formed but fabricated id passes: the contract cannot know it. Provenance is the producer's job."""
+        self.accept(step(rid="eligibility_fabricated_by_hand"))
+
+    def test_case_observation_with_bound_steps(self):
+        obs = CaseObservation.model_validate({
+            "run_id": "evalrun_example", "case_id": "evalcase_example", "case_version": 1,
+            "case_sha256": "sha256:" + "0" * 64, "split": "golden", "execution_status": "executed",
+            "steps": [step(), {**step(status="errored", rid=None, error_type="engine_refused"), "step_id": "s2"}],
+            "outcome": "fail", "latency": {"status": "not_measured", "unit": "milliseconds"},
+            "cost": {"status": "not_applicable", "unit": "usd"}})
+        self.assertEqual(obs.steps[0].observed.eligibility_result_id, GENERATED)
+        self.assertIsNone(obs.steps[1].observed.eligibility_result_id)
+
+    def test_existing_t2_golden_observations_unchanged(self):
+        """Every T2 harness observation on the golden split omits the field and re-validates unchanged."""
+        doc = H.split_doc(Split.GOLDEN)
+        cases = H.cases_of(doc)
+        for case in cases:
+            observation = H.run_case(case, doc).observation
+            with self.subTest(case=case.id):
+                for s in observation.steps:
+                    if s.observed is not None:
+                        self.assertIsNone(s.observed.eligibility_result_id)
+                    self.assertNotEqual(s.basis.value, "deterministic_baseline_execution")
+                self.assertEqual(CaseObservation.model_validate(observation.model_dump(mode="json")), observation)
+        self.assertEqual(len(cases), 26)
+
+
 if __name__ == "__main__":
     unittest.main()

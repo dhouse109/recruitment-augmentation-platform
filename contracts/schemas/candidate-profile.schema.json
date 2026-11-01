@@ -144,7 +144,7 @@
       "type": "string"
     }
   },
-  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.5/candidate-profile.schema.json",
+  "$id": "https://github.com/dhouse109/recruitment-augmentation-platform/contracts/schemas/0.2.0-dev.foundations.6/candidate-profile.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "One version of an organization-scoped reusable candidate profile.\n\nVersion envelope and metadata only. Claim vocabulary is deferred to the\nD-004.10 contract PR. Each instance pins exactly one profile version via\n``source_ref``; multiple versions share ``id``, ``candidate_id`` and source entity.",
@@ -183,5 +183,5 @@
   "title": "CandidateProfile",
   "type": "object",
   "x-contract-status": "partial development version; proposed; NOT frozen",
-  "x-contract-version": "0.2.0-dev.foundations.5"
+  "x-contract-version": "0.2.0-dev.foundations.6"
 }
