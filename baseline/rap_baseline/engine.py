@@ -15,6 +15,18 @@ Order (fail closed at every step):
   P10 post-check: the same wrapper with the produced result + provenance subset check
   P11 provenance record (output digest, checks)
 
+PR-S2 inserts, without changing P0-P11:
+
+  P2b L2 projection-selection check (metadata only)       -- no authority call
+  P12 findings from the same ``DecisionInputs`` and the produced outcomes
+  P13 L1 independent findings verification against the admitted projection
+  P14 deterministic explanation (fixed templates) and its self-check
+
+``rules.evaluate(inputs)`` is still the only rule entry point. A P2b, P12-P13 or
+P14 failure is ``Errored`` for the whole assessment (owner decision D6); no
+partial ``Assessed`` and no explanation is ever returned with ``Refused`` or
+``Errored``.
+
 Source-integrity and authorization failures are refusals, never ``unknown``
 rule outcomes. A post-check failure is an engine defect (``Errored``) and the
 verifier is never relaxed. Any unexpected exception in any phase is returned as
@@ -35,6 +47,9 @@ from rap_contracts.models import SourceSystem, SourceSystemCapabilities
 from rap_contracts.recommendation import RecommendationContext, validate_recommendation_inputs
 
 from . import EVALUATED_BY, rules
+from .explanation import ExplanationMismatch, build_explanation
+from .findings import make_artifact
+from .findings_check import FindingsMismatch, verify_findings
 from .identity import (
     EngineIdentity,
     IdentityError,
@@ -48,6 +63,7 @@ from .identity import (
 from .inputs import gate_refs, organization_guard, project, resolve_targets, structural_checks
 from .provenance import AssessmentProvenance, RecordingAuthority
 from .request import Assessed, EligibilityRequest, Errored, Refused, Stage
+from .selection_check import SelectionMismatch, verify_selection
 
 ENGINE = EngineIdentity(evaluated_by=EVALUATED_BY, rule_table_version=rules.RULE_TABLE_VERSION,
                         citation_policy_version=rules.CITATION_POLICY_VERSION)
@@ -76,6 +92,9 @@ def assess(request: EligibilityRequest | Mapping[str, Any], context, authority,
         targets = resolve_targets(req, context)
         stage = Stage.PROJECTION
         projected = project(context, targets)
+        stage = Stage.SELECTION  # P2b (PR-S2): metadata-only, no authority call
+        verify_selection(context, targets, projected)
+        stage = Stage.PROJECTION
         organization_guard(projected, targets, req.organization_id)
         stage = Stage.STRUCTURE
         structural_checks(projected, capabilities)
@@ -89,6 +108,8 @@ def assess(request: EligibilityRequest | Mapping[str, Any], context, authority,
         stage = Stage.CONTEXT
         validate_recommendation_inputs(RecommendationContext(
             eligibility=projected, eligibility_results=MappingProxyType({}), capabilities=capabilities))
+    except SelectionMismatch as exc:  # P2b: an engine defect in the projection, never a refusal
+        return Errored(Stage.SELECTION, "projection_selection_mismatch", str(exc), calls())
     except ContractViolation as exc:
         return Refused(stage, exc.code, str(exc), calls())
     except Exception as exc:  # unexpected: an engine defect, never a refusal
@@ -141,4 +162,27 @@ def assess(request: EligibilityRequest | Mapping[str, Any], context, authority,
             gated_refs=tuple(normalize_ref(r) for r in refs), checks=checks)
     except Exception as exc:
         return Errored(Stage.PROVENANCE, "unexpected_exception", type(exc).__name__, calls())
-    return Assessed(result=result, provenance=provenance)
+
+    # P12-P13 (PR-S2): findings from the same inputs, then L1 against the admitted projection
+    try:
+        findings = make_artifact(rules.build_findings(inputs, result.rule_outcomes), result, provenance,
+                                 rules.FINDINGS_POLICY_VERSION)
+    except rules.RuleEvaluationError as exc:
+        return Errored(Stage.FINDINGS, "findings_construction_failed", str(exc), calls())
+    except Exception as exc:
+        return Errored(Stage.FINDINGS, "unexpected_exception", type(exc).__name__, calls())
+    try:
+        verify_findings(findings, result, projected, provenance, ENGINE)
+    except FindingsMismatch as exc:
+        return Errored(Stage.FINDINGS, "findings_verification_failed", str(exc), calls())
+    except Exception as exc:
+        return Errored(Stage.FINDINGS, "unexpected_exception", type(exc).__name__, calls())
+
+    # P14 (PR-S2): deterministic explanation over verified findings only
+    try:
+        explanation = build_explanation(findings)
+    except ExplanationMismatch as exc:
+        return Errored(Stage.EXPLANATION, "explanation_verification_failed", str(exc), calls())
+    except Exception as exc:
+        return Errored(Stage.EXPLANATION, "unexpected_exception", type(exc).__name__, calls())
+    return Assessed(result=result, provenance=provenance, findings=findings, explanation=explanation)

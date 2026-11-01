@@ -170,6 +170,29 @@ class FixtureSeparationTests(unittest.TestCase):
         sample = "contracts/fix" + "tures/eligibility-evidence-v0.2.0-dev" + ".json and json" + ".load(fh)"
         self.assertTrue(all(p.search(sample) for p in FIXTURE_PATTERNS))
 
+    def test_scans_cover_the_pr_s2_modules(self):
+        names = {p.name for p in self.baseline_files()}
+        self.assertLessEqual({"findings.py", "findings_check.py", "selection_check.py", "explanation.py",
+                              "g12_cases.py", "dump_scenarios.py", "test_g12_matrix.py"}, names)
+        package = {p.name for p in PACKAGE.glob("*.py")}
+        self.assertLessEqual({"findings.py", "findings_check.py", "selection_check.py", "explanation.py"}, package)
+
+    def test_no_contract_file_is_opened_while_pr_s2_cases_run(self):
+        from g12_cases import CASES
+        contracts_dir = str(BASELINE.parent / "contracts")
+        opened = []
+        real_open = builtins.open
+
+        def spy(file, *args, **kwargs):
+            opened.append(str(file))
+            return real_open(file, *args, **kwargs)
+
+        with mock.patch.object(builtins, "open", spy):
+            for fn in CASES.values():
+                w, cand, kw = fn()
+                run(w, cand, DATA, PILOT, **kw)
+        self.assertEqual([f for f in opened if f.startswith(contracts_dir)], [])
+
     def test_no_file_under_contracts_is_opened_while_scenarios_run(self):
         contracts_dir = str(BASELINE.parent / "contracts")
         opened = []
