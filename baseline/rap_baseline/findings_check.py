@@ -12,7 +12,7 @@ classification), from the admitted projection, the result and the engine-held
 agree with the recomputed values, and only then is the artifact header compared
 with them. The gated reference set is taken from that provenance.
 
-(Implementation note: the engine identity is passed in rather than rebuilt from the
+(Implementation note, deferred technical debt TD-1: the engine identity is passed in rather than rebuilt from the
 provenance's version fields, because PR-S1 provenance records the rule-table and
 citation versions from ``rules`` constants while the fingerprint covers
 ``engine.ENGINE``; PR-S1's own test of engine identity changes only the latter.)

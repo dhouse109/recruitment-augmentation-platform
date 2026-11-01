@@ -8,6 +8,7 @@ in ``UNREACHABLE``. Test-local synthetic records only.
 import dataclasses
 import re
 import unittest
+from unittest import mock
 
 from builders import ANA, BEN, DATA, HAS, LACKS, OPS, WEB, World, hours, run
 from g12_cases import CASES, drop, py_lacks_stmt, sh_lacks_stmt, two_codes
@@ -118,7 +119,10 @@ class SlotAndEscapingTests(unittest.TestCase):
                 dataclasses.replace(s, contributions=tuple(dataclasses.replace(con, evidence=tuple(
                     dataclasses.replace(a, field_path=hostile) for a in con.evidence)) for con in s.contributions))
                 for s in r.subjects)) for r in c.rules))
-        ea = build_explanation(dataclasses.replace(out.findings, content=edit(out.findings.content)))
+        try:
+            ea = build_explanation(dataclasses.replace(out.findings, content=edit(out.findings.content)))
+        except Exception as exc:  # a source string interpreted as template text breaks rendering
+            self.fail(f"a hostile field path changed rendering: {exc!r}")
         self.assertEqual(ea.content.rendered_body.count(SLOT), 1)
         self.assertIn('"{evidence_id}{0}\\u27e6as_of\\u27e7\\u003cscript\\u003e\\u0026amp;"', ea.rendered_text)
         self.assertNotIn("<script>", ea.rendered_text)
@@ -176,6 +180,171 @@ class WordingTests(unittest.TestCase):
     def test_skill_codes_only_no_vocabulary_labels(self):  # O3: vocabularies are not gated
         text = run(*CASES["C01"]()[:2], DATA)[0].explanation.rendered_text
         self.assertNotIn("vocabulary_s1", text)
+
+
+# --- review repair R2: one-to-one completeness of explanation statements ----------------------------
+
+_REF = re.compile(r"^rule:(?P<rule>[^/]+)(?:/subject:(?P<kind>[a-z_]+):(?P<anchor>[^/]+)"
+                  r"(?:/(?:(?P<gap>gap)|input:(?P<input>[^/]+)(?:/evidence:(?P<evidence>[^#/]+)(?:#alt(?P<alt>\d+))?)?))?)?$")
+
+
+def findings_elements(fa):
+    """The test's own enumeration of verified finding elements (independent of explanation.py)."""
+    out = []
+    for r in fa.content.rules:
+        out.append(("rule", r.rule_id, f"rule/{r.result}"))
+        for s in r.subjects:
+            anchor = s.requirement.requirement_id if s.requirement else (s.program_id or "-")
+            out.append(("subject", r.rule_id, s.kind, anchor, f"subject/{s.kind}/{s.subject_status}/{s.subject_role}"))
+            if s.information_gap:
+                out.append(("gap", r.rule_id, s.kind, anchor, f"gap/{s.information_gap}"))
+            for c in s.contributions:
+                out.append(("contribution", r.rule_id, s.kind, anchor, c.input_id, f"contribution/{c.role}/{c.rule_standing}"))
+                for a in c.evidence:
+                    out.append(("attribution", r.rule_id, s.kind, anchor, c.input_id, a.evidence_id, a.alternative_index,
+                                f"attribution/{a.relation}/{a.basis}", a.field_path))
+    return out
+
+
+def statement_elements(ea):
+    """Parse explanation statements back into finding elements (references and identifying params)."""
+    out = []
+    for st in ea.content.statements:
+        if st.ref == "decision":
+            continue
+        m = _REF.match(st.ref)
+        assert m, st.ref
+        p = dict(st.params)
+        if m["evidence"]:
+            alt = None if m["alt"] is None else int(m["alt"])
+            assert p["evidence_id"] == m["evidence"] and p.get("alternative_index") == alt, st.ref
+            out.append(("attribution", m["rule"], m["kind"], m["anchor"], m["input"], m["evidence"], alt, st.key,
+                        p["field_path"]))
+        elif m["input"]:
+            assert p["input_id"] == m["input"], st.ref
+            out.append(("contribution", m["rule"], m["kind"], m["anchor"], m["input"], st.key))
+        elif m["gap"]:
+            out.append(("gap", m["rule"], m["kind"], m["anchor"], st.key))
+        elif m["kind"]:
+            assert m["anchor"] in (p.get("requirement_id"), p.get("program_id"), "-"), st.ref
+            out.append(("subject", m["rule"], m["kind"], m["anchor"], st.key))
+        else:
+            assert p["rule_id"] == m["rule"], st.ref
+            out.append(("rule", m["rule"], st.key))
+    return out
+
+
+def assert_complete(test, out):
+    expected = findings_elements(out.findings)
+    got = statement_elements(out.explanation)
+    test.assertEqual(len(expected), len(set(expected)))
+    test.assertEqual(got, expected)
+    test.assertEqual(sum(1 for st in out.explanation.content.statements if st.ref == "decision"), 1)
+    lines = out.explanation.rendered_text.splitlines()
+    test.assertEqual(len(lines), len(out.explanation.content.statements) + 1 + len(out.explanation.content.limitations))
+    for line, st in zip(lines, out.explanation.content.statements):
+        ident = dict(st.params).get("evidence_id") or dict(st.params).get("input_id") or dict(st.params).get("requirement_id")
+        if ident:
+            test.assertIn(f'"{ident}"', line, st.ref)
+
+
+class ExplanationCompletenessTests(unittest.TestCase):
+    """Every rule, subject, applicable gap, contribution and evidence attribution of the verified findings is
+    represented exactly once, in order, with the correct reference -- and omissions are detected."""
+
+    def test_one_to_one_coverage_of_verified_findings(self):
+        n = 0
+        for name, out in all_outcomes():
+            if isinstance(out, Assessed):
+                with self.subTest(name):
+                    assert_complete(self, out)
+                    n += 1
+        self.assertGreaterEqual(n, 25)
+
+    def test_c06_g12c_is_fully_represented(self):
+        out = run(*CASES["C06"]()[:2], DATA)[0]
+        assert_complete(self, out)
+        base = "rule:S1-SKILL-004/subject:qualification:requirement_s1_data_python"
+        pairs = [(st.key, st.ref) for st in out.explanation.content.statements if st.ref.startswith(base)]
+        self.assertEqual(pairs, [
+            ("subject/qualification/contradicted_verified/decisive", base),
+            ("contribution/uncited_material/decision_input", base + "/input:claim_s1_ana_python_lacks"),
+            ("attribution/support/candidate_statement",
+             base + "/input:claim_s1_ana_python_lacks/evidence:evidence_s1_ana_python_screen"),
+            ("contribution/cited/decision_input", base + "/input:claim_s1_ana_python_lacks_v"),
+            ("attribution/support/independent_verification",
+             base + "/input:claim_s1_ana_python_lacks_v/evidence:evidence_s1_ana_py_check"),
+        ])
+        text = out.explanation.rendered_text
+        self.assertIn('Material decision input not cited by the eligibility result: "claim_s1_ana_python_lacks"', text)
+        self.assertIn('Evidence "evidence_s1_ana_python_screen": self-declared (candidate statement)', text)
+        self.assertIn('Cited decision input "claim_s1_ana_python_lacks_v"', text)
+
+    def test_contested_alternatives_and_gaps_are_represented(self):  # C04: G12b contested with a gap
+        out = run(*CASES["C04"]()[:2], DATA)[0]
+        refs = {st.ref for st in out.explanation.content.statements}
+        base = "rule:S1-SKILL-004/subject:qualification:requirement_s1_data_python"
+        self.assertLessEqual({base + "/gap", base + "/input:claim_s1_ben_python/evidence:evidence_s1_ben_python_profile#alt0",
+                              base + "/input:claim_s1_ben_python/evidence:evidence_s1_ben_python_app#alt1"}, refs)
+
+    def test_checker_is_discriminating(self):
+        """The test-side comparison itself detects an omitted element (bypassing the runtime self-check)."""
+        out = run(*CASES["C06"]()[:2], DATA)[0]
+        trimmed = tuple(st for st in out.explanation.content.statements
+                        if "/input:claim_s1_ana_python_lacks" not in st.ref or "_lacks_v" in st.ref)
+        forged = dataclasses.replace(out, explanation=dataclasses.replace(
+            out.explanation, content=dataclasses.replace(out.explanation.content, statements=trimmed)))
+        with self.assertRaises(AssertionError):
+            assert_complete(self, forged)
+
+    def omitting(self, case, drop):
+        real = explanation._statements
+
+        def statements(fa):
+            return [(d, st) for d, st in real(fa) if not drop(st)]
+        w, cand, kw = CASES[case]()
+        ctx, caps = w.build()
+        from builders import StubAuthority
+        from rap_baseline import Errored, Stage, assess
+        with mock.patch.object(explanation, "_statements", statements):
+            out = assess(w.request(cand, DATA), ctx, StubAuthority(), caps)
+        self.assertIsInstance(out, Errored, str(out))
+        self.assertEqual((out.stage, out.code), (Stage.EXPLANATION, "explanation_verification_failed"))
+        self.assertFalse(hasattr(out, "explanation"))
+        return out
+
+    def test_omitted_uncited_material_is_errored(self):  # G12c: the statement-backed claim and its evidence
+        out = self.omitting("C06", lambda st: "/input:claim_s1_ana_python_lacks" in st.ref and "_lacks_v" not in st.ref)
+        self.assertIn("statements for", out.detail)
+
+    def test_omitted_gap_is_errored(self):
+        self.omitting("C04", lambda st: st.ref.endswith("/gap"))
+
+    def test_omitted_attribution_is_errored(self):
+        self.omitting("C07", lambda st: st.ref.endswith("/evidence:evidence_s1_ana_python_screen"))
+
+    def test_omitted_rule_is_errored(self):
+        self.omitting("C01", lambda st: st.ref == "rule:S1-ACTIVE-001")
+
+    def test_wrong_reference_is_errored(self):
+        real = explanation._statements
+
+        def statements(fa):
+            return [(d, dataclasses.replace(st, ref=st.ref.replace("claim_s1_ana_python_lacks", "claim_s1_ana_hours")))
+                    for d, st in real(fa)]
+        out = run(*CASES["C06"]()[:2], DATA)[0]
+        with mock.patch.object(explanation, "_statements", statements):
+            with self.assertRaises(ExplanationMismatch):
+                build_explanation(out.findings)
+
+    def test_missing_rendered_line_is_errored(self):
+        out = run(*CASES["C06"]()[:2], DATA)[0]
+        ea = out.explanation
+        lines = ea.content.rendered_body.split("\n")
+        body = "\n".join(lines[:3] + lines[4:])
+        with self.assertRaises(ExplanationMismatch):
+            explanation._verify(dataclasses.replace(ea, content=dataclasses.replace(ea.content, rendered_body=body)),
+                                out.findings)
 
 
 if __name__ == "__main__":

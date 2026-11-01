@@ -343,10 +343,65 @@ def _text_digest(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+_DEPTH = {"decision": 0, "rule": 0, "subject": 1, "gap": 2, "contribution": 2, "attribution": 3}
+
+
+def _expected_index(fa: FindingsArtifact) -> list[tuple[str, str, tuple]]:
+    """(key, reference, identifying params) for every finding element, in canonical order (review repair R2).
+
+    One entry per rule, subject, applicable information gap, contribution and evidence
+    attribution of the verified findings, plus the decision header.
+    """
+    c = fa.content
+    index = [(f"decision/{c.decision}", "decision", (("opportunity_id", c.opportunity_id), ("policy_id", c.policy_id)))]
+    for r in c.rules:
+        rref = f"rule:{r.rule_id}"
+        index.append((f"rule/{r.result}", rref, (("reason_code", r.reason_code), ("rule_id", r.rule_id))))
+        for s in r.subjects:
+            req = s.requirement.requirement_id if s.requirement is not None else None
+            sref = f"{rref}/subject:{s.kind}:{req or s.program_id or '-'}"
+            index.append((f"subject/{s.kind}/{s.subject_status}/{s.subject_role}", sref,
+                          (("program_id", s.program_id), ("requirement_id", req), ("skill_code", s.skill_code))))
+            if s.information_gap is not None:
+                index.append((f"gap/{s.information_gap}", f"{sref}/gap", ()))
+            for con in s.contributions:
+                cref = f"{sref}/input:{con.input_id}"
+                index.append((f"contribution/{con.role}/{con.rule_standing}", cref, (("input_id", con.input_id),)))
+                for a in con.evidence:
+                    alt = "" if a.alternative_index is None else f"#alt{a.alternative_index}"
+                    index.append((f"attribution/{a.relation}/{a.basis}", f"{cref}/evidence:{a.evidence_id}{alt}",
+                                  (("alternative_index", a.alternative_index), ("evidence_id", a.evidence_id),
+                                   ("field_path", a.field_path))))
+    return index
+
+
+def _completeness(ea: ExplanationArtifact, fa: FindingsArtifact) -> None:
+    """Every finding element is represented exactly once, in order, with the right reference and identity,
+    and every statement is rendered as one line of the body (review repair R2)."""
+    expected = _expected_index(fa)
+    statements = ea.content.statements
+    if len(statements) != len(expected):
+        raise ExplanationMismatch(f"explanation has {len(statements)} statements for {len(expected)} finding elements")
+    for statement, (key, ref, ident) in zip(statements, expected):
+        params = dict(statement.params)
+        if (statement.key, statement.ref) != (key, ref) or any(params.get(k) != v for k, v in ident):
+            raise ExplanationMismatch(f"statement {statement.ref} does not represent finding element {ref}")
+    lines = ea.content.rendered_body.split("\n")
+    if len(lines) != len(statements) + 1 + len(ea.content.limitations):
+        raise ExplanationMismatch("rendered body lines do not correspond one-to-one with the statements")
+    for line, statement in zip(lines, statements):
+        depth = _DEPTH[statement.key.split("/", 1)[0]]
+        if line != ("  " * depth) + ("- " if depth else "") + _render(statement):
+            raise ExplanationMismatch(f"rendered line for {statement.ref} does not match its statement")
+    if ea.content.limitations != _limitations(fa):
+        raise ExplanationMismatch("limitations do not match the findings")
+
+
 def _verify(ea: ExplanationArtifact, fa: FindingsArtifact) -> None:
-    """P14 self-check: pins, the single time slot, the substitution, digests and ids."""
+    """P14 self-check: pins, completeness against the findings, the single time slot, the substitution, digests, ids."""
     if (ea.produced_by, ea.templates, fa.findings_policy, fa.produced_by) != _PINNED:
         raise ExplanationMismatch("unpinned explanation, template or findings version")
+    _completeness(ea, fa)
     if ea.content.rendered_body.count(SLOT) != 1:
         raise ExplanationMismatch("rendered_body must hold the time slot exactly once")
     if SLOT in ea.rendered_text or ea.rendered_text != ea.content.rendered_body.replace(SLOT, utc_text(fa.as_of)):

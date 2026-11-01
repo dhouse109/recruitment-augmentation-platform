@@ -191,7 +191,7 @@ All runs were manual, from a fresh checkout, on Python 3.13.18. No CI is configu
 |---|---|---|
 | contracts | 464 pass | 464 pass, 17 skipped |
 | `schema_export --check` | drift NONE (36 schemas) | drift NONE |
-| baseline | **199 pass** | **199 pass** |
+| baseline | **220 pass** | **220 pass** |
 
 **Baseline test breakdown.** The 115 PR-S1 tests all still pass, run by their exact ids. The only change to them is the approved AST-scan extension in `test_gate_ordering.py`.
 
@@ -202,71 +202,89 @@ All runs were manual, from a fresh checkout, on Python 3.13.18. No CI is configu
 | `test_g12_matrix.py` | 27 | new |
 | `test_findings_check.py` | 17 | new |
 | `test_selection_check.py` | 15 | new |
-| `test_explanation.py` | 14 | new |
+| `test_explanation.py` | 24 | new (10 added by review repair R2) |
 | `test_findings.py` | 8 | new |
+| `test_mutation_harness.py` | 11 | new (review repair R1) |
 
 **Cross-commit comparison (A4).** `tests/tools/dump_scenarios.py` was run against a checkout of `dbeee9ab` and against this branch. It covers 30 scenarios: C01–C19, an 8-scenario candidate × opportunity sweep, and three C02 identity variants. Result bytes, provenance bytes and refusal stage, code, detail and authority-call counts are **identical**: the diff is empty. Provenance byte equality assumes equivalent recorded authority answers; the synthetic authority returns fixed `checked_at` and `checked_by` values.
 
-**Failure-first mutations.** `tests/tools/mutations.py` applies each mutation to a scratch copy and runs the full suite. All **44** are caught, and every listed discriminating test fails. Counts include failing subtests, with failing test methods in parentheses.
+**Failure-first mutations.** `tests/tools/mutations.py` applies each mutation to a scratch copy and runs the full suite. A mutation counts as caught only under these conditions (review repair R1):
+- the suite completed;
+- it ran exactly the 220 tests the loader discovers in the unmutated copy;
+- it reported genuine failure blocks consistent with its summary, with no module import failure;
+- every listed discriminating test is among the failures.
+
+A runner timeout or crash, a missing or ambiguous test count, a resized run, an import failure or a missing anchor is a **harness error**, never a detection.
+
+Two controls run first and are classified as required:
+- a no-op edit → not caught;
+- an import-breaking edit → harness error (it ran 26 of 220 tests).
+
+All **46** mutations are caught, with 0 harness errors and 0 not caught. The **PR-S2 count** column is test failures + test errors (failing test methods). Subtests are included, and failures and errors are reported separately since R1. The PR-S1 column is the total recorded in the PR-S1 document. All counts are from the 220-test suite.
 
 | # | Mutation | PR-S1 count | PR-S2 count |
 |---|---|---|---|
-| M01 | P6 before the gate | 5 (4) | 5 (4) |
-| M02 | gate failures ignored | 62 (5) | 63 (6) |
-| M03 | contested-alternative evidence not gated | 29 (19) | 44 (29) |
-| M04 | inferred evidence not gated | 11 (5) | 25 (13) |
-| M05 | P6 on the full context | 4 (4) | 4 (4) |
-| M06 | projection organization guard removed | 6 (6) | 7 (7) |
-| M07 | P1 organization checks removed | 1 (1) | 2 (2) |
-| M08 | result id omits the fingerprint | 13 (2) | 29 (4) |
-| M09 | `as_of` not normalized | 2 (2) | 2 (2) |
-| M10 | nested `captured_at` not normalized | 2 (2) | 2 (2) |
-| M11 | principal in the fingerprint | 1 (1) | 226 (106) |
-| M12 | declaration preferred over verification | 2 (2) | 58 (31) |
-| M13 | full mixed-basis lacks set cited | 1 (1) | 58 (31) |
-| M14 | `not_evidenced` before `only_inferred` | 2 (2) | **1 (1)** |
-| M15 | inferred treated as declared | 8 (6) | 30 (16) |
-| M16 | `not_declared` before `contested` | 2 (2) | 3 (3) |
-| M17 | unpublished hours checked late | 1 (1) | 1 (1) |
-| M18 | post-check removed | 6 (6) | 8 (8) |
-| M19 | provenance subset check removed | 2 (2) | 2 (2) |
-| M20 | deterministic ordering removed | 19 (9) | 95 (62) |
-| M21 | gate checks only opportunity and policy | 136 (62) | 304 (118) |
-| M22 | conflicting participation evaluated | 1 (1) | 1 (1) |
-| M23 | P10 exceptions escape | 2 (2) | 2 (2) |
-| M24 | P11 exceptions escape | 2 (2) | 2 (2) |
-| M25 | builders open a contract file | 1 (1) | 2 (2) |
-| M26 | drop `uncited_material` | — | 59 (32) |
-| M27 | merge G12c claims | — | 106 (66) |
-| M28 | omit alternative index | — | 37 (28) |
-| M29 | inferred relation as `support` | — | 32 (17) |
-| M30 | L1 imports producer classification | — | 1 (1) |
-| M31 | L1 reads the supplied context | — | 226 (106) |
-| **M32** | **I10 weakened to the result-dependency subset (N5 discriminates)** | — | 3 (3) |
-| M33 | findings on `Refused` | — | 4 (1) |
-| M34 | engine identity changed | — | 15 (1) |
-| M35 | `as_of` in the content digest | — | 226 (106) |
-| M36 | gap mapping swapped | — | 47 (31) |
-| M37 | template interpolates `field_path` | — | 1 (1) |
-| M38 | L2 removed | — | 15 (10) |
-| M39 | I7 relaxed to supportability (N1–N3 discriminate) | — | 3 (3) |
-| M40 | findings routed through `EVALUATORS` | — | 1 (1) |
-| M41 | `as_of` rendered into the body | — | 220 (101) |
-| M42 | L1 trusts provenance without recomputing it (N10 discriminates) | — | 2 (1) |
-| M43 | L2 compares ids, not identity (N8h discriminates) | — | 3 (2) |
-| M44 | L2 ignores application targets | — | 30 (18) |
+| M01 | P6 before the gate | 5 (4) | 5 + 0 (4) |
+| M02 | gate failures ignored | 62 (5) | 63 + 0 (6) |
+| M03 | contested-alternative evidence not gated | 29 (19) | 28 + 19 (32) |
+| M04 | inferred evidence not gated | 11 (5) | 14 + 12 (14) |
+| M05 | P6 on the full context | 4 (4) | 4 + 0 (4) |
+| M06 | projection organization guard removed | 6 (6) | 7 + 0 (7) |
+| M07 | P1 organization checks removed | 1 (1) | 2 + 0 (2) |
+| M08 | result id omits the fingerprint | 13 (2) | 29 + 0 (4) |
+| M09 | `as_of` not normalized | 2 (2) | 2 + 0 (2) |
+| M10 | nested `captured_at` not normalized | 2 (2) | 2 + 0 (2) |
+| M11 | principal in the fingerprint | 1 (1) | 107 + 129 (116) |
+| M12 | declaration preferred over verification | 2 (2) | 28 + 36 (37) |
+| M13 | full mixed-basis lacks set cited | 1 (1) | 28 + 36 (37) |
+| M14 | `not_evidenced` before `only_inferred` | 2 (2) | 1 + 0 (1) |
+| M15 | inferred treated as declared | 8 (6) | 13 + 18 (17) |
+| M16 | `not_declared` before `contested` | 2 (2) | 3 + 0 (3) |
+| M17 | unpublished hours checked late | 1 (1) | 1 + 0 (1) |
+| M18 | post-check removed | 6 (6) | 7 + 1 (8) |
+| M19 | provenance subset check removed | 2 (2) | 2 + 0 (2) |
+| M20 | deterministic ordering removed | 19 (9) | 59 + 38 (64) |
+| M21 | gate checks only opportunity and policy | 136 (62) | 185 + 129 (128) |
+| M22 | conflicting participation evaluated | 1 (1) | 1 + 0 (1) |
+| M23 | P10 exceptions escape | 2 (2) | 2 + 0 (2) |
+| M24 | P11 exceptions escape | 2 (2) | 2 + 0 (2) |
+| M25 | builders open a contract file | 1 (1) | 2 + 0 (2) |
+| M26 | drop `uncited_material` | — | 16 + 51 (40) |
+| M27 | merge G12c claims | — | 57 + 56 (73) |
+| M28 | omit alternative index | — | 21 + 19 (31) |
+| M29 | inferred relation as `support` | — | 15 + 18 (18) |
+| M30 | L1 imports producer classification | — | 1 + 0 (1) |
+| M31 | L1 reads the supplied context | — | 107 + 129 (116) |
+| **M32** | **I10 weakened to the result-dependency subset (N5 discriminates)** | — | 3 + 0 (3) |
+| M33 | findings on `Refused` | — | 4 + 0 (1) |
+| M34 | engine identity changed | — | 15 + 0 (1) |
+| M35 | `as_of` in the content digest | — | 107 + 129 (116) |
+| M36 | gap mapping swapped | — | 24 + 26 (34) |
+| M37 | template interpolates `field_path` | — | 1 + 0 (1) |
+| M38 | L2 removed | — | 15 + 0 (10) |
+| M39 | I7 relaxed to supportability (N1–N3 discriminate) | — | 3 + 0 (3) |
+| M40 | findings routed through `EVALUATORS` | — | 1 + 0 (1) |
+| M41 | `as_of` rendered into the body | — | 97 + 129 (107) |
+| M42 | L1 trusts provenance without recomputing it (N10 discriminates) | — | 2 + 0 (1) |
+| M43 | L2 compares ids, not identity (N8h discriminates) | — | 3 + 0 (2) |
+| M44 | L2 ignores application targets | — | 26 + 5 (19) |
+| M45 | explanation drops `uncited_material` statements and its completeness self-check (R2) | — | 16 + 0 (11) |
+| M46 | P14 completeness self-check removed (R2; omission tests discriminate) | — | 5 + 0 (5) |
+
+**Earlier mutation run superseded.** The first PR #14 run (head `2ee2594`) had two defects: it could count an incomplete run, or a run with no test count, as caught. Its M24 edit was such a case: it broke module import, and only 15 tests ran. **That run is superseded by this table.**
 
 **Notes on the PR-S1 rows:**
 - The PR-S1 mutation scripts were not committed, so M01–M25 are re-created from their descriptions. Exact counts can differ for that reason alone.
 - Higher counts mostly reflect the new L1, matrix and identity tests catching the same fault.
 - **M14 is lower** (1 vs 2). In the re-created mutation, only `test_q7_inferred_only_beats_not_evidenced` combines an inferred-only code with an unevidenced code. No PR-S2 matrix case does. The count is non-zero, and the fault is caught.
 - **M11** is re-created as a corrupted fingerprint string. L1 then rejects every assessment, which explains its large count.
+- **M24** in the first run removed the only `except` clause, which is a syntax error. It is now re-created by narrowing that clause, and it is caught by the same two tests (from PR-S1's own review repair R2) that PR-S1 recorded.
 
 ## 9. Deviations from plan rev. 2.2
 
 1. **L1 receives the engine-held `EngineIdentity`.** The plan rebuilt it from the provenance's version fields. PR-S1 provenance records `rule_table_version` and `citation_policy_version` from `rules` constants, while the input fingerprint covers `engine.ENGINE`. The existing PR-S1 test `test_engine_identity_is_part_of_the_fingerprint` patches only the latter. With the plan's construction, L1 rejected that test's assessments. L1 still recomputes the fingerprint, digest and id; only the source of the engine identity changed.
 
-   This also records a **latent PR-S1 provenance inconsistency**: those provenance fields are not bound to the identity actually fingerprinted. P11 is left unchanged, as required.
+   This also records a **latent PR-S1 provenance inconsistency**: those provenance fields are not bound to the identity actually fingerprinted. P11 is left unchanged, as required. It is **deferred technical debt TD-1** (§11).
 2. **Template keys** are split into contribution (role, standing) and attribution (relation, basis), giving 7 + 7 reachable keys. A contribution can carry several attributions with different bases (C07), so one key per contribution could not name them all.
 3. **Two supporting test-only files beyond the manifest:**
    - `tests/g12_cases.py` holds the C01–C19 definitions, shared by the matrix tests and the dump tool;
@@ -275,6 +293,11 @@ All runs were manual, from a fresh checkout, on Python 3.13.18. No CI is configu
    - N3b: citing both G12c claims is rejected at P10;
    - extra L2 collections: requirement, profile, program, substituted evidence, reordering and substituted policy;
    - a demonstration that L1's I10 also catches a *partial* projection omission. A *coherent* omission (record and evidence removed together) is caught only by L2.
+
+5. **Review repairs (2026-11-01, PR #14 review):**
+   - **R1, mutation-harness reliability:** the classification rules and controls in §8, plus the unit tests in `tests/test_mutation_harness.py`.
+   - **R2, explanation completeness:** the P14 self-check now requires a one-to-one, in-order correspondence between the verified findings and the explanation, covering every rule, subject, applicable information gap, contribution and evidence attribution, each with its reference and identifying params. It also requires one rendered line per statement and limitations that match the findings. Any omission or wrong reference is `Errored(explanation, explanation_verification_failed)`.
+   - **R2 tests:** an independent test-side checker covers the full matrix and sweep, with C06/G12c checked explicitly. Negative tests cover an omitted uncited contribution, gap, attribution, rule and rendered line, and a wrong reference. Mutations M45–M46 also cover it.
 
 ## 10. Guarantees NOT established
 
@@ -285,3 +308,9 @@ All runs were manual, from a fresh checkout, on Python 3.13.18. No CI is configu
 5. **O3 and O5** remain open. Vocabularies are ungated (codes only), and no opportunity-subject evidence is cited.
 6. **Verifier independence** is code-level and single-author. It is not organizational independence.
 7. **Fairness or legal appropriateness** of the fictional rules and of the template wording.
+
+## 11. Deferred technical debt
+
+| ID | Item | Why deferred | Proposed resolution (needs separate authorization) |
+|---|---|---|---|
+| **TD-1** | **PR-S1 provenance version fields are not bound to the fingerprinted engine identity.** `AssessmentProvenance.rule_table_version` and `citation_policy_version` come from `rules.RULE_TABLE_VERSION` and `rules.CITATION_POLICY_VERSION`, while the input fingerprint and result id cover `engine.ENGINE`. They agree in normal operation, but nothing enforces it. PR-S1's `test_engine_identity_is_part_of_the_fingerprint` changes only `ENGINE`, and provenance then states versions that were not fingerprinted. L1 therefore takes the engine-held `EngineIdentity` (deviation 1) and still recomputes the fingerprint, output digest and result id. It does **not** check the provenance version fields. | Fixing it changes P11 (PR-S1 provenance semantics). PR-S2 is required to leave P0–P11, result identity and contracts unchanged. | In a separately authorized PR, record the provenance versions from the same `EngineIdentity` the fingerprint covers, or assert equality at P11. Then let L1 also compare the provenance version fields. Expected impact: no result-id change in normal operation; the PR-S1 identity test would need its expectation restated. |

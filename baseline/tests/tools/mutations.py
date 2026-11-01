@@ -2,13 +2,23 @@
 
 Each mutation disables one invariant by an exact, single-occurrence text replacement
 in a scratch copy of the repository, runs the baseline suite there, and reports
-failures (including failing subtests) and failing test methods. A mutation is
-"caught" when the suite fails; ``must_fail`` names the discriminating test(s) that
-must be among the failures. The working tree is never modified.
+failures and errors (including failing subtests) and failing test methods. The
+working tree is never modified.
+
+Classification (review repair R1): a mutation is CAUGHT only when the suite ran to
+completion, ran exactly the number of tests the loader discovers in the unmutated
+copy, reported genuine failure blocks consistent with its summary, and every
+discriminating test in ``must_fail`` is among them. A runner timeout or crash, a
+missing or ambiguous test count, an incomplete or resized run, a module import
+failure, or a missing anchor is a HARNESS_ERROR, never a detection. Two controls
+(a no-op edit and an import-breaking edit) must classify as NOT_CAUGHT and
+HARNESS_ERROR before any mutation is judged. Exit status: 0 all caught; 1 some not
+caught; 2 any harness error.
 
 M01-M25 re-create the PR-S1 failure-first demonstrations on the PR-S2 code (the
 PR-S1 scripts were not committed; descriptions follow docs/baseline/slice-0-eligibility-engine.md
-section 6). M26-M44 are the PR-S2 mutations of plan rev. 2.2 section 10.
+section 6). M26-M44 are the PR-S2 mutations of plan rev. 2.2 section 10; M45-M46 cover
+review repair R2 (explanation completeness).
 
     python -I baseline/tests/tools/mutations.py [--only M32,M38]
 """
@@ -144,21 +154,136 @@ MUTATIONS = [
                                                         (SC, "                   | {m.target_program_id for m in apps} | {m.program_id for m in opps}) - {None}",
                                                          "                   | {m.program_id for m in opps}) - {None}")],
      ["test_sweep_never_selection_errors"]),
+    # ---- review repair R2: explanation completeness ------------------------------------------
+    ("M45", "explanation drops uncited_material statements and its completeness self-check",
+     [(X, '                cref = f"{sref}/input:{con.input_id}"\n                out.append((2, Statement(',
+       '                if con.role == "uncited_material":\n                    continue\n'
+       '                cref = f"{sref}/input:{con.input_id}"\n                out.append((2, Statement('),
+      (X, "    _completeness(ea, fa)\n", "")],
+     ["test_one_to_one_coverage_of_verified_findings", "test_c06_g12c_is_fully_represented"]),
+    ("M46", "P14 explanation completeness self-check removed", [(X, "    _completeness(ea, fa)\n", "")],
+     ["test_omitted_uncited_material_is_errored", "test_omitted_gap_is_errored", "test_omitted_attribution_is_errored"]),
 ]
 
 FAIL_LINE = re.compile(r"^(FAIL|ERROR): (\w+) \(([\w.]+)\)")
+RAN_LINE = re.compile(r"^Ran (\d+) tests? in [\d.]+s$", re.M)
+SUMMARY_LINE = re.compile(r"^(OK|FAILED)(?: \(([^)]*)\))?$", re.M)
+
+#: Outcome classes. A mutation is CAUGHT only when the suite ran to completion at the
+#: expected size and reported genuine test failures; anything else is a HARNESS_ERROR,
+#: never evidence of detection.
+CAUGHT, NOT_CAUGHT, HARNESS_ERROR = "CAUGHT", "NOT_CAUGHT", "HARNESS_ERROR"
 
 
-def run_suite(root: Path) -> tuple[int, int, set[str], str]:
+def classify(returncode: int | None, stderr: str, expected: int) -> dict:
+    """Classify one unittest run (pure function; unit-tested in ``test_mutation_harness.py``).
+
+    Returns ``{"status", "ran", "failures", "errors", "methods", "reason"}`` where ``status`` is
+    ``"completed_ok"``, ``"completed_failed"`` or ``"harness_error"``. A run is a harness error when
+    the process did not finish (no return code), did not print exactly one ``Ran N tests`` line and
+    one final summary, ran a different number of tests than ``expected``, reported failures that do
+    not match the per-test failure blocks, or failed to import a test module (``_FailedTest``).
+    """
+    out = {"status": "harness_error", "ran": None, "failures": 0, "errors": 0, "methods": set(), "reason": ""}
+    if returncode is None:
+        out["reason"] = "runner did not finish (timeout or crash)"
+        return out
+    ran = RAN_LINE.findall(stderr)
+    summaries = SUMMARY_LINE.findall(stderr)
+    if len(ran) != 1 or len(summaries) != 1:
+        out["reason"] = "missing or ambiguous 'Ran N tests' line or final summary"
+        return out
+    out["ran"] = int(ran[0])
+    verdict, detail = summaries[0]
+    counts = dict(re.findall(r"(failures|errors|skipped|expected failures|unexpected successes)=(\d+)", detail or ""))
+    hits = [m for m in (FAIL_LINE.match(line) for line in stderr.splitlines()) if m]
+    out["failures"] = sum(1 for m in hits if m.group(1) == "FAIL")
+    out["errors"] = sum(1 for m in hits if m.group(1) == "ERROR")
+    out["methods"] = {m.group(2) for m in hits}
+    if out["ran"] != expected:
+        out["reason"] = f"ran {out['ran']} tests, expected {expected} (incomplete or altered suite)"
+        return out
+    if any("_FailedTest" in m.group(3) or "loader" in m.group(3) for m in hits):
+        out["reason"] = "a test module failed to import (the mutation broke the code, not an invariant)"
+        return out
+    if (int(counts.get("failures", 0)), int(counts.get("errors", 0))) != (out["failures"], out["errors"]):
+        out["reason"] = "summary counts do not match the reported failure blocks"
+        return out
+    if verdict == "OK":
+        if returncode != 0 or hits:
+            out["reason"] = "OK summary with a non-zero exit or failure blocks"
+            return out
+        out["status"] = "completed_ok"
+        return out
+    if returncode != 1 or not hits:
+        out["reason"] = "FAILED summary without failure blocks or with an unexpected exit code"
+        return out
+    out["status"] = "completed_failed"
+    return out
+
+
+def run_suite(root: Path, expected: int) -> dict:
     env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "PYTHONHASHSEED")}
     env["PYTHONPATH"] = str(root / "contracts")
-    proc = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests"], cwd=root / "baseline",
-                          capture_output=True, text=True, env=env, timeout=600)
-    text = proc.stderr
-    hits = [m for m in (FAIL_LINE.match(line) for line in text.splitlines()) if m]
-    ran = re.search(r"^Ran (\d+) tests?", text, re.M)
-    methods = {m.group(2) for m in hits}
-    return len(hits), int(ran.group(1)) if ran else -1, methods, text[-400:]
+    try:
+        proc = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests"], cwd=root / "baseline",
+                              capture_output=True, text=True, env=env, timeout=600)
+    except subprocess.TimeoutExpired:
+        return classify(None, "", expected)
+    result = classify(proc.returncode, proc.stderr, expected)
+    result["tail"] = proc.stderr[-600:]
+    return result
+
+
+def discovered_count(root: Path) -> int:
+    """Number of tests the loader finds in the unmutated copy (independent of running them)."""
+    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH",)}
+    env["PYTHONPATH"] = str(root / "contracts")
+    code = ("import unittest\n"
+            "def n(s):\n"
+            "    return sum(n(t) if isinstance(t, unittest.TestSuite) else 1 for t in s)\n"
+            "print(n(unittest.defaultTestLoader.discover('tests')))\n")
+    proc = subprocess.run([sys.executable, "-c", code], cwd=root / "baseline", capture_output=True, text=True,
+                          env=env, timeout=300, check=True)
+    return int(proc.stdout.strip())
+
+
+def apply(root: Path, edits) -> dict | None:
+    """Apply single-occurrence replacements; return the originals, or None if an anchor is not found once."""
+    originals: dict[str, str] = {}
+    for path, old, new in edits:
+        target = root / path
+        originals.setdefault(path, target.read_text(encoding="utf-8"))
+        text = target.read_text(encoding="utf-8")
+        if text.count(old) != 1:
+            restore(root, originals)
+            return None
+        target.write_text(text.replace(old, new), encoding="utf-8")
+    return originals
+
+
+def restore(root: Path, originals: dict) -> None:
+    for path, text in originals.items():
+        (root / path).write_text(text, encoding="utf-8")
+
+
+def judge(result: dict, must_fail: list[str]) -> tuple[str, str]:
+    if result["status"] == "harness_error":
+        return HARNESS_ERROR, result["reason"]
+    if result["status"] == "completed_ok":
+        return NOT_CAUGHT, "suite passed"
+    absent = [t for t in must_fail if t not in result["methods"]]
+    if absent:
+        return NOT_CAUGHT, "discriminating test(s) did not fail: " + ",".join(absent)
+    return CAUGHT, ""
+
+
+#: Harness controls, run before the mutations: the harness must classify a no-op edit as
+#: NOT_CAUGHT and an edit that breaks module import as HARNESS_ERROR (never CAUGHT).
+CONTROLS = [
+    ("CTRL-noop", "no-op edit (comment only)", [(E, "    # P0\n", "    # P0 (control: no-op)\n")], NOT_CAUGHT),
+    ("CTRL-import", "edit that breaks module import", [(E, "    # P0\n", "    # P0\n    )\n")], HARNESS_ERROR),
+]
 
 
 def main() -> int:
@@ -169,32 +294,42 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "repo"
         shutil.copytree(REPO, root, ignore=shutil.ignore_patterns(".git", "__pycache__", ".venv*"))
-        base_failures, base_ran, _, tail = run_suite(root)
-        print(f"baseline: ran={base_ran} failures={base_failures}")
-        if base_failures:
-            print(tail)
+        expected = discovered_count(root)
+        base = run_suite(root, expected)
+        print(f"baseline: discovered={expected} ran={base['ran']} status={base['status']} {base['reason']}")
+        if base["status"] != "completed_ok":
+            print(base.get("tail", ""))
             return 2
-        missing = 0
+        harness_errors = not_caught = 0
+        for cid, desc, edits, want in CONTROLS:
+            originals = apply(root, edits)
+            if originals is None:
+                print(f"{cid} | {desc} | HARNESS_ERROR anchor not found exactly once")
+                return 2
+            result = run_suite(root, expected)
+            restore(root, originals)
+            status, why = judge(result, [])
+            ok = status == want
+            print(f"{cid} | {desc} | classified={status} expected={want} | {'OK' if ok else 'CONTROL FAILED'} {why}")
+            if not ok:
+                return 2
         for mid, desc, edits, must_fail in MUTATIONS:
             if only and mid not in only:
                 continue
-            originals = {}
-            for path, old, new in edits:
-                target = root / path
-                text = originals.setdefault(path, target.read_text(encoding="utf-8")) if path not in originals else target.read_text(encoding="utf-8")
-                if text.count(old) != 1:
-                    print(f"{mid}: anchor not found exactly once in {path}")
-                    return 3
-                target.write_text(text.replace(old, new), encoding="utf-8")
-            failures, ran, methods, tail = run_suite(root)
-            for path, text in originals.items():
-                (root / path).write_text(text, encoding="utf-8")
-            absent = [t for t in must_fail if t not in methods]
-            caught = (failures > 0 or ran < 0) and not absent
-            missing += 0 if caught else 1
-            print(f"{mid} | {desc} | failures={failures} methods={len(methods)} ran={ran} | "
-                  f"{'CAUGHT' if caught else 'NOT CAUGHT'}{' missing discriminators: ' + ','.join(absent) if absent else ''}")
-        return 1 if missing else 0
+            originals = apply(root, edits)
+            if originals is None:
+                harness_errors += 1
+                print(f"{mid} | {desc} | HARNESS_ERROR anchor not found exactly once")
+                continue
+            result = run_suite(root, expected)
+            restore(root, originals)
+            status, why = judge(result, must_fail)
+            harness_errors += status == HARNESS_ERROR
+            not_caught += status == NOT_CAUGHT
+            print(f"{mid} | {desc} | failures={result['failures']} errors={result['errors']} "
+                  f"methods={len(result['methods'])} ran={result['ran']}/{expected} | {status}{(' ' + why) if why else ''}")
+        print(f"summary: harness_errors={harness_errors} not_caught={not_caught}")
+        return 2 if harness_errors else (1 if not_caught else 0)
 
 
 if __name__ == "__main__":

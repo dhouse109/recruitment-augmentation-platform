@@ -37,7 +37,8 @@ cd ..
 # PR-S2 A4: compare result/provenance bytes with another checkout (e.g. the PR-S1 base)
 python -I baseline/tests/tools/dump_scenarios.py --code-root <other-checkout> > other.jsonl
 python -I baseline/tests/tools/dump_scenarios.py --code-root . > head.jsonl && diff other.jsonl head.jsonl
-# PR-S2 A3/A16: failure-first mutations on a scratch copy (about 3 minutes)
+# PR-S2 A3/A16: failure-first mutations on a scratch copy (about 4 minutes).
+# Exit 0: all caught; 1: some not caught; 2: a harness error (never counted as detection).
 python -I baseline/tests/tools/mutations.py
 ```
 
