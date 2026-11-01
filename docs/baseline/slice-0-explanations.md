@@ -7,7 +7,7 @@
 - D5 and D6, accepted;
 - AR-1, implementation of the single PR in plan rev. 2.2 §10.
 
-**No merge** is authorized. Also not authorized: contract changes, a Contract v0.2 freeze, PR-S3, Drupal integration, reviewer presentation, CI, deployment, real applicant data and paid inference.
+**Merge status:** PR #14 was separately approved by the owner and merged on 2026-11-01 (merge commit `7d66a62e246964f99db33a74a026103ca5a49db3`). Not authorized: contract changes, a Contract v0.2 freeze, PR-S3, Drupal integration, reviewer presentation, CI, deployment, real applicant data and paid inference.
 **Design source:** RAP-SLICE0-PR-S2-PLAN-2026-10-31, revision 2.2. It is a shared packet document, not a repository file.
 **Base:** `main` @ `dbeee9ab1e6e6b84144f16c5dc13f3e4ae3334f0` (merge of PR #13). Contract `0.2.0-dev.foundations.5` is **unchanged and not frozen**.
 **Data:** synthetic only. Tests use test-local `*_s1_*` records. No contract fixture file, golden case or nominal held-out record is read.
