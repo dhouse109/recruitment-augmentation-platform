@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 .venv/
+
+# Slice 0 PR-S3b offline runner output (never committed; decision E8)
+evaluation/out/
