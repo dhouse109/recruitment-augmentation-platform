@@ -141,6 +141,25 @@ MUTATIONS = [
     ("R29", "label id equality not rejected (X4)",
      [(AR, "    if result.id == step.eligibility_result_id or result.id in admitted.graph.label_ids:", "    if False:")],
      ["test_generated_id_equal_to_a_label_id_is_rejected"]),
+    # ---- review repairs R1 (execution state machine) and R2 (source-gate provenance) ----------------------
+    ("R30", "unjustified skip of an engine or prerequisite step accepted (SM1)",
+     [(AR, "            if not halted and so.status is StepStatus.NOT_EVALUATED:\n", "            if False:\n")],
+     ["test_direct_target_skipped_without_cause", "test_g025_targets_skipped_although_the_prerequisite_matched",
+      "test_engine_error_silently_converted_to_not_evaluated"]),
+    ("R31", "step evaluated after the prerequisite stopped the case accepted (SM2)",
+     [(AR, "            if halted and so.status is not StepStatus.NOT_EVALUATED:\n", "            if False:\n")],
+     ["test_step_evaluated_after_the_prerequisite_stopped_the_case"]),
+    ("R32", "prerequisite status not derived from the validator result (SM3)",
+     [(AR, "                    if so.status is not follows:\n", "                    if False:\n")],
+     ["test_falsified_prerequisite_match_status", "test_falsified_prerequisite_mismatch_used_to_skip_targets"]),
+    ("R33", "source-gate provenance not verified (G1)",
+     [(AR, "                _check_gate_evidence(k, case, index, e, key, scope, principal, admitted)\n", "")],
+     ["test_missing_gated_reference", "test_substituted_gated_reference", "test_missing_source_check",
+      "test_inconsistent_source_check_answer"]),
+    ("R34", "source checks compared by source only, not by answer (G1)",
+     [(AR, "    if prov.get(\"checks\") != answers:\n",
+       "    if [a.get(\"source\") for a in prov.get(\"checks\") or []] != [a[\"source\"] for a in answers]:\n")],
+     ["test_inconsistent_source_check_answer", "test_check_from_another_authority_or_time"]),
 ]
 
 FAIL_LINE = re.compile(r"^(FAIL|ERROR): (\w+) \(([\w.]+)\)")

@@ -38,12 +38,13 @@
 5. `Refused` / `Errored` → step `errored` with `engine_refused` / `engine_errored`; stage and code go to the
    sidecar; no result id. A refusal is never mapped to a validator `violation`.
 
-**g025 prerequisite (interpretation for review).** The T2 conformance harness validates a context that also
-contains the scope's label results. This runner never constructs labels, so `context_validation` runs
-`validate_recommendation_inputs` over the **label-free admitted context** (empty eligibility-results map, as the
-engine's own phase P6 does). It therefore does not re-check the labels themselves. The observation is recorded at
-basis `reference_validator` (T2). If the owner prefers the harness semantics, constructing the scope's labels for
-this one T2 step is the alternative; it would relax the "labels are never constructed" rule.
+**g025 prerequisite (recommended interpretation; owner decision recorded by the PR #18 review).** The T2
+conformance harness validates a context that also contains the scope's label results. This runner never constructs
+labels, so `context_validation` runs `validate_recommendation_inputs` over the **admitted non-label context**
+(records, policies, requirements, claims, participations, evidence, vocabularies and capabilities, with an empty
+eligibility-results map, as the engine's own phase P6 does). It does **not** reproduce the harness's label-inclusive
+prerequisite and does not re-check the labels. The observation is recorded at basis `reference_validator` (T2).
+This interpretation changes no golden label or case expectation.
 
 ## 3. Admission (A1–A8) and publication
 
@@ -65,8 +66,9 @@ All admission checks run before any engine call. Any failure is exit **3**: no a
 consistency, exit 4 otherwise).
 
 **Publication** writes to a temporary directory next to `--out`, re-reads every file and checks, in order:
-contract re-validation and run fields (P1), the X1–X9 bindings, prerequisite reproduction (P3), coverage (P4), the
-held-out identifier scan (S1) and the identity record (P5). Only then is the directory renamed to `--out`.
+contract re-validation and run fields (P1), the execution state machine (SM1–SM3), the X1–X9 bindings and the
+source-gate evidence (G1), prerequisite reproduction (P3), coverage (P4), the held-out identifier scan (S1) and the
+identity record (P5). Only then is the directory renamed to `--out`.
 Any failure removes the temporary directory (and any parent it created).
 
 ## 4. Cross-artifact binding (X1–X9)
@@ -82,6 +84,23 @@ Any failure removes the temporary directory (and any parent it created).
 | X7 | `check_eligibility_result` on the stored result reproduces the observed verdict | Re-run, not read |
 | X8 | Errored steps: a refusal or error with stage and code, no result bytes, matching `error_type` | — |
 | X9 | Steps sharing a key carry identical ids and bytes | — |
+
+**Execution state machine (review repair R1).** Each executed case is replayed against its steps in order. A step
+may be `not_evaluated` **if and only if** an earlier prerequisite or control step did not match:
+
+| Id | Rule |
+|---|---|
+| SM1 | A step that nothing earlier stopped must be evaluated: the direct targets of g002, g003 and g008, g025 s1, and g025 s2–s3 when s1 matched. An engine refusal or error is an evaluated `errored` step, never `not_evaluated` |
+| SM2 | No step after a non-matching prerequisite is evaluated (the case is then `inconclusive` by the contract's outcome rule) |
+| SM3 | g025 s1's status must follow from re-running the validator on the admitted context and comparing with the step expectation |
+
+**Source-gate evidence (review repair R2), G1.** For every assessed engine step the recorded
+`provenance.gated_refs` must equal the engine's decision-relevant gate set for the admitted projection (in order),
+and `provenance.checks` must equal, answer for answer, what the approved fixture-mock authority gives for the
+case's principal, overrides and step deltas (all `current` and `allowed`, `checked_at` = `as_of`, `checked_by` =
+the mock). Missing, substituted, extraneous or inconsistent entries are rejected. A reproducible fixture-mock answer
+is **not** trusted external authority evidence; it shows only that the recorded answers are the mock's. TD-1
+(provenance version fields not bound to `engine.ENGINE`) is unchanged.
 
 X3's recomputation is independent of the engine's runtime output but **not of the engine's code**: it uses the
 engine's own published projection and identity functions over the admitted scope. `verify-repeat` re-admits the
@@ -132,17 +151,20 @@ It is not an accuracy figure and must not be aggregated or extrapolated.
 
 ## 8. Test and mutation evidence
 
-`evaluation/tests` (156 tests; 1 JSON-Schema test is skipped in the runtime-only environment) cover admission
+`evaluation/tests` (175 tests; 1 JSON-Schema test is skipped in the runtime-only environment) cover admission
 aborts A1–A8 with no output, definitions, ownership and the construction guards, organization scoping, the
 workflow order (spies), execution-phase injections (superseded, withdrawn and denied sources, removed
 participation, injected engine error, refusal never mapped to a violation, prerequisite mismatch, altered
-expectations), label blindness, every X1–X9 negative, publication checks, identities, all four `verify-repeat`
+expectations), label blindness, every X1–X9 negative, execution-state negatives (unjustified skips, a hidden engine
+error, a step evaluated after a prerequisite stop, falsified prerequisite statuses; the legitimate prerequisite
+mismatch still publishes as `inconclusive`), source-gate evidence negatives (with coverage and identity recomputed so
+only the invariant can object), publication checks, identities, all four `verify-repeat`
 verdicts, `PYTHONHASHSEED` 0/1/2 and shuffled record order, and static and dynamic separation.
 
 Some negatives isolate one check deliberately: X4 patches the id function to simulate a collision with a label
 id, and X9 disables the per-step checks; both are stated in the tests.
 
-`tests/tools/mutations.py` applies 29 single-invariant mutations (R01–R29) in a scratch copy and classifies them
+`tests/tools/mutations.py` applies 34 single-invariant mutations (R01–R29; R30–R34 for review repairs R1 and R2) in a scratch copy and classifies them
 with the PR-S2 R1 rules (controls first). Class-level fixtures are built lazily so a broken fixture fails each test
 rather than shrinking the run, which the classifier would treat as a harness error.
 

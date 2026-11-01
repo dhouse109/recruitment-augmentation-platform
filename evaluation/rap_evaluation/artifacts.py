@@ -1,4 +1,11 @@
-"""Artifact writing, publication validation, cross-artifact binding verification (X1-X9) and atomic publication.
+"""Artifact writing, publication validation, cross-artifact binding verification and atomic publication.
+
+Publication checks: contract re-validation (P1); the execution state machine
+(SM1-SM3: a step is skipped iff an earlier prerequisite stopped the case, and the
+prerequisite's status follows from its re-run validator result); the X1-X9
+bindings; the recorded source-gate evidence (G1: gated references and fixture-mock
+answers reconstructed from the admitted scope); coverage (P4); the held-out
+identifier scan (S1); and the identity record (P5).
 
 Everything is written to a temporary directory next to ``--out``, re-read from
 disk, re-parsed through the contracts and checked: run and observation shape,
@@ -30,12 +37,21 @@ from pydantic import ValidationError
 
 from rap_baseline import EVALUATED_BY, EligibilityRequest
 from rap_baseline.engine import ENGINE
-from rap_baseline.identity import build_decision_inputs, input_fingerprint, output_digest, result_id, utc_text
-from rap_baseline.inputs import project, resolve_targets
+from rap_baseline.identity import (
+    build_decision_inputs,
+    canonical,
+    input_fingerprint,
+    normalize_ref,
+    output_digest,
+    result_id,
+    utc_text,
+)
+from rap_baseline.inputs import gate_refs, project, resolve_targets
 from rap_contracts.eligibility import EligibilityResult
-from rap_contracts.evaluation import CaseObservation, EvaluationRun, StepStatus
+from rap_contracts.evaluation import CaseObservation, EvaluationRun, StepRole, StepStatus
 
 from . import EXECUTED_BY, BindingFailure, RunnerFailure
+from .authority import FixtureMockAuthority
 from .applicability import CLASS_REASONS, CLASS_TABLE, F3_SHARED_SCENARIO, SELECTION, SELECTION_VERSION, class_table_digest
 from .execute import ENGINE_BASIS, VALIDATOR_BASIS, WORKFLOW, validate_context, compare, result_json, rule_view, validate_result
 from .identity import output_digest as normalized_output_digest
@@ -159,14 +175,36 @@ def _fail(check: str, detail: str) -> None:
     raise BindingFailure(check, detail)
 
 
-def recompute_fingerprint(key, scope, principal: str, as_of) -> str:
-    """The input fingerprint, recomputed from the ADMITTED scope and key (never read from the sidecar)."""
+def _projection(key, scope, principal: str, as_of):
     request = EligibilityRequest(organization_id=key.organization_id, candidate_id=key.candidate_id,
                                  opportunity_id=key.opportunity_id, policy=key.policy, principal_id=principal, as_of=as_of)
     targets = resolve_targets(request, scope.eligibility)
-    projected = project(scope.eligibility, targets)
+    return targets, project(scope.eligibility, targets)
+
+
+def recompute_fingerprint(key, scope, principal: str, as_of) -> str:
+    """The input fingerprint, recomputed from the ADMITTED scope and key (never read from the sidecar)."""
+    _, projected = _projection(key, scope, principal, as_of)
     return input_fingerprint(build_decision_inputs(projected, key.organization_id, key.candidate_id,
                                                    key.opportunity_id, ENGINE))
+
+
+def expected_gate_evidence(case, index: int, key, scope, principal: str, as_of) -> tuple[list, list]:
+    """The source-gate audit fields an engine step must have recorded, reconstructed from the admitted scope.
+
+    Gated references: the engine's own decision-relevant set for the admitted projection (``gate_refs``), in its
+    order. Answers: the approved deterministic fixture-mock behaviour for this case's principal, with the case's
+    overrides and the authority deltas of every step up to and including this one. A reproducible mock answer is
+    NOT trusted external authority evidence; it only shows the recorded answers are the ones the mock gives.
+    """
+    targets, projected = _projection(key, scope, principal, as_of)
+    refs = gate_refs(projected, targets)
+    authority = FixtureMockAuthority([principal], scope.source_refs, as_of)
+    authority.apply(case.initial_state.authority.overrides)
+    for step in case.steps[:index + 1]:
+        authority.apply(step.authority_delta)
+    answers = [authority.check(principal, ref) for ref in refs]
+    return [canonical(normalize_ref(r)) for r in refs], [canonical(a) for a in answers]
 
 
 def verify_bindings(observations: list[CaseObservation], entries: list[Mapping[str, Any]], admitted) -> None:
@@ -191,11 +229,18 @@ def verify_bindings(observations: list[CaseObservation], entries: list[Mapping[s
             _fail("P2", f"{obs.case_id}: observed steps differ from the case's steps")
         scope = admitted.scopes[case.id]
         principal = admitted.principals[case.id]
-        for so in obs.steps:
+        halted = False
+        for index, so in enumerate(obs.steps):
             step = steps[so.step_id]
             k = (case.id, step.step_id)
             if so.operation.value != step.operation or so.role is not step.role:
                 _fail("P2", f"{k}: operation or role differs from the case")
+            # Execution state machine (SM1-SM3): a step is skipped if and only if an earlier prerequisite or
+            # control step did not match. An engine refusal or error is an evaluated (errored) step.
+            if halted and so.status is not StepStatus.NOT_EVALUATED:
+                _fail("SM2", f"{k}: evaluated after a prerequisite stopped the case")
+            if not halted and so.status is StepStatus.NOT_EVALUATED:
+                _fail("SM1", f"{k}: skipped although nothing earlier stopped the case")
             if step.operation != "eligibility_support":
                 if so.basis is not VALIDATOR_BASIS or k in by_step:
                     _fail("P3", f"{k}: prerequisite must be a reference-validator step with no engine entry")
@@ -203,10 +248,17 @@ def verify_bindings(observations: list[CaseObservation], entries: list[Mapping[s
                     again = validate_context(scope)
                     if (again.result, again.violation_code) != (so.observed.result, so.observed.violation_code):
                         _fail("P3", f"{k}: prerequisite observation not reproduced")
-                continue
-            if so.basis is not ENGINE_BASIS:
+                    exp = step.expected
+                    follows = (StepStatus.MATCHED if (again.result, again.violation_code) == (exp.result, exp.violation_code)
+                               else StepStatus.MISMATCHED)
+                    if so.status is not follows:
+                        _fail("SM3", f"{k}: prerequisite status {so.status.value} does not follow from the validator "
+                                     f"result and the expectation ({follows.value})")
+            elif so.basis is not ENGINE_BASIS:
                 _fail("P3", f"{k}: engine step basis is {so.basis.value}")
-            if so.status is StepStatus.NOT_EVALUATED:
+            if step.role in (StepRole.PREREQUISITE, StepRole.CONTROL) and so.status is not StepStatus.MATCHED:
+                halted = True
+            if step.operation != "eligibility_support" or so.status is StepStatus.NOT_EVALUATED:
                 continue
             e = by_step.get(k)
             if e is None:
@@ -217,6 +269,7 @@ def verify_bindings(observations: list[CaseObservation], entries: list[Mapping[s
                 _fail("X5", f"{k}: sidecar key or request differs from the admitted key")
             if so.status in (StepStatus.MATCHED, StepStatus.MISMATCHED):
                 _check_assessed(k, step, so, e, key, scope, principal, admitted)
+                _check_gate_evidence(k, case, index, e, key, scope, principal, admitted)
                 generated.setdefault(key.assessment(), (e["result_json"], so.observed.eligibility_result_id))
                 if generated[key.assessment()] != (e["result_json"], so.observed.eligibility_result_id):
                     _fail("X9", f"{k}: steps sharing a key carry different generated results")
@@ -276,6 +329,21 @@ def _check_assessed(k, step, so, e, key, scope, principal, admitted) -> None:
     # X7: the validator verdict is reproduced on the generated result
     if validate_result(result, scope) != (so.observed.result, so.observed.violation_code):
         _fail("X7", f"{k}: validator verdict on the generated result not reproduced")
+
+
+def _check_gate_evidence(k, case, index, e, key, scope, principal, admitted) -> None:
+    """G1: the recorded source-gate audit fields equal the reconstruction; nothing missing, substituted or extra."""
+    prov = e.get("provenance") or {}
+    try:
+        refs, answers = expected_gate_evidence(case, index, key, scope, principal, admitted.as_of)
+    except Exception as exc:
+        _fail("G1", f"{k}: gate evidence not reconstructible ({type(exc).__name__})")
+    if prov.get("gated_refs") != refs:
+        _fail("G1", f"{k}: recorded gated references differ from the admitted projection's gate set")
+    if prov.get("checks") != answers:
+        _fail("G1", f"{k}: recorded source-check answers differ from the fixture-mock reconstruction")
+    if any((a.get("version_status"), a.get("access_status")) != ("current", "allowed") for a in answers):
+        _fail("G1", f"{k}: assessed although a gated source was not current and allowed")
 
 
 def _check_errored(k, so, e) -> None:

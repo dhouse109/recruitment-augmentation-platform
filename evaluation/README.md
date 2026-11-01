@@ -13,7 +13,7 @@
 | The engine executed on pinned synthetic golden inputs: evidence tier **T3**, basis `deterministic_baseline_execution` | Correctness, accuracy, safety or usefulness |
 | Per-step **agreement or disagreement with proposed labels** on 4 cases, which are 3 distinct assessments (g002 and g008 share one scenario, F3) | Any metric, gate result, comparison or promotion evidence (none is computed) |
 | g025's `context_validation` prerequisite ran on the reference validator (**T2**) | Drupal authorization, permissions, currentness or context completeness (**not T4**; the source authority is a fixture mock) |
-| Cross-artifact bindings X1–X9 held at publication | A trusted attestation (no trusted evaluation-record service exists) |
+| The execution state machine (SM1–SM3), cross-artifact bindings X1–X9 and the recorded source-gate evidence (G1) held at publication | A trusted attestation (no trusted evaluation-record service exists); a reproducible fixture-mock answer is not external authority evidence |
 
 The run status is always **`partial`** (no `completed_at`): 4 of 26 pinned cases were executed, so the run is
 ineligible for comparisons and promotion. The nominal held-out case file is never opened.
