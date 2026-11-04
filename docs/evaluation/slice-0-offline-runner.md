@@ -206,9 +206,11 @@ Design record: [`F3-scenario-separation.md`](F3-scenario-separation.md).
 | Distinct assessments | 3 | **4** (5 engine invocations; g003 s1 and g025 s2 share A × ops by design) |
 | Coverage artifact | `coverage/1` with `f3_shared_scenario` | `coverage/2`, no shared-scenario field |
 
-**Observed with golden v2** (`as_of` 2026-11-01T00:00:00Z): every selected step matched its proposed label; coverage
-26 pinned / 4 executed / 22 not run / 6 executed steps (5 engine T3, 1 validator T2) / 5 invocations / 4 distinct
-assessments; status `partial`. This remains agreement with proposed, unadjudicated labels, not correctness.
+**Observed with golden v2** (`as_of` 2026-11-01T00:00:00Z): coverage 26 pinned / 4 executed / 22 not run / 6
+executed steps (5 engine T3, 1 validator T2) / 5 invocations / 4 distinct assessments; status `partial`. All six
+executed steps matched expectations: five T3 deterministic eligibility steps agreed with proposed, unadjudicated
+labels, and the g025/s1 T2 reference-validator prerequisite matched its expected context-validation outcome. This
+establishes neither reviewed correctness nor T4 authorization.
 
 **Historical non-comparability (E11a, E11b).** `verify-repeat` re-admits each run directory against the
 current fixtures, so the current runner refuses a run pinned to golden v1 with a binding failure `P1` (exit 4)
