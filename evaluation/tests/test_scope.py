@@ -12,7 +12,7 @@ from rap_evaluation import MOCK_AUTHORITY_ID, AdmissionAbort, scope
 from rap_evaluation.authority import FixtureMockAuthority
 from rap_evaluation.run import run_evaluation
 
-GOLDEN = {"candidate_demo_a", "candidate_demo_b", "candidate_demo_c"}
+GOLDEN = {"candidate_demo_a", "candidate_demo_b", "candidate_demo_c", "candidate_demo_g"}  # G: golden v2 (F3)
 HELD_OUT = {"candidate_demo_d", "candidate_demo_e"}
 
 
@@ -26,7 +26,7 @@ class OwnershipTests(unittest.TestCase):
         ids = admitted().graph.held_out_identifiers
         for expected in ("candidate_demo_d", "candidate_demo_e", "eligibility_d_data", "profile_demo_d", "claim_e_python_inferred"):
             self.assertIn(expected, ids)
-        self.assertFalse(ids & {"candidate_demo_a", "candidate_demo_b", "candidate_demo_c"})
+        self.assertFalse(ids & {"candidate_demo_a", "candidate_demo_b", "candidate_demo_c", "candidate_demo_g"})
 
     def test_every_owner_is_resolved(self):
         g = admitted().graph

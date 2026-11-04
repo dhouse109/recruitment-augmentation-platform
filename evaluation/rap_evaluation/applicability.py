@@ -2,7 +2,9 @@
 
 Only classes A and B are executed. Every other case is recorded as ``not_run``
 with its class and reason. Selection version 1 is exactly g002, g003, g008 and
-g025; any change to the table or the selection is a new selection version.
+g025; any change to the table or the selection is a new selection version. The
+selection names case ids; which case versions run is fixed by the golden
+manifest pin (golden v2 since F3).
 """
 
 from __future__ import annotations
@@ -38,8 +40,9 @@ _CLASSES = {
 CLASS_TABLE: dict[str, str] = {f"evalcase_{c}": cls for cls, cases in _CLASSES.items() for c in cases}
 EXECUTED_CLASSES = frozenset({"A", "B"})
 SELECTION: tuple[str, ...] = ("evalcase_g002", "evalcase_g003", "evalcase_g008", "evalcase_g025")
-#: F3: these two cases share one scenario (B x data); they are one distinct assessment.
-F3_SHARED_SCENARIO: tuple[str, ...] = ("evalcase_g002", "evalcase_g008")
+# F3 (golden v2): g002 and g008 are separate scenarios (B x web and G x data). The former
+# F3_SHARED_SCENARIO marker is removed; the selected case ids, classes and SELECTION_VERSION are unchanged
+# (case versions are bound through the golden manifest pin in the specification identity).
 
 
 def class_table_digest() -> str:

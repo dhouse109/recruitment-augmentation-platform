@@ -18,6 +18,15 @@ from rap_evaluation import fixtures as fx
 from rap_evaluation.run import run_evaluation
 
 
+def case_record(golden: dict, kind: str, record_id: str) -> dict:
+    """A record from the golden case file's case_records section (F3: case-local labels live here)."""
+    return next(r for r in golden["case_records"][kind] if r["id"] == record_id)
+
+
+def real_golden() -> dict:
+    return json.loads((fx.FIXTURE_DIR / fx.GOLDEN_FILE).read_text(encoding="utf-8"))
+
+
 class AdmissionTestCase(TempDirTest):
     def assertAborts(self, check: str, code: str | None = None, *, fixture_dir: Path | None = None, **cfg) -> AdmissionAbort:
         out = cfg.pop("out", self.tmp / "out" / "run")
@@ -154,26 +163,39 @@ class OwnershipScopeKeyApplicabilityTests(AdmissionTestCase):
         with tampered(golden=lambda g: case_doc(g, "evalcase_g003")["scope"].update(include_records=["claim_nowhere"])):
             self.assertAborts("A5", "include_record_unresolvable")
 
+    # F3 (golden v2): g002's label eligibility_b_web is a case-local record declared in its include_records.
+    # Tests that redirect g002's step also clear that include, otherwise L3 (an included label no step
+    # references) correctly aborts first at A6 and A7 is never reached.
+
     def test_label_missing(self):
-        with tampered(golden=lambda g: case_doc(g, "evalcase_g002")["steps"][0].update(eligibility_result_id="eligibility_b_missing")):
+        def redirect(g):
+            case_doc(g, "evalcase_g002")["scope"]["include_records"] = []
+            case_doc(g, "evalcase_g002")["steps"][0].update(eligibility_result_id="eligibility_b_missing")
+        with tampered(golden=redirect):
             self.assertAborts("A7", "label_id_missing")
 
     def test_label_duplicate(self):
+        # The copy goes into the base layer: a second copy inside case_records would be rejected earlier by
+        # L1 (include_record_unresolvable), so A7's duplicate check would not be exercised.
         def dup(L):
-            L[LAYER_EVIDENCE]["eligibility_results"].append(dict(layer_record(L, "eligibility_results", "eligibility_b_data")))
+            L[LAYER_EVIDENCE]["eligibility_results"].append(dict(case_record(real_golden(), "eligibility_results",
+                                                                             "eligibility_b_web")))
         with tampered(layers=dup):
             self.assertAborts("A7", "label_id_duplicate")
 
     def test_label_out_of_scope(self):
-        with tampered(golden=lambda g: case_doc(g, "evalcase_g002")["steps"][0].update(eligibility_result_id="eligibility_a_data")):
+        def redirect(g):
+            case_doc(g, "evalcase_g002")["scope"]["include_records"] = []
+            case_doc(g, "evalcase_g002")["steps"][0].update(eligibility_result_id="eligibility_a_data")
+        with tampered(golden=redirect):
             self.assertAborts("A7", "label_out_of_scope")
 
     def test_policy_pin_mismatch(self):
-        with tampered(layers=lambda L: layer_record(L, "eligibility_results", "eligibility_b_data")["policy"].update(version=2)):
+        with tampered(golden=lambda g: case_record(g, "eligibility_results", "eligibility_b_web")["policy"].update(version=2)):
             self.assertAborts("A7", "key_policy_pin_mismatch")
 
     def test_key_organization_mismatch(self):
-        with tampered(layers=lambda L: layer_record(L, "eligibility_results", "eligibility_b_data").update(organization_id="org_demo_002")):
+        with tampered(golden=lambda g: case_record(g, "eligibility_results", "eligibility_b_web").update(organization_id="org_demo_002")):
             self.assertAborts("A7", "key_organization_mismatch")
 
     def test_key_opportunity_unknown(self):

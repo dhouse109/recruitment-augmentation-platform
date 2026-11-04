@@ -147,7 +147,9 @@ class BindingNegativeTests(TamperTestCase):
 
         def forge(d):
             new_id = baseline_result_id(forged, AS_OF)
-            for case_id in ("evalcase_g002", "evalcase_g008"):  # one shared key: keep X9 consistent too
+            # Two separate assessments since F3 (golden v2: B x web and G x data), each forged consistently:
+            # fingerprint, result id, provenance and observed id all agree, so only recomputation detects it.
+            for case_id in ("evalcase_g002", "evalcase_g008"):
                 e = entry_of(d, case_id, "s1")
                 set_result(e, id=new_id)
                 e["result_id"] = e["provenance"]["result_id"] = new_id
@@ -248,7 +250,8 @@ class BindingNegativeTests(TamperTestCase):
     def test_steps_sharing_a_key_with_different_bytes(self):
         """Isolates X9 by disabling the per-step checks (X2-X7) for this test only."""
         def differ(d):
-            set_result(entry_of(d, "evalcase_g008", "s1"), evaluated_by="rap-baseline.eligibility/9.9.9")
+            # F3: the remaining shared assessment key is A x ops (g003 s1 and g025 s2).
+            set_result(entry_of(d, "evalcase_g025", "s2"), evaluated_by="rap-baseline.eligibility/9.9.9")
         with mock.patch.object(artifacts, "_check_assessed"):
             self.publish_tampered(differ, "X9")
 

@@ -101,6 +101,10 @@ SPLIT_FILES = {Split.GOLDEN: "evaluation-golden-v0.2.0-dev.json", Split.HELD_OUT
 DEFINITIONS_FILE = "evaluation-definitions-v0.2.0-dev.json"
 #: Proposed draft definitions v2 (F4, PR-A). Not the default: DEFINITIONS_FILE (v1) remains the harness default.
 DEFINITIONS_V2_FILE = "evaluation-definitions-v2-v0.2.0-dev.json"
+#: F3 (RAP-F3-PLAN-2026-11-04 rev. 1.1): golden v2 (g002/g008 separated) and the definitions file whose draft
+#: safety-gate policy v3 pins it (metrics v1). Not the defaults: SPLIT_FILES and DEFINITIONS_FILE remain v1.
+GOLDEN_V2_FILE = "evaluation-golden-v2-v0.2.0-dev.json"
+DEFINITIONS_GOLDEN_V2_FILE = "evaluation-definitions-golden-v2-v0.2.0-dev.json"
 #: Proposed draft reviewer rubric v2 (F4, PR-B). Rubric v1 in both definitions files is unchanged.
 RUBRIC_V2_FILE = "evaluation-rubric-v2-v0.2.0-dev.json"
 

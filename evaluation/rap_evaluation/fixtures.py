@@ -1,8 +1,11 @@
 """Allowed-path fixture loading (A2) and integrity pins (A3).
 
-Only five files may be opened: the three pinned base layers, the golden case
-file and the draft v1 definitions file. The nominal held-out case file's path is
-never constructed here or anywhere in this package.
+Only five files may be opened: the three pinned base layers, the golden v2 case
+file and the definitions file that pins it (draft metric definitions v1 and draft
+safety-gate policy v3; F3, RAP-F3-PLAN-2026-11-04 rev. 1.1). Golden v1 and the
+definitions v1/v2 files are preserved unchanged in the repository but are not
+read by this runner version. The nominal held-out case file's path is never
+constructed here or anywhere in this package.
 
 Parsing the shared base layers is contact with held-out-owned synthetic records
 (candidates D and E): the eligibility layer is shared. The guards in ``scope.py``
@@ -38,8 +41,9 @@ REPO = Path(__file__).resolve().parents[2]
 FIXTURE_DIR = REPO / "contracts" / "fixtures"
 
 LAYER_FILES = ("foundations-v0.2.0-dev.json", "eligibility-evidence-v0.2.0-dev.json", "review-v0.2.0-dev.json")
-GOLDEN_FILE = "evaluation-golden-v0.2.0-dev.json"
-DEFINITIONS_FILE = "evaluation-definitions-v0.2.0-dev.json"  # draft v1; v2 and rubric v2 are never loaded
+GOLDEN_FILE = "evaluation-golden-v2-v0.2.0-dev.json"  # evalset_golden v2 (F3); golden v1 is never loaded
+#: Draft metrics v1 + draft safety-gate policy v3 (pins golden v2). Definitions v1/v2 and rubric v2 are never loaded.
+DEFINITIONS_FILE = "evaluation-definitions-golden-v2-v0.2.0-dev.json"
 ALLOWED_FILES = frozenset(LAYER_FILES + (GOLDEN_FILE, DEFINITIONS_FILE))
 
 
