@@ -11,6 +11,17 @@ artifact.
 Labels (``eligibility_results``) are never constructed either. Only the key
 fields of the label a step names are read (``project_label_key``); the label's
 decision, rule outcomes, citations and timestamps are not read by the runner.
+
+Case-local labels (F3-D3, RAP-F3-PLAN-2026-11-04 rev. 1.1, rules L1-L5). A
+case may name a ``case_records`` label in ``scope.include_records`` only if the
+label resolves to exactly one case record (L1), is owned by an in-scope
+candidate (L2) and is the ``eligibility_result_id`` of an ``eligibility_support``
+step of the SAME case (L3). Such a label is recorded as an included label
+reference and is never constructed, never placed in the eligibility context and
+never passed to the engine (L4). L5 (a step label resolved from ``case_records``
+must be declared in ``include_records``) is checked in ``admission.resolve_keys``.
+This is the only include exception: chunks, recommendations and verifications
+are still rejected.
 """
 
 from __future__ import annotations
@@ -175,6 +186,8 @@ class AdmittedScope:
     capabilities: Mapping[SourceSystem, SourceSystemCapabilities]
     source_refs: frozenset[SourceReference]
     constructed: frozenset[tuple[str, str]]
+    #: Case-local label ids admitted through ``include_records`` (L3/L4): referenced, never constructed.
+    included_labels: frozenset[str] = frozenset()
 
 
 def construct(kind: str, raw: Mapping[str, Any], scope_candidates: frozenset[str], graph: OwnershipGraph):
@@ -203,13 +216,20 @@ def build_scope(case: EvaluationCase, pool: Mapping[str, Any], case_records: Map
     if not cands <= graph.golden_candidates or cands & graph.held_out_candidates:
         raise AdmissionAbort("A6", "scope_not_golden", case.id)
     chosen: dict[str, list] = {kind: select(kind, pool, graph, cands) for kind in CONSTRUCTED_KINDS}
+    step_labels = {s.eligibility_result_id for s in case.steps if s.operation == "eligibility_support"}
+    included_labels: set[str] = set()
     for rid in case.scope.include_records:
         hits = [(k, r) for k in SCOPED_KINDS for r in case_records.get(k, []) if r["id"] == rid]
-        if len(hits) != 1:
+        if len(hits) != 1:                                                                    # L1
             raise AdmissionAbort("A5", "include_record_unresolvable", f"{case.id}: {rid}")
         kind, rec = hits[0]
-        if graph.owner(kind, rec) not in cands:
+        if graph.owner(kind, rec) not in cands:                                               # L2
             raise AdmissionAbort("A5", "include_record_out_of_scope", f"{case.id}: {rid}")
+        if kind == "eligibility_results":
+            if rid not in step_labels:                                                        # L3
+                raise AdmissionAbort("A6", "include_label_not_step_referenced", f"{case.id}: {rid}")
+            included_labels.add(rid)  # L4: a reference only; never constructed or given to the engine
+            continue
         if kind not in CONSTRUCTED_KINDS:
             raise AdmissionAbort("A6", "include_record_kind_not_supported", f"{case.id}: {kind}")
         chosen[kind].append(rec)
@@ -239,7 +259,8 @@ def build_scope(case: EvaluationCase, pool: Mapping[str, Any], case_records: Map
     refs |= {r.source_ref for r in eligibility.requirements} | {p.source_ref for p in eligibility.policies}
     constructed = frozenset((k, r["id"]) for k in CONSTRUCTED_KINDS for r in chosen[k])
     return AdmittedScope(case_id=case.id, candidates=cands, eligibility=eligibility, capabilities=capabilities,
-                         source_refs=frozenset(refs), constructed=constructed)
+                         source_refs=frozenset(refs), constructed=constructed,
+                         included_labels=frozenset(included_labels))
 
 
 # ---------------------------------------------------------------------------

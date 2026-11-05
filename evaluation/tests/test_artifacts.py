@@ -81,8 +81,11 @@ class PublishedRunTests(LazyClassFixture):
         self.assertEqual({k: c[k] for k in ("pinned_cases", "executed_cases", "not_run_cases", "executed_steps",
                                              "engine_steps", "validator_steps", "engine_invocations", "distinct_assessments")},
                          {"pinned_cases": 26, "executed_cases": 4, "not_run_cases": 22, "executed_steps": 6,
-                          "engine_steps": 5, "validator_steps": 1, "engine_invocations": 5, "distinct_assessments": 3})
-        self.assertEqual(c["f3_shared_scenario"], ["evalcase_g002", "evalcase_g008"])
+                          "engine_steps": 5, "validator_steps": 1, "engine_invocations": 5, "distinct_assessments": 4})
+        # F3 (golden v2): g002 and g008 are separate scenarios; the obsolete shared-scenario field is gone.
+        self.assertEqual(c["artifact"], "rap-evaluation.coverage/2")
+        self.assertNotIn("f3_shared_scenario", c)
+        self.assertIn("runs against golden v1 are not comparable", " ".join(c["statements"]))
         self.assertEqual(len(c["not_run"]), 22)
         self.assertTrue(all(n["class"] in "CDEFG" and n["reason"] for n in c["not_run"]))
         self.assertIn("not reviewed correctness", " ".join(c["statements"]))
@@ -113,8 +116,10 @@ class PublishedRunTests(LazyClassFixture):
         self.assertEqual(ident["execution_id"], run["id"])
         self.assertEqual(ident["configuration_fingerprint"], run["configuration"]["fingerprint"])
         self.assertEqual(ident["specification"]["as_of"], "2026-11-01T00:00:00Z")
-        self.assertEqual(ident["specification"]["manifest"]["root"],
-                         "sha256:5baf87b79e41dd22a97b23977874683eab9099ad83b1148ef2fd8a883b70c769")
+        # evalset_golden v2 (F3). The v1 root sha256:5baf87b7... is preserved in golden v1 and is never run here.
+        self.assertEqual(ident["specification"]["manifest"],
+                         {"id": "evalset_golden", "version": 2, "split": "golden",
+                          "root": "sha256:3bd060439f58ce4d28e5272d5169135fc93526d5cec8a78de3a8dc4dfbd4d25e"})
 
     def test_published_directory_re_validates_from_disk(self):
         docs, texts = load_dir(self.out)

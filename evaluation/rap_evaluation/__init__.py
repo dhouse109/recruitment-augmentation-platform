@@ -6,6 +6,11 @@ with the contract's ``check_eligibility_result`` and compares it with the case's
 PROPOSED, unadjudicated label. Everything else in the golden manifest is
 recorded as ``not_run``.
 
+Version 0.2.0 (F3, RAP-F3-PLAN-2026-11-04 rev. 1.1) reads golden manifest
+``evalset_golden`` v2, in which g002 and g008 are separate scenarios, and the
+draft safety-gate policy v3. Runs of 0.1.0 against golden v1 are reproducible
+only at their recorded commit and are not comparable with 0.2.0 runs.
+
 What a run establishes: the engine executed on pinned synthetic golden inputs
 (evidence tier T3, basis ``deterministic_baseline_execution``) and its results
 agreed or disagreed with proposed labels. What it does NOT establish: correctness,
@@ -15,7 +20,7 @@ metric, gate, comparison or promotion API is called, and no artifact is committe
 """
 
 RUNNER_COMPONENT = "rap-evaluation.runner"
-RUNNER_VERSION = "0.1.0"
+RUNNER_VERSION = "0.2.0"
 EXECUTED_BY = f"{RUNNER_COMPONENT}/{RUNNER_VERSION}"
 MOCK_AUTHORITY_ID = "rap-evaluation.fixture-mock/0.1.0"
 

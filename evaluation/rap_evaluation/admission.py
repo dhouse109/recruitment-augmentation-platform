@@ -81,7 +81,11 @@ def check_environment(config: RunConfig) -> datetime:
 
 def resolve_keys(selected: tuple[EvaluationCase, ...], pool: Mapping[str, Any], case_records: Mapping[str, Any],
                  graph: OwnershipGraph, scopes: Mapping[str, AdmittedScope]) -> tuple[dict, dict]:
-    """A7: every selected engine step's label exists once, is in scope and has a key the scope can assess."""
+    """A7: every selected engine step's label exists once, is in scope and has a key the scope can assess.
+
+    A label resolved from the golden ``case_records`` (a case-local label) must also be declared in the
+    case's ``scope.include_records`` (L5), so the runner and the T2 harness agree on the case's scope.
+    """
     keys: dict[tuple[str, str], LabelKey] = {}
     principals: dict[str, str] = {}
     for case in selected:
@@ -101,6 +105,11 @@ def resolve_keys(selected: tuple[EvaluationCase, ...], pool: Mapping[str, Any], 
                                      f"{case.id}/{step.step_id}")
             if graph.owner("eligibility_results", hits[0]) not in scope.candidates:
                 raise AdmissionAbort("A7", "label_out_of_scope", f"{case.id}/{step.step_id}")
+            # L5 (F3-D3): a case-local label must be declared in the case's include_records. Identity
+            # comparison only; no label field beyond the key is read (LABEL_KEY_FIELDS, project_label_key).
+            from_case_records = any(r is hits[0] for r in case_records.get("eligibility_results", []))
+            if from_case_records and step.eligibility_result_id not in case.scope.include_records:
+                raise AdmissionAbort("A7", "label_not_declared_in_scope", f"{case.id}/{step.step_id}")
             key = project_label_key(hits[0])
             cands = {c.id: c for c in ctx.records.candidates}
             opps = {o.id: o for o in ctx.records.opportunities}

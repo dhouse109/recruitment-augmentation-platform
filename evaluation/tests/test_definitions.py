@@ -1,4 +1,5 @@
-"""A4: read-only verification of the draft v1 definitions (plan section 4.3, decision E7)."""
+"""A4: read-only verification of draft metrics v1 and draft safety-gate policy v3 (plan section 4.3, decision E7;
+F3, RAP-F3-PLAN-2026-11-04 rev. 1.1, decision F3-D2 option P1)."""
 
 from __future__ import annotations
 
@@ -12,10 +13,11 @@ from rap_contracts.source_checks import canonical_json_sha256
 
 from rap_evaluation import AdmissionAbort
 from rap_evaluation.definitions import METRICS_PIN, POLICY_PIN, verify_definitions
-from rap_evaluation.fixtures import DEFINITIONS_FILE, check_integrity
+from rap_evaluation.fixtures import DEFINITIONS_FILE, GOLDEN_FILE, check_integrity
 from rap_evaluation.run import run_evaluation
 
-GOLDEN_ROOT = "sha256:5baf87b79e41dd22a97b23977874683eab9099ad83b1148ef2fd8a883b70c769"
+#: evalset_golden v2 (F3). Policy v1/v2 pin golden v1 (sha256:5baf87b7...), which this runner never reads.
+GOLDEN_ROOT = "sha256:3bd060439f58ce4d28e5272d5169135fc93526d5cec8a78de3a8dc4dfbd4d25e"
 
 
 class DefinitionsTests(TempDirTest):
@@ -76,9 +78,18 @@ class DefinitionsTests(TempDirTest):
         self.assertEqual(cm.exception.check, "A4")
         self.assertNothingPublished(out)
 
-    def test_only_the_v1_definitions_file_is_loaded(self):
-        self.assertIn(DEFINITIONS_FILE, real_fixtures().opened)
-        self.assertFalse([n for n in real_fixtures().opened if "v2" in n or "rubric" in n])
+    def test_only_the_golden_v2_definitions_file_is_loaded(self):
+        # F3: the "no v2 in any name" check is replaced by exact names, because the approved golden v2 and
+        # golden-v2 definitions files carry "v2" in their names. Intent kept: definitions v1, draft definitions
+        # v2, the v2 rubric and golden v1 are never opened.
+        opened = real_fixtures().opened
+        self.assertEqual((DEFINITIONS_FILE, GOLDEN_FILE),
+                         ("evaluation-definitions-golden-v2-v0.2.0-dev.json", "evaluation-golden-v2-v0.2.0-dev.json"))
+        self.assertIn(DEFINITIONS_FILE, opened)
+        for never in ("evaluation-definitions-v0.2.0-dev.json", "evaluation-definitions-v2-v0.2.0-dev.json",
+                      "evaluation-golden-v0.2.0-dev.json"):
+            self.assertNotIn(never, opened)
+        self.assertFalse([n for n in opened if "rubric" in n])
 
 
 if __name__ == "__main__":

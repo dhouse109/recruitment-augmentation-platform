@@ -7,6 +7,12 @@
 **Code:** [`evaluation/rap_evaluation`](../../evaluation/README.md). No change under `contracts/` or `baseline/`.  
 **Data:** synthetic only. No held-out case file is opened. No paid inference.
 
+> **F3 update (2026-11-04, AR-F3; runner 0.2.0).** The runner now reads golden manifest `evalset_golden` **v2**,
+> in which g002 (B × web) and g008 (G × data) are separate scenarios, and draft safety-gate policy **v3** (draft
+> metrics v1). Case-local labels are admitted only under rules L1–L5. Sections below record PR-S3b as merged and
+> carry dated F3 notes where facts changed; §10 summarizes F3. Design record:
+> [`F3-scenario-separation.md`](F3-scenario-separation.md).
+
 > A matched step means the engine's generated result was contract-supported and agreed with a **proposed,
 > unadjudicated** label. It is not reviewed correctness, accuracy or safety, and the fixture-mock source
 > authority is not Drupal authorization (not T4).
@@ -20,7 +26,7 @@
 | E3 | g025 s1 (`context_validation`) runs on the reference validator at basis `reference_validator` (T2) | `execute.py` |
 | E4 | Run status `partial`, never `completed`; no `completed_at` | `run.py` |
 | E5 | Shared layers are parsed; held-out-owned records are guarded before construction and scanned for in the output. Parsing is contact (§5) | `scope.py`, `artifacts.py` |
-| E7 | Draft v1 metrics and safety policy verified read-only | `definitions.py` |
+| E7 | Draft v1 metrics and safety policy verified read-only (F3: draft metrics v1 unchanged; policy v3, which pins golden v2) | `definitions.py` |
 | E8 | Artifacts are written to an output directory only; `evaluation/out/` is git-ignored | `.gitignore`, `__main__.py` |
 | E9 | New top-level `evaluation/rap_evaluation`; the `evals/` layout question stays open | — |
 | E12 | Random execution id; deterministic configuration, specification and output identities; `verify-repeat` | `identity.py` |
@@ -53,12 +59,13 @@ All admission checks run before any engine call. Any failure is exit **3**: no a
 | Check | Content |
 |---|---|
 | A1 | Clean recorded commit (CLI reads git; tests inject a `CodeRevision`), installed contract version `.foundations.6`, purpose `regression`, no retrieval/prompt/model/judge pin, one replicate, timezone-aware `as_of`, new output path |
-| A2 | Only five files can be opened: the three base layers, the golden file and definitions v1. Any other name is refused before `open`. The held-out file name is never constructed |
+| A2 | Only five files can be opened: the three base layers, the golden file and its definitions file (since F3: golden v2 and `evaluation-definitions-golden-v2-v0.2.0-dev.json`; golden v1 and definitions v1/v2 are never read). Any other name is refused before `open`. The held-out file name is never constructed |
 | A3 | Golden, repository-visible, `not_applicable` manifest; layer digests, `case_records_sha256` and every case pin (`check_manifest_cases`) |
-| A4 | `evaldefs_metrics` v1 and `evaldefs_safety_gate` v1 validate, are `draft`, chain correctly and pass `check_policy_manifest`; digests recorded; held-out manifest pin recorded, never resolved |
+| A4 | `evaldefs_metrics` v1 and `evaldefs_safety_gate` v1 (v3 since F3) validate, are `draft`, chain correctly and pass `check_policy_manifest`; digests recorded; held-out manifest pin recorded, never resolved |
 | A5 | Owner of every candidate-scoped raw record derived from the record graph. Revisions of one record (for example two revisions of `profile_demo_a`) share an id and must share an owner |
 | A6 | Contract models are built only for records owned by an in-scope golden candidate. A held-out-owned record reaching construction is `held_out_construction`; another golden candidate's record is `cross_scope_construction` |
-| A7 | Each selected step's label exists once and is in scope; its key's candidate, opportunity, organization and policy pin resolve in the scope; exactly one declared principal |
+| A7 | Each selected step's label exists once and is in scope; its key's candidate, opportunity, organization and policy pin resolve in the scope; exactly one declared principal. F3 (L5): a label resolved from the golden `case_records` must be declared in the case's `include_records` (`label_not_declared_in_scope`) |
+| L1–L4 (F3) | A case-local `eligibility_results` include must resolve once (L1), be owned in scope (L2) and be named by an `eligibility_support` step of the same case (L3, `include_label_not_step_referenced`). It is a reference only: never constructed, never in the eligibility context, never given to the engine (L4). Chunks, recommendations and verifications are still refused (`include_record_kind_not_supported`) |
 | A8 | All 26 pinned cases are classified; the selection is exactly the four cases; selected cases have the expected step shape and declare no safety expectations, assertions or review store (stricter than the plan: this runner emits no safety observations) |
 
 **Execution** runs only after A1–A8. Engine refusals and errors become observations. Any other exception is exit
@@ -135,6 +142,8 @@ Verdicts: `PASS` (distinct execution ids, equal configuration, specification and
 
 ## 7. Observed results (synthetic golden inputs, `as_of` 2026-11-01T00:00:00Z)
 
+*As merged in PR-S3b (runner 0.1.0, golden v1). For golden v2 (F3) see §10.*
+
 | Case | Step | Basis | Status |
 |---|---|---|---|
 | g002 | s1 (B × data) | T3 | matched |
@@ -164,13 +173,13 @@ verdicts, `PYTHONHASHSEED` 0/1/2 and shuffled record order, and static and dynam
 Some negatives isolate one check deliberately: X4 patches the id function to simulate a collision with a label
 id, and X9 disables the per-step checks; both are stated in the tests.
 
-`tests/tools/mutations.py` applies 34 single-invariant mutations (R01–R29; R30–R34 for review repairs R1 and R2) in a scratch copy and classifies them
+`tests/tools/mutations.py` applies 34 single-invariant mutations (R01–R29; R30–R34 for review repairs R1 and R2; F3 adds R35–R39, see §10) in a scratch copy and classifies them
 with the PR-S2 R1 rules (controls first). Class-level fixtures are built lazily so a broken fixture fails each test
 rather than shrinking the run, which the classifier would treat as a harness error.
 
 ## 9. Limitations carried forward
 
-- **F3:** g002 and g008 share one scenario; they are one distinct assessment.
+- **F3:** ~~g002 and g008 share one scenario; they are one distinct assessment.~~ Resolved by golden v2 (2026-11-04, §10).
 - **F4/B3:** definitions and labels are drafts; labels are proposed and not adjudicated.
 - **G12a–c:** open at the result level; citations are recorded in the sidecar but not evaluated (no citation
   expectations exist).
@@ -179,6 +188,42 @@ rather than shrinking the run, which the classifier would treat as a harness err
 - **Held-out contact:** the shared layer is parsed (§5).
 - **No T4:** the fixture mock is not Drupal; context completeness is asserted by the fixture adapter.
 - **No measurement:** latency `not_measured`, cost `not_applicable`; no metric, gate, comparison or promotion.
-- The manifest's `contract_version` (`.foundations.4`) lags the installed `.foundations.6` (R-8); recorded as is.
+- The manifest's `contract_version` (`.foundations.4`) lags the installed `.foundations.6` (R-8); recorded as is. Golden v2 records `.foundations.6`, the version it was authored and validated against; golden v1 keeps `.foundations.4`.
 - The pre-existing contract conformance suite (`contracts/tests`) still reads both case splits, as on `main`;
   this runner does not.
+
+## 10. F3 update — golden v2 (2026-11-04, AR-F3)
+
+Authorized by the owner under RAP-F3-PLAN-2026-11-04 rev. 1.1 (decisions F3-D1 to F3-D5) and scope amendment 1.
+Design record: [`F3-scenario-separation.md`](F3-scenario-separation.md).
+
+| Item | Runner 0.1.0 (PR-S3b) | Runner 0.2.0 (F3) |
+|---|---|---|
+| Golden manifest | `evalset_golden` v1 | `evalset_golden` **v2** (24 cases identical to v1; g002 and g008 at v2) |
+| Draft definitions | metrics v1, policy v1 | metrics v1, **policy v3** (pins golden v2; otherwise identical to v1) |
+| g002 s1 | B × data (both rules unknown) | **B × web**: only AVAIL `unknown / availability_not_declared` |
+| g008 s1 | B × data (same scenario as g002) | **G × data**: only SKILL `unknown / qualification_contested` |
+| Distinct assessments | 3 | **4** (5 engine invocations; g003 s1 and g025 s2 share A × ops by design) |
+| Coverage artifact | `coverage/1` with `f3_shared_scenario` | `coverage/2`, no shared-scenario field |
+
+**Observed with golden v2** (`as_of` 2026-11-01T00:00:00Z): coverage 26 pinned / 4 executed / 22 not run / 6
+executed steps (5 engine T3, 1 validator T2) / 5 invocations / 4 distinct assessments; status `partial`. All six
+executed steps matched expectations: five T3 deterministic eligibility steps agreed with proposed, unadjudicated
+labels, and the g025/s1 T2 reference-validator prerequisite matched its expected context-validation outcome. This
+establishes neither reviewed correctness nor T4 authorization.
+
+**Historical non-comparability (E11a, E11b).** `verify-repeat` re-admits each run directory against the
+current fixtures, so the current runner refuses a run pinned to golden v1 with a binding failure `P1` (exit 4)
+and prints no verdict. `tests/tools/historical_v1_check.py` (E11b) extracts the pre-F3 tree at `653642e9` with
+`git archive` (the held-out case fixture is excluded and never materialized), produces two genuine runner-0.1.0
+runs, confirms they re-verify as `PASS` at that commit, and confirms the current runner rejects them. Historical
+runs are reproducible only at their recorded commit.
+
+**Held-out scope of S1.** S1 scans artifacts for identifiers of held-out-owned records the runner can see (base
+layers and golden case records). It does not and cannot cover identifiers that exist only in the nominal
+held-out case file, which the runner never opens; collisions with those are checked by contract-level tests
+(`contracts/tests/test_golden_v2_f3.py`, C8–C11) under verification boundary VB-1–VB-6.
+
+**Mutations R35–R39** (all must be CAUGHT): L3 removed; L4 broken (label placed in the construction set);
+a non-key field of a case-local label read in production (R37, detected by the label spy, which now wraps
+base-layer and case-local labels); L5 removed; policy pin reverted to v1.

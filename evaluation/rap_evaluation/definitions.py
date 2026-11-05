@@ -1,4 +1,9 @@
-"""A4: read-only verification of the draft v1 metric definitions and safety-gate policy (plan section 4.3).
+"""A4: read-only verification of the draft metric definitions v1 and safety-gate policy v3 (plan section 4.3).
+
+F3 (RAP-F3-PLAN-2026-11-04 rev. 1.1, decision F3-D2 option P1): policy v3 is
+policy v1 with its golden manifest pin moved to ``evalset_golden`` v2. The
+metric definitions stay at draft v1 (decision E7 unchanged); draft metrics v2
+remain non-default and are never loaded.
 
 Only ``metric_definitions`` and ``safety_gate_policy`` are used. Nothing is
 computed, approved or defaulted: no metric value, gate evaluation, comparison or
@@ -22,7 +27,7 @@ from rap_contracts.source_checks import canonical_json_sha256
 from . import AdmissionAbort
 
 METRICS_PIN = DefinitionsPin(id="evaldefs_metrics", version=1)
-POLICY_PIN = DefinitionsPin(id="evaldefs_safety_gate", version=1)
+POLICY_PIN = DefinitionsPin(id="evaldefs_safety_gate", version=3)
 
 
 @dataclass(frozen=True)

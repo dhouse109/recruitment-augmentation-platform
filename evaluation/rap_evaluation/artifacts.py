@@ -52,7 +52,7 @@ from rap_contracts.evaluation import CaseObservation, EvaluationRun, StepRole, S
 
 from . import EXECUTED_BY, BindingFailure, RunnerFailure
 from .authority import FixtureMockAuthority
-from .applicability import CLASS_REASONS, CLASS_TABLE, F3_SHARED_SCENARIO, SELECTION, SELECTION_VERSION, class_table_digest
+from .applicability import CLASS_REASONS, CLASS_TABLE, SELECTION, SELECTION_VERSION, class_table_digest
 from .execute import ENGINE_BASIS, VALIDATOR_BASIS, WORKFLOW, validate_context, compare, result_json, rule_view, validate_result
 from .identity import output_digest as normalized_output_digest
 from .identity import spec_digest, specification
@@ -67,7 +67,8 @@ STATEMENTS = (
     "g025 s1 is a reference-validator prerequisite (T2, reference_validator), not an engine step.",
     "The source authority is a fixture mock: no Drupal authorization, permission or currentness is established (not T4).",
     "Run status is partial: 4 of 26 pinned cases were executed. No metric, gate, comparison or promotion was computed.",
-    "g002 and g008 share one scenario (F3): they are one distinct assessment.",
+    "Golden manifest evalset_golden v2 (F3): g002 and g008 are separate scenarios; runs against golden v1 are not "
+    "comparable with this run.",
 )
 
 
@@ -96,7 +97,7 @@ def build_coverage(observations: Iterable[CaseObservation], entries: list[Mappin
     executed = [o for o in observations if o.execution_status == "executed"]
     steps = [s for o in executed for s in o.steps if s.status is not StepStatus.NOT_EVALUATED]
     return {
-        "artifact": "rap-evaluation.coverage/1",
+        "artifact": "rap-evaluation.coverage/2",
         "pinned_cases": len(observations),
         "executed_cases": len(executed),
         "executed": [{"case_id": o.case_id, "class": CLASS_TABLE[o.case_id]} for o in executed],
@@ -108,7 +109,6 @@ def build_coverage(observations: Iterable[CaseObservation], entries: list[Mappin
         "validator_steps": sum(1 for s in steps if s.basis is VALIDATOR_BASIS),
         "engine_invocations": len(entries),
         "distinct_assessments": len({_assessment(e) for e in entries}),
-        "f3_shared_scenario": list(F3_SHARED_SCENARIO),
         "selection": list(SELECTION),
         "selection_version": SELECTION_VERSION,
         "class_table_sha256": class_table_digest(),

@@ -58,10 +58,11 @@ class RealExecutionTests(LazyClassFixture):
 
     def test_shared_keys_produce_identical_results(self):
         ids = {(e.case_id, e.step_id): e.result.id for e in self.p.entries}
-        self.assertEqual(ids[("evalcase_g002", "s1")], ids[("evalcase_g008", "s1")])
-        self.assertEqual(ids[("evalcase_g003", "s1")], ids[("evalcase_g025", "s2")])
+        # F3 (golden v2): g002 (B x web) and g008 (G x data) are separate assessments.
+        self.assertNotEqual(ids[("evalcase_g002", "s1")], ids[("evalcase_g008", "s1")])
+        self.assertEqual(ids[("evalcase_g003", "s1")], ids[("evalcase_g025", "s2")])  # A x ops, by design (not F3)
         self.assertNotEqual(ids[("evalcase_g025", "s2")], ids[("evalcase_g025", "s3")])
-        self.assertEqual(len(set(ids.values())), 3)
+        self.assertEqual(len(set(ids.values())), 4)
 
     def test_generated_ids_never_equal_label_ids(self):
         labels = admitted().graph.label_ids
@@ -153,7 +154,8 @@ class ExecutionInjectionTests(unittest.TestCase):
         self.assertEqual(ex.observation.steps[0].observed.error_type, "engine_refused")
 
     def test_denied_principal_is_an_engine_refusal(self):
-        ex = self.run_case(self.case("evalcase_g002", self.override("evalcase_g002", "opportunity_demo_data",
+        # F3: g002 assesses opportunity_demo_web (B x web).
+        ex = self.run_case(self.case("evalcase_g002", self.override("evalcase_g002", "opportunity_demo_web",
                                                                     VersionStatus.CURRENT, AccessStatus.DENIED)))
         s = ex.observation.steps[0]
         self.assertEqual((s.status, s.observed.error_type), (StepStatus.ERRORED, "engine_refused"))
@@ -269,16 +271,28 @@ class LabelBlindnessTests(LazyClassFixture):
                 accessed.setdefault(dict.__getitem__(self, "id"), set()).add("*values")
                 return dict.values(self)
 
-        def spy(layers):
+        # F3 (R37): spy on BOTH label sources -- the base layer and the golden case-local labels -- so an
+        # unauthorized read of a case-local label field is detected. The spy only records; it never raises, so
+        # a violation fails an assertion rather than erroring.
+        def spy_layers(layers):
             rs = layers["eligibility-evidence-v0.2.0-dev.json"]["eligibility_results"]
             rs[:] = [Spy(r) for r in rs]
-        with tampered(layers=spy):
+
+        def spy_case_records(golden):
+            rs = golden["case_records"]["eligibility_results"]
+            rs[:] = [Spy(r) for r in rs]
+        with tampered(layers=spy_layers, golden=spy_case_records):
             adm = admit(config("/nonexistent/spy"))
             products(adm=adm)
-        golden_labels = {"eligibility_a_data", "eligibility_a_ops", "eligibility_a_web", "eligibility_b_data", "eligibility_c_job"}
+        golden_labels = {rid for (kind, rid), owner in adm.graph.owners.items()
+                         if kind == "eligibility_results" and owner in adm.graph.golden_candidates}
+        self.assertTrue({"eligibility_b_web", "eligibility_g_data", "eligibility_a_ops", "eligibility_a_web"} <= golden_labels)
         for label in golden_labels & set(accessed):
             self.assertLessEqual(accessed[label], set(LABEL_KEY_FIELDS), label)
-        self.assertTrue({"eligibility_a_ops", "eligibility_b_data", "eligibility_a_web"} <= set(accessed))
+        # Every selected step's label went through the A7 key projection (not merely the ownership pass, which
+        # reads only id and candidate_id). Both case-local labels must be among them.
+        for label in ("eligibility_b_web", "eligibility_g_data", "eligibility_a_ops", "eligibility_a_web"):
+            self.assertLessEqual({"organization_id", "opportunity_id", "policy"}, accessed.get(label, set()), label)
 
     def test_request_is_built_from_the_key_and_the_engine_receives_no_label(self):
         seen = []
