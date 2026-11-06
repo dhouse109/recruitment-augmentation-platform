@@ -1,0 +1,224 @@
+{
+  "record_set": "owner_review_decisions",
+  "id": "evalreviewdecisions_golden",
+  "version": 1,
+  "contract_version": "0.2.0-dev.foundations.6",
+  "data_policy": "synthetic_only",
+  "interpretation": "recorded_decisions_only",
+  "notes": [
+    "Machine-readable transcription of the project owner's F4/B3 decisions recorded in RAP-F4-B3-OWNER-REVIEW-2026-11-06 (merged PR #22).",
+    "Records decisions only. It does not change, determine or override the persisted label status of any case, and it carries no expected outcome or case limitation; those remain authoritative in the source record.",
+    "Self-attested owner statements: not authenticated or attested by any trusted service.",
+    "Bound to evalset_golden v2 only (manifest root below). Golden v1 and the held-out split are not covered."
+  ],
+  "dataset": {
+    "id": "evalset_golden",
+    "version": 2,
+    "split": "golden",
+    "root": "sha256:3bd060439f58ce4d28e5272d5169135fc93526d5cec8a78de3a8dc4dfbd4d25e"
+  },
+  "source_record": {
+    "document_id": "RAP-F4-B3-OWNER-REVIEW-2026-11-06",
+    "path": "docs/evaluation/F4-B3-OBJECTIVE-GOLDEN-OWNER-REVIEW-2026-11-06.md",
+    "merged_in": "4314deac7bc09e4b7914403a8bfd95c962d798fa",
+    "file_sha256": "sha256:e7089720b0f0de14232fc6deb56548dd058a6f0c87a0568d680769d04a49a15a"
+  },
+  "provenance": {
+    "basis": "self_attested_owner_statement",
+    "trusted_attestation": false
+  },
+  "decided_on": "2026-11-06",
+  "coverage": {
+    "kind": "complete_manifest",
+    "entry_count": 26
+  },
+  "summary": {
+    "accepted": 26,
+    "corrections_requested": 0,
+    "deferred": 0
+  },
+  "decisions": [
+    {
+      "case_id": "evalcase_g001",
+      "case_version": 1,
+      "case_sha256": "sha256:c6ec0da71ff139cc46953fa2becad4e789c9948201e3c4bb2e66222b941d754d",
+      "batch": 2,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g002",
+      "case_version": 2,
+      "case_sha256": "sha256:dbacee10babc7ef14532473cd6c05517cc6d9eeff57469f0f7b6b00f1609b3f1",
+      "batch": 1,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g003",
+      "case_version": 1,
+      "case_sha256": "sha256:67558522d4390680f86faf3a03670a1cdd67171487e74ccdf1c16ba8692338e8",
+      "batch": 2,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g004",
+      "case_version": 1,
+      "case_sha256": "sha256:aec0283d2eb760b955e5531f813338751fb4b2fb6f07ed3fb8b4c82c8d9d7331",
+      "batch": 2,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g005a",
+      "case_version": 1,
+      "case_sha256": "sha256:c7f4fb8ce48a0a2e5556cb4b53f3ada939b8513f685e786ec9216d302a1b97d7",
+      "batch": 2,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g005b",
+      "case_version": 1,
+      "case_sha256": "sha256:a73c85fadcf8ef42ee104e7c686bb2057ecf2c5654907740a141e862018e0ca5",
+      "batch": 2,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g006",
+      "case_version": 1,
+      "case_sha256": "sha256:e54af9b95509f21b3b5cb3f7bcc95bcb0c2581d148413e0c683fb4cb14928b78",
+      "batch": 2,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g007",
+      "case_version": 1,
+      "case_sha256": "sha256:535cfd9c6117a23b99a7d70200aa6636434cf83aef6fc5909e664c0c601e88a7",
+      "batch": 3,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g008",
+      "case_version": 2,
+      "case_sha256": "sha256:e9f267192ff7d509258a252ff6a9c1d82198764772379087e8f9416b0fa19efe",
+      "batch": 1,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g009",
+      "case_version": 1,
+      "case_sha256": "sha256:446102d97884dc79bb01f0e8d31bbf1efd18c68095eed77ea8fc3aec9f49b0de",
+      "batch": 3,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g010",
+      "case_version": 1,
+      "case_sha256": "sha256:6a1bb09d28757d2799ad23de26ea4692006825b1b5233e7801c8fae605bb248b",
+      "batch": 3,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g011",
+      "case_version": 1,
+      "case_sha256": "sha256:ab764f12cb0db3a1d6b95be9cd799a2d8aca7e833ef03d14e7a403ca1514634e",
+      "batch": 3,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g012",
+      "case_version": 1,
+      "case_sha256": "sha256:2d5dafc2969571f3561a060008ec67204480e56004466ecd4d27b9f935c2ca9e",
+      "batch": 3,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g013",
+      "case_version": 1,
+      "case_sha256": "sha256:95344e0cf1d1470c28af6051c99a506ee14346b5a7950a457e0509e8de2b1dcb",
+      "batch": 4,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g014",
+      "case_version": 1,
+      "case_sha256": "sha256:6bcb06ccc79aca095b1242338621a7122551444e60eb04d5513f3cafe14e0004",
+      "batch": 4,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g015",
+      "case_version": 1,
+      "case_sha256": "sha256:79c45c19c05599037f3c6ee8325ea8781260f12a8814db7fcdd917e8bdae7489",
+      "batch": 4,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g016",
+      "case_version": 1,
+      "case_sha256": "sha256:267aed998593edf37e41d45db282466c21f464956d4820ca721d7299b5946456",
+      "batch": 4,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g017",
+      "case_version": 1,
+      "case_sha256": "sha256:ac933d0472d29446dcc35ba02331f70e8981505d8738c2bb3c60135e70b76d02",
+      "batch": 4,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g018",
+      "case_version": 1,
+      "case_sha256": "sha256:c18e0fed60c4ab13aad19ed1d2fc8ae6008fc1fd1cae27b5f4a27b6d897363d1",
+      "batch": 5,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g019",
+      "case_version": 1,
+      "case_sha256": "sha256:1f1317b94e6c670f00f51415fe27489849d27df075b76b39beebdc76313f04f9",
+      "batch": 5,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g020",
+      "case_version": 1,
+      "case_sha256": "sha256:15ab1cf985a98940505224352c3c272abae04e722e57d5046fbdbca58a9d23c0",
+      "batch": 5,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g021",
+      "case_version": 1,
+      "case_sha256": "sha256:c49ca583b8ad1f1e9fccaaf0ea32d5cb35a9487f5f902fea72f1cead3e70f1ef",
+      "batch": 5,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g022",
+      "case_version": 1,
+      "case_sha256": "sha256:aef99a4e115d8c5cb161b1b3f71837ae9316c496ffcff66596746704ebb80b02",
+      "batch": 5,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g023",
+      "case_version": 1,
+      "case_sha256": "sha256:16515b5ffa697a4189eeab033cd239981042f764bb05b1a686c54ee0179c258e",
+      "batch": 6,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g024",
+      "case_version": 1,
+      "case_sha256": "sha256:3c6b8cd2d597c649057de0a9a91f7dc5c04b6e13e279fdb6c2609dd80403578a",
+      "batch": 6,
+      "decision": "accepted_as_pinned"
+    },
+    {
+      "case_id": "evalcase_g025",
+      "case_version": 1,
+      "case_sha256": "sha256:3013a9b99604095c325b4b2c5b08f61a2a3c833dd7655b71fd0410dfad50570b",
+      "batch": 6,
+      "decision": "accepted_as_pinned"
+    }
+  ]
+}
